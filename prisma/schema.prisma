@@ -1,0 +1,297 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  STUDENT
+}
+
+enum NoteType {
+  IMAGE
+  PDF
+  MIXED
+}
+
+enum HomeworkStatus {
+  PENDING
+  SUBMITTED
+  LATE
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+enum QuestionType {
+  MCQ
+  SHORT_ANSWER
+}
+
+enum NotificationType {
+  HOMEWORK
+  NOTE
+  TEST
+  ATTENDANCE
+  ANNOUNCEMENT
+  SYSTEM
+}
+
+model User {
+  id            String              @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  email         String              @unique
+  passwordHash  String
+  role          UserRole
+  bio           String?
+  avatarUrl     String?
+  phone         String?
+  deviceTokens  String[]            @default([])
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  subjects      Subject[]           @relation("TeacherSubjects")
+  homework      Homework[]          @relation("HomeworkAuthor")
+  tests         Test[]              @relation("TestAuthor")
+  announcements Announcement[]      @relation("AnnouncementAuthor")
+  notifications Notification[]      @relation("NotificationRecipient")
+  submissions   HomeworkSubmission[]
+  attendance    Attendance[]        @relation("AttendanceStudent")
+  reading       ReadingProgress[]   @relation("ReadingProgressUser")
+  markedAttend  Attendance[]        @relation("AttendanceMarker")
+  testAttempts  TestAttempt[]       @relation("TestAttemptStudent")
+
+  @@index([role])
+}
+
+model Subject {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  slug        String      @unique
+  color       String
+  icon        String
+  sortOrder   Int         @default(0)
+  teacherId   String      @db.ObjectId
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  teacher    User        @relation("TeacherSubjects", fields: [teacherId], references: [id])
+  chapters   Chapter[]
+  notes      Note[]
+  homework   Homework[]
+  tests      Test[]
+  attendance Attendance[]
+
+  @@index([teacherId])
+}
+
+model Chapter {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  name       String
+  slug       String
+  order      Int       @default(0)
+  subjectId  String    @db.ObjectId
+  summary    String?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+  notes     Note[]
+  homework  Homework[]
+  tests     Test[]
+
+  @@index([subjectId, order])
+  @@unique([subjectId, slug])
+}
+
+model Note {
+  id           String            @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  description  String?
+  subjectId    String            @db.ObjectId
+  chapterId    String            @db.ObjectId
+  type         NoteType
+  images       Json?
+  pdfs         Json?
+  youtubeUrl   String?
+  pageCount    Int               @default(0)
+  lastUpdated  DateTime          @default(now())
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  subject     Subject           @relation(fields: [subjectId], references: [id])
+  chapter     Chapter           @relation(fields: [chapterId], references: [id])
+  progress    ReadingProgress[]
+
+  @@index([subjectId, chapterId])
+  @@index([title])
+}
+
+model ReadingProgress {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  noteId     String   @db.ObjectId
+  assetType  String
+  page       Int      @default(1)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation("ReadingProgressUser", fields: [userId], references: [id])
+  note Note @relation(fields: [noteId], references: [id])
+
+  @@unique([userId, noteId, assetType])
+  @@index([userId, noteId])
+}
+
+model Homework {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  title        String
+  instructions String
+  subjectId    String           @db.ObjectId
+  chapterId    String?          @db.ObjectId
+  authorId     String           @db.ObjectId
+  dueDate      DateTime
+  attachments  Json?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  subject     Subject             @relation(fields: [subjectId], references: [id])
+  chapter     Chapter?            @relation(fields: [chapterId], references: [id])
+  author      User                @relation("HomeworkAuthor", fields: [authorId], references: [id])
+  submissions HomeworkSubmission[]
+
+  @@index([subjectId, dueDate])
+}
+
+model HomeworkSubmission {
+  id           String           @id @default(auto()) @map("_id") @db.ObjectId
+  homeworkId   String           @db.ObjectId
+  studentId    String           @db.ObjectId
+  submittedAt  DateTime         @default(now())
+  status       HomeworkStatus   @default(SUBMITTED)
+  textAnswer   String?
+  attachments  Json?
+  feedback     String?
+  score        Float?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+
+  homework Homework @relation(fields: [homeworkId], references: [id])
+  student  User     @relation(fields: [studentId], references: [id])
+
+  @@unique([homeworkId, studentId])
+  @@index([studentId, status])
+}
+
+model Test {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  description String?
+  subjectId   String      @db.ObjectId
+  chapterId   String?     @db.ObjectId
+  authorId    String      @db.ObjectId
+  startsAt    DateTime?
+  endsAt      DateTime?
+  durationMin Int         @default(30)
+  isPublished Boolean     @default(false)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  subject   Subject   @relation(fields: [subjectId], references: [id])
+  chapter   Chapter?  @relation(fields: [chapterId], references: [id])
+  author    User      @relation("TestAuthor", fields: [authorId], references: [id])
+  questions Question[]
+  attempts  TestAttempt[]
+
+  @@index([subjectId, isPublished])
+}
+
+model Question {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  testId        String       @db.ObjectId
+  type          QuestionType
+  prompt        String
+  options       Json?
+  correctAnswer String?
+  marks         Float        @default(1)
+  explanation   String?
+  order         Int          @default(0)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  test Test @relation(fields: [testId], references: [id])
+
+  @@index([testId, order])
+}
+
+model Attendance {
+  id         String            @id @default(auto()) @map("_id") @db.ObjectId
+  studentId  String            @db.ObjectId
+  subjectId  String            @db.ObjectId
+  date       DateTime
+  status     AttendanceStatus
+  note       String?
+  markedById String            @db.ObjectId
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+
+  student  User    @relation("AttendanceStudent", fields: [studentId], references: [id])
+  subject  Subject @relation(fields: [subjectId], references: [id])
+  markedBy User    @relation("AttendanceMarker", fields: [markedById], references: [id])
+
+  @@unique([studentId, subjectId, date])
+  @@index([date, subjectId])
+}
+
+model Announcement {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  message   String
+  audience  String   @default("all")
+  authorId  String   @db.ObjectId
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  author User @relation("AnnouncementAuthor", fields: [authorId], references: [id])
+
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String            @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String            @db.ObjectId
+  title     String
+  body      String
+  type      NotificationType
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  user User @relation("NotificationRecipient", fields: [userId], references: [id])
+
+  @@index([userId, readAt])
+}
+
+model TestAttempt {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  testId      String      @db.ObjectId
+  studentId   String      @db.ObjectId
+  answers     Json        // Object mapping question ID to student's answer
+  score       Float
+  percentage  Float
+  completedAt DateTime    @default(now())
+
+  test        Test        @relation(fields: [testId], references: [id], onDelete: Cascade)
+  student     User        @relation("TestAttemptStudent", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([testId, studentId])
+  @@index([studentId])
+}
