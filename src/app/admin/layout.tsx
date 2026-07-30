@@ -10,5 +10,9 @@ export default async function AdminLayout({ children }: Readonly<{ children: Rea
     redirect('/login');
   }
 
-  return <DashboardShell role="ADMIN" name={session.user.name ?? 'Teacher'}>{children}</DashboardShell>;
+  return (
+    <DashboardShell role="ADMIN" name={session.user.name ?? 'Teacher'} avatarUrl={session.user.avatarUrl}>
+      {children}
+    </DashboardShell>
+  );
 }

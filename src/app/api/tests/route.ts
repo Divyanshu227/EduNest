@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
+import { getStudentRecipients, notifyUsers } from '@/lib/notifications';
 import { testSchema } from '@/lib/validators';
 
 export async function GET() {
@@ -33,6 +34,16 @@ export async function POST(request: Request) {
       endsAt: null
     }
   });
+
+  if (parsed.data.isPublished) {
+    const recipients = await getStudentRecipients();
+    await notifyUsers(recipients, {
+      title: `New test: ${parsed.data.title}`,
+      body: 'A new test is now available for you to take.',
+      type: 'TEST',
+      link: '/student/tests'
+    });
+  }
 
   return NextResponse.json({ data: test }, { status: 201 });
 }

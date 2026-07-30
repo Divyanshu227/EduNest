@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
+import { getStudentRecipients, notifyUsers } from '@/lib/notifications';
 import { announcementSchema } from '@/lib/validators';
 
 export async function GET() {
@@ -30,6 +31,14 @@ export async function POST(request: Request) {
       ...parsed.data,
       authorId: auth.session.user.id
     }
+  });
+
+  const recipients = await getStudentRecipients(parsed.data.audience);
+  await notifyUsers(recipients, {
+    title: parsed.data.title,
+    body: parsed.data.message,
+    type: 'ANNOUNCEMENT',
+    link: '/student/announcements'
   });
 
   return NextResponse.json({ data: announcement }, { status: 201 });

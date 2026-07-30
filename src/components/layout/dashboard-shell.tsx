@@ -27,10 +27,12 @@ const roleIcons: Record<string, ReactNode> = {
 export function DashboardShell({
   role,
   name,
+  avatarUrl,
   children
 }: {
   role: UserRole;
   name: string;
+  avatarUrl?: string | null;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -40,9 +42,17 @@ export function DashboardShell({
   const sidebarContent = (
     <>
       <div className="mb-8 flex items-center gap-3">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
-          <span className="text-lg font-bold">E</span>
-        </div>
+        {avatarUrl ? (
+          <img
+            src={avatarUrl}
+            alt={name}
+            className="h-12 w-12 rounded-2xl border border-primary/20 object-cover shadow-glow"
+          />
+        ) : (
+          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
+            <span className="text-lg font-bold">{name[0] ?? 'E'}</span>
+          </div>
+        )}
         <div>
           <p className="text-lg font-semibold leading-none">EduNest</p>
           <p className="text-xs text-muted-foreground">{role === 'ADMIN' ? 'Teacher Console' : 'Student Space'}</p>
@@ -119,6 +129,17 @@ export function DashboardShell({
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt={name}
+                  className="h-10 w-10 rounded-2xl border border-border/60 object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-sm font-bold text-primary">
+                  {name[0] ?? 'U'}
+                </div>
+              )}
               <NotificationCenter />
               <ThemeToggle />
               <LogoutButton />

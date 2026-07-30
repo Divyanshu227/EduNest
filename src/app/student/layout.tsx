@@ -10,5 +10,9 @@ export default async function StudentLayout({ children }: Readonly<{ children: R
     redirect('/login');
   }
 
-  return <DashboardShell role="STUDENT" name={session.user.name ?? 'Student'}>{children}</DashboardShell>;
+  return (
+    <DashboardShell role="STUDENT" name={session.user.name ?? 'Student'} avatarUrl={session.user.avatarUrl}>
+      {children}
+    </DashboardShell>
+  );
 }

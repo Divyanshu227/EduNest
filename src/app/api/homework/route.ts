@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, requireUser, jsonError } from '@/lib/api';
+import { getStudentRecipients, notifyUsers } from '@/lib/notifications';
 import { homeworkSchema } from '@/lib/validators';
 
 export async function GET() {
@@ -37,6 +38,14 @@ export async function POST(request: Request) {
       authorId: auth.session.user.id,
       dueDate: new Date(parsed.data.dueDate)
     }
+  });
+
+  const recipients = await getStudentRecipients();
+  await notifyUsers(recipients, {
+    title: `New homework: ${parsed.data.title}`,
+    body: 'A new homework assignment has been posted.',
+    type: 'HOMEWORK',
+    link: '/student/homework'
   });
 
   return NextResponse.json({ data: homework }, { status: 201 });

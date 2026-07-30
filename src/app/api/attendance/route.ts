@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, jsonError } from '@/lib/api';
+import { notifyUsers } from '@/lib/notifications';
 import { attendanceSchema } from '@/lib/validators';
 
 export async function GET() {
@@ -46,6 +47,18 @@ export async function POST(request: Request) {
       note: parsed.data.note,
       markedById: auth.session.user.id
     }
+  });
+
+  const recipients = await prisma.user.findMany({
+    where: { id: parsed.data.studentId, role: 'STUDENT' },
+    select: { id: true, deviceTokens: true }
+  });
+
+  await notifyUsers(recipients, {
+    title: 'Attendance updated',
+    body: `Your attendance was marked ${parsed.data.status.toLowerCase()}.`,
+    type: 'ATTENDANCE',
+    link: '/student/attendance'
   });
 
   return NextResponse.json({ data: attendance }, { status: 201 });
