@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { InstallAppButton } from '@/components/install-app-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { APP_NAME } from '@/lib/constants';
+import { prisma } from '@/lib/prisma';
 
 const features = [
   { icon: LibraryBig, title: 'Handwritten notes', body: 'Upload, reorder, preview, and study notebook-style image pages.' },
@@ -13,14 +14,25 @@ const features = [
   { icon: ShieldCheck, title: 'Protected access', body: 'JWT auth, middleware protection, and role-based permissions keep data secure.' }
 ];
 
-const subjects = [
-  { name: 'Mathematics', chapters: ['Chapter 1', 'Chapter 2', 'Chapter 3'] },
-  { name: 'English', chapters: ['Grammar', 'Reading', 'Chapter 1'] },
-  { name: 'Hindi', chapters: ['Chapter 1', 'व्याकरण'] },
-  { name: 'EVS', chapters: ['Chapter 1', 'Chapter 2'] }
+const fallbackSubjects = [
+  { name: 'Mathematics', chapters: [{ name: 'Chapter 1' }, { name: 'Chapter 2' }, { name: 'Chapter 3' }] },
+  { name: 'English', chapters: [{ name: 'Grammar' }, { name: 'Reading' }, { name: 'Chapter 1' }] },
+  { name: 'Hindi', chapters: [{ name: 'Chapter 1' }, { name: 'व्याकरण' }] },
+  { name: 'EVS', chapters: [{ name: 'Chapter 1' }, { name: 'Chapter 2' }] }
 ];
 
-export default function HomePage() {
+export default async function HomePage() {
+  const [activeAccounts, subjectsCount, dbSubjects] = await Promise.all([
+    prisma.user.count().catch(() => 3),
+    prisma.subject.count().catch(() => 4),
+    prisma.subject.findMany({
+      include: { chapters: { orderBy: { order: 'asc' } } },
+      orderBy: { sortOrder: 'asc' }
+    }).catch(() => [])
+  ]);
+
+  const displaySubjects = dbSubjects.length > 0 ? dbSubjects : fallbackSubjects;
+
   return (
     <main className="overflow-hidden">
       <section className="relative isolate bg-hero-gradient text-white">
@@ -53,8 +65,8 @@ export default function HomePage() {
 
             <div className="grid gap-4 sm:grid-cols-3">
               {[
-                ['3', 'Active accounts'],
-                ['4', 'Subjects'],
+                [`${activeAccounts}`, 'Active accounts'],
+                [`${subjectsCount}`, 'Subjects'],
                 ['PWA', 'Installable offline app']
               ].map(([value, label]) => (
                 <div key={label} className="rounded-3xl border border-white/10 bg-white/10 p-5 backdrop-blur-xl">
@@ -124,7 +136,7 @@ export default function HomePage() {
             </div>
           </div>
           <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-4">
-            {subjects.map((subject) => (
+            {displaySubjects.map((subject) => (
               <Card key={subject.name} className="border-border/60 bg-card/85 backdrop-blur">
                 <CardHeader>
                   <CardTitle>{subject.name}</CardTitle>
@@ -132,9 +144,9 @@ export default function HomePage() {
                 <CardContent>
                   <div className="space-y-2">
                     {subject.chapters.map((chapter) => (
-                      <div key={chapter} className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm">
+                      <div key={chapter.name} className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-3 text-sm">
                         <CheckCircle2 className="h-4 w-4 text-primary" />
-                        {chapter}
+                        {chapter.name}
                       </div>
                     ))}
                   </div>
