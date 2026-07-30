@@ -36,16 +36,34 @@ export async function sendPushToTokens(tokens: string[], payload: { title: strin
   }
 
   const messaging = firebase.messaging();
-  return messaging.sendEachForMulticast({
-    tokens,
-    notification: {
-      title: payload.title,
-      body: payload.body
-    },
-    webpush: {
-      fcmOptions: {
-        link: payload.link ?? '/'
+  const chunkSize = 500;
+  const responses = [];
+  
+  for (let i = 0; i < tokens.length; i += chunkSize) {
+    const chunk = tokens.slice(i, i + chunkSize);
+    const response = await messaging.sendEachForMulticast({
+      tokens: chunk,
+      notification: {
+        title: payload.title,
+        body: payload.body
+      },
+      webpush: {
+        notification: {
+          title: payload.title,
+          body: payload.body,
+          icon: '/icon.svg',
+          badge: '/icon.svg'
+        },
+        fcmOptions: {
+          link: payload.link ?? '/'
+        },
+        data: {
+          link: payload.link ?? '/'
+        }
       }
-    }
-  });
+    });
+    responses.push(response);
+  }
+  
+  return responses;
 }

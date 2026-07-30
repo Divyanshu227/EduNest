@@ -1,0 +1,64 @@
+import { NextResponse } from 'next/server';
+
+export const runtime = 'nodejs';
+
+function getEnvValue(name: string) {
+  return process.env[name] ?? '';
+}
+
+export async function GET() {
+  const body = `
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
+
+firebase.initializeApp({
+  apiKey: '${getEnvValue('NEXT_PUBLIC_FIREBASE_API_KEY')}',
+  authDomain: '${getEnvValue('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN')}',
+  projectId: '${getEnvValue('NEXT_PUBLIC_FIREBASE_PROJECT_ID')}',
+  storageBucket: '${getEnvValue('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')}',
+  messagingSenderId: '${getEnvValue('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')}',
+  appId: '${getEnvValue('NEXT_PUBLIC_FIREBASE_APP_ID')}'
+});
+
+const messaging = firebase.messaging();
+
+messaging.onBackgroundMessage((payload) => {
+  const title = payload.notification?.title || 'EduNest';
+  const options = {
+    body: payload.notification?.body || '',
+    icon: '/icon.svg',
+    badge: '/icon.svg',
+    data: {
+      link: payload.fcmOptions?.link || payload.data?.link || '/'
+    }
+  };
+
+  self.registration.showNotification(title, options);
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const link = event.notification?.data?.link || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      for (const client of clientList) {
+        if ('focus' in client) {
+          client.navigate(link);
+          return client.focus();
+        }
+      }
+
+      return clients.openWindow(link);
+    })
+  );
+});
+`;
+
+  return new NextResponse(body, {
+    headers: {
+      'Content-Type': 'application/javascript; charset=utf-8',
+      'Cache-Control': 'no-store'
+    }
+  });
+}

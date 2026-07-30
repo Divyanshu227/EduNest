@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LogoutButton } from '@/components/logout-button';
 import { NotificationCenter } from '@/components/layout/NotificationCenter';
+import { PushNotificationButton } from '@/components/layout/PushNotificationButton';
 
 const roleIcons: Record<string, ReactNode> = {
   Dashboard: <LayoutDashboard className="h-4 w-4" />,
@@ -140,6 +141,7 @@ export function DashboardShell({
                   {name[0] ?? 'U'}
                 </div>
               )}
+              <PushNotificationButton />
               <NotificationCenter />
               <ThemeToggle />
               <LogoutButton />

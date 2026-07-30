@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
+import { notifyUsers } from '@/lib/notifications';
 
 export async function GET(request: NextRequest) {
   try {
@@ -53,11 +54,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    const scheduledTime = new Date(startTime);
+
     const newClass = await prisma.liveClass.create({
       data: {
         title,
         meetLink,
-        startTime: new Date(startTime),
+        startTime: scheduledTime,
         durationMin: Number(durationMin),
         studentId,
         teacherId: session.user.id,
@@ -65,6 +68,24 @@ export async function POST(request: NextRequest) {
       include: {
         student: { select: { name: true, email: true } },
       },
+    });
+
+    const recipients = await prisma.user.findMany({
+      where: { id: studentId, role: 'STUDENT' },
+      select: { id: true, deviceTokens: true }
+    });
+
+    const when = new Intl.DateTimeFormat('en-IN', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+      timeZone: 'Asia/Kolkata'
+    }).format(scheduledTime);
+
+    await notifyUsers(recipients, {
+      title: `${session.user.name ?? 'Teacher'} scheduled ${title}`,
+      body: `${session.user.name ?? 'Teacher'} scheduled ${title} class at ${when}. Click to view.`,
+      type: 'SYSTEM',
+      link: '/student/classes'
     });
 
     return NextResponse.json({ data: newClass });

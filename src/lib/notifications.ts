@@ -1,4 +1,4 @@
-import type { NotificationType, User } from '@prisma/client';
+import type { NotificationType, User, UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { sendPushToTokens } from '@/lib/fcm';
 
@@ -36,10 +36,23 @@ export async function notifyUsers(
 }
 
 export async function getStudentRecipients(audience?: string) {
-  const students = await prisma.user.findMany({
+  let targetId = audience;
+  let targetRole = 'STUDENT';
+
+  if (audience === 'all_teachers') {
+    targetRole = 'ADMIN';
+  } else if (audience && audience.startsWith('teacher:')) {
+    targetId = audience.split(':')[1];
+    targetRole = 'ADMIN';
+  } else if (audience && audience.startsWith('student:')) {
+    targetId = audience.split(':')[1];
+    targetRole = 'STUDENT';
+  }
+
+  const recipients = await prisma.user.findMany({
     where: {
-      role: 'STUDENT',
-      ...(audience && audience !== 'all' && audience !== 'all_students' ? { id: audience } : {})
+      role: targetRole as UserRole,
+      ...(targetId && targetId !== 'all' && targetId !== 'all_students' && targetId !== 'all_teachers' ? { id: targetId } : {})
     },
     select: {
       id: true,
@@ -47,5 +60,5 @@ export async function getStudentRecipients(audience?: string) {
     }
   });
 
-  return students;
+  return recipients;
 }
