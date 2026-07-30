@@ -11,8 +11,11 @@ export async function uploadToCloudinary(file: File, folder: string) {
   const buffer = Buffer.from(await file.arrayBuffer());
 
   return new Promise<{ secure_url: string; public_id: string; resource_type: string; format?: string }>((resolve, reject) => {
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const resourceType = isPdf ? 'raw' : 'auto';
+    
     const uploadStream = cloudinary.uploader.upload_stream(
-      { folder, resource_type: 'auto' },
+      { folder, resource_type: resourceType },
       (error, result) => {
         if (error || !result) {
           reject(error ?? new Error('Cloudinary upload failed'));
