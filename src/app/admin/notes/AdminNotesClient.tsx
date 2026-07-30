@@ -72,6 +72,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
   // Media files states
   const [uploadedImages, setUploadedImages] = useState<NoteImage[]>([]);
   const [uploadedPdfs, setUploadedPdfs] = useState<NotePdf[]>([]);
+  const [pageCountInput, setPageCountInput] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
@@ -96,6 +97,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
     setYoutubeUrl('');
     setUploadedImages([]);
     setUploadedPdfs([]);
+    setPageCountInput('');
     setIsFormOpen(true);
   };
 
@@ -114,6 +116,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
     
     setUploadedImages(noteImages);
     setUploadedPdfs(notePdfs);
+    setPageCountInput(note.pageCount?.toString() || '');
     setIsFormOpen(true);
   };
 
@@ -134,7 +137,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
       youtubeUrl,
       images: noteType === 'PDF' ? [] : uploadedImages,
       pdfs: noteType === 'IMAGE' ? [] : uploadedPdfs,
-      pageCount: noteType === 'PDF' ? uploadedPdfs.length : uploadedImages.length
+      pageCount: noteType === 'PDF' ? (parseInt(pageCountInput) || uploadedPdfs.length) : uploadedImages.length
     };
 
     try {
@@ -387,15 +390,29 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
                 )}
 
                 {noteType !== 'IMAGE' && (
-                  <div className="space-y-2 border-t border-border/40 pt-4">
-                    <Label>PDF Document</Label>
-                    <CloudinaryUploader
-                      value={uploadedPdfs}
-                      onChange={setUploadedPdfs}
-                      accept="application/pdf"
-                      folder="notes_pdfs"
-                      multiple={false}
-                    />
+                  <div className="space-y-4 border-t border-border/40 pt-4">
+                    <div className="space-y-2">
+                      <Label>PDF Document</Label>
+                      <CloudinaryUploader
+                        value={uploadedPdfs}
+                        onChange={setUploadedPdfs}
+                        accept="application/pdf"
+                        folder="notes_pdfs"
+                        multiple={false}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="pageCountInput">Total Pages in PDF</Label>
+                      <Input
+                        id="pageCountInput"
+                        type="number"
+                        min="1"
+                        value={pageCountInput}
+                        onChange={(e) => setPageCountInput(e.target.value)}
+                        placeholder="e.g. 15 (Optional: defaults to 1)"
+                      />
+                      <p className="text-[10px] text-muted-foreground">Enter the total number of pages in the PDF for student reading progress tracking.</p>
+                    </div>
                   </div>
                 )}
 

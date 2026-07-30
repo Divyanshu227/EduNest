@@ -14,7 +14,7 @@ export async function uploadToCloudinary(file: File, folder: string) {
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     const resourceType = isPdf ? 'raw' : 'auto';
     
-    const uploadStream = cloudinary.uploader.upload_stream(
+    const uploadStream = cloudinary.uploader.upload_chunked_stream(
       { folder, resource_type: resourceType },
       (error, result) => {
         if (error || !result) {
