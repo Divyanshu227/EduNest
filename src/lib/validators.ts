@@ -36,7 +36,8 @@ export const homeworkSchema = z.object({
   instructions: z.string().min(5),
   subjectId: z.string().min(1),
   chapterId: z.string().optional(),
-  dueDate: z.string().datetime()
+  dueDate: z.string().datetime(),
+  attachments: z.array(z.any()).optional().default([])
 });
 
 export const testSchema = z.object({
@@ -70,5 +71,6 @@ export const noteMetadataSchema = z.object({
 
 export const homeworkSubmissionSchema = z.object({
   homeworkId: z.string().min(1),
-  textAnswer: z.string().optional()
+  textAnswer: z.string().optional(),
+  attachments: z.array(z.any()).optional().default([])
 });

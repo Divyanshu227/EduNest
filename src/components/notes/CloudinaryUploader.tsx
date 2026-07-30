@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { Upload, X, ArrowUp, ArrowDown, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
+import { uploadAction } from '@/app/actions/upload';
+
 interface UploadedFile {
   url: string;
   publicId: string;
@@ -33,16 +35,13 @@ export function CloudinaryUploader({
     formData.append('file', file);
     formData.append('folder', folder);
 
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData
-    });
-
-    if (!res.ok) {
+    const result = await uploadAction(formData);
+    
+    if (!result) {
       throw new Error('Upload failed');
     }
 
-    return res.json();
+    return result;
   };
 
   const handleFiles = async (files: FileList) => {

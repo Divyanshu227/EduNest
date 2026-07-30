@@ -15,6 +15,9 @@ const nextConfig = {
       }
     ]
   },
+  serverActions: {
+    bodySizeLimit: '20mb'
+  },
   webpack: (config, { dev }) => {
     config.resolve.alias.canvas = false;
     if (dev) {
