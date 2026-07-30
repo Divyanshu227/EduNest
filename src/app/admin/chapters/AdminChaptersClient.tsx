@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, BookOpen, Layers, X, AlertCircle } from 'lucide-react';
+import { Plus, BookOpen, Layers, X, AlertCircle, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -78,6 +78,21 @@ export function AdminChaptersClient({ subjects, initialChapters }: AdminChapters
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this chapter? Note: This will delete all associated notes, homework, and tests!')) return;
+
+    try {
+      const res = await fetch(`/api/chapters/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) throw new Error('Delete failed');
+      setChapters(prev => prev.filter(c => c.id !== id));
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   // Group chapters by subject name
   const groupedChapters = subjects.reduce((acc, sub) => {
     acc[sub.name] = {
@@ -121,7 +136,12 @@ export function AdminChaptersClient({ subjects, initialChapters }: AdminChapters
                     <CardHeader className="p-4 pb-2">
                       <div className="flex items-center justify-between gap-2">
                         <Badge variant="outline" className="text-[10px]">Order: {ch.order}</Badge>
-                        <span className="text-[10px] text-muted-foreground">{ch.slug}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[10px] text-muted-foreground">{ch.slug}</span>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={() => handleDelete(ch.id)}>
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
                       </div>
                       <CardTitle className="text-lg font-bold mt-1.5 leading-tight">{ch.name}</CardTitle>
                     </CardHeader>

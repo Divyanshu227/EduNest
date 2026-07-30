@@ -5,6 +5,7 @@ export const APP_NAME = 'EduNest';
 export const NAVIGATION = {
   admin: [
     { label: 'Dashboard', href: '/admin' },
+    { label: 'Users', href: '/admin/users' },
     { label: 'Subjects', href: '/admin/subjects' },
     { label: 'Chapters', href: '/admin/chapters' },
     { label: 'Notes', href: '/admin/notes' },

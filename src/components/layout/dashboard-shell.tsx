@@ -13,6 +13,7 @@ import { NotificationCenter } from '@/components/layout/NotificationCenter';
 
 const roleIcons: Record<string, ReactNode> = {
   Dashboard: <LayoutDashboard className="h-4 w-4" />,
+  Users: <Users2 className="h-4 w-4" />,
   Subjects: <BookOpen className="h-4 w-4" />,
   Chapters: <Sparkles className="h-4 w-4" />,
   Notes: <GraduationCap className="h-4 w-4" />,

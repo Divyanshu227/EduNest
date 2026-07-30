@@ -16,7 +16,7 @@ export default async function LoginPage() {
         <div className="mb-2 text-center">
           <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">EduNest</p>
           <h1 className="mt-2 font-[var(--font-heading)] text-3xl font-black">Sign in securely</h1>
-          <p className="mt-1 text-xs text-muted-foreground">Use the seeded teacher or student accounts.</p>
+          <p className="mt-1 text-xs text-muted-foreground">Sign in to access your dashboard.</p>
         </div>
         <LoginForm />
       </div>

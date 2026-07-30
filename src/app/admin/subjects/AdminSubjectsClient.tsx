@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, BookOpen, Layers, X, FolderHeart, Palette, Hash } from 'lucide-react';
+import { Plus, BookOpen, Layers, X, FolderHeart, Palette, Hash, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -103,6 +103,21 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
     }
   };
 
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this subject? Note: This will delete all chapters, notes, homework, and tests in this subject!')) return;
+
+    try {
+      const res = await fetch(`/api/subjects/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) throw new Error('Delete failed');
+      setSubjects(prev => prev.filter(s => s.id !== id));
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -128,6 +143,9 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
                 <Badge variant="outline" style={{ borderColor: `${sub.color}30`, backgroundColor: `${sub.color}10`, color: sub.color }} className="text-[10px]">
                   Sort order: {sub.sortOrder}
                 </Badge>
+                <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={() => handleDelete(sub.id)}>
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
               </div>
               <CardTitle className="text-2xl font-bold">{sub.name}</CardTitle>
               <CardDescription className="text-xs line-clamp-2 mt-1">
