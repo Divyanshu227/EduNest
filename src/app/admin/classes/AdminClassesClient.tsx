@@ -152,13 +152,11 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                 Schedule Class
               </Button>
             </DialogTrigger>
-          </Dialog>
-        </div>
-        <DialogContent className="glass max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Schedule a New Class</DialogTitle>
-              <DialogDescription>
-                Provide the details of the session below. An invite will be available for the student.
+            <DialogContent className="glass max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Schedule a New Class</DialogTitle>
+                <DialogDescription>
+                  Provide the details of the session below. An invite will be available for the student.
               </DialogDescription>
             </DialogHeader>
             
@@ -245,6 +243,8 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
             </form>
           </DialogContent>
         </Dialog>
+      </div>
+
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
