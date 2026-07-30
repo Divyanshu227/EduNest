@@ -50,9 +50,7 @@ export async function sendPushToTokens(tokens: string[], payload: { title: strin
       webpush: {
         notification: {
           title: payload.title,
-          body: payload.body,
-          icon: '/icon.svg',
-          badge: '/icon.svg'
+          body: payload.body
         },
         fcmOptions: {
           link: payload.link ?? '/'

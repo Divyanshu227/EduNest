@@ -14,33 +14,8 @@ firebase.initializeApp({
 const messaging = firebase.messaging();
 
 messaging.onBackgroundMessage((payload) => {
-  const title = payload.notification?.title || 'EduNest';
-  const options = {
-    body: payload.notification?.body || '',
-    icon: '/icon.svg',
-    badge: '/icon.svg',
-    data: {
-      link: payload.fcmOptions?.link || payload.data?.link || '/'
-    }
-  };
-
-  self.registration.showNotification(title, options);
+  console.log('[firebase-messaging-sw.js] Received background message ', payload);
+  // FCM automatically displays the notification if the 'notification' key is present in the payload.
 });
 
-self.addEventListener('notificationclick', (event) => {
-  event.notification.close();
-  const link = event.notification?.data?.link || '/';
 
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
-      for (const client of clientList) {
-        if ('focus' in client) {
-          client.navigate(link);
-          return client.focus();
-        }
-      }
-
-      return clients.openWindow(link);
-    })
-  );
-});
