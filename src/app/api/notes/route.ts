@@ -43,9 +43,9 @@ export async function POST(request: Request) {
       chapterId: parsed.data.chapterId,
       youtubeUrl: parsed.data.youtubeUrl || null,
       type: parsed.data.noteType,
-      images: [],
-      pdfs: [],
-      pageCount: 0,
+      images: parsed.data.images,
+      pdfs: parsed.data.pdfs,
+      pageCount: parsed.data.pageCount,
       lastUpdated: new Date()
     }
   });
