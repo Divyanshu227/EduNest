@@ -81,7 +81,7 @@ export function StudentAttendanceClient({ logs, subjects }: StudentAttendanceCli
       {/* Header */}
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-4xl">My Attendance</h2>
+        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">My Attendance</h2>
       </div>
 
       {/* Summary Row */}
@@ -106,18 +106,18 @@ export function StudentAttendanceClient({ logs, subjects }: StudentAttendanceCli
         {/* Calendar Grid */}
         <div className="lg:col-span-2 space-y-4">
           <Card className="border-border/60 bg-card/85 backdrop-blur">
-            <CardHeader className="pb-4 border-b border-border/40 flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col gap-3 border-b border-border/40 pb-4 lg:flex-row lg:items-center lg:justify-between">
               <div>
-                <CardTitle className="text-xl">Attendance Calendar</CardTitle>
+                <CardTitle className="text-lg sm:text-xl">Attendance Calendar</CardTitle>
                 <CardDescription>Daily presence scorecard logs.</CardDescription>
               </div>
 
               {/* Month Selector Buttons */}
-              <div className="flex items-center gap-1.5 border border-border/60 rounded-2xl p-1 bg-muted/20">
+              <div className="flex w-full items-center justify-between gap-1.5 rounded-2xl border border-border/60 bg-muted/20 p-1 sm:w-auto sm:justify-start">
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={prevMonth}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-sm font-bold min-w-[100px] text-center">
+                <span className="min-w-[100px] text-center text-sm font-bold">
                   {monthName} {year}
                 </span>
                 <Button variant="ghost" size="icon" className="h-8 w-8 rounded-xl" onClick={nextMonth} disabled={month === new Date().getMonth() && year === new Date().getFullYear()}>
@@ -126,50 +126,54 @@ export function StudentAttendanceClient({ logs, subjects }: StudentAttendanceCli
               </div>
             </CardHeader>
             <CardContent className="pt-6">
-              {/* Calendar Header Day names */}
-              <div className="grid grid-cols-7 gap-2 text-center text-xs font-black text-muted-foreground uppercase mb-3">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
-                  <span key={d}>{d}</span>
-                ))}
-              </div>
+              <div className="-mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+                <div className="min-w-[640px]">
+                  {/* Calendar Header Day names */}
+                  <div className="mb-3 grid grid-cols-7 gap-2 text-center text-xs font-black uppercase text-muted-foreground">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(d => (
+                      <span key={d}>{d}</span>
+                    ))}
+                  </div>
 
-              {/* Days Grid */}
-              <div className="grid grid-cols-7 gap-2">
-                {calendarDays.map((day, idx) => {
-                  if (day === null) {
-                    return <div key={`empty-${idx}`} className="aspect-square" />;
-                  }
+                  {/* Days Grid */}
+                  <div className="grid grid-cols-7 gap-2">
+                    {calendarDays.map((day, idx) => {
+                      if (day === null) {
+                        return <div key={`empty-${idx}`} className="aspect-square" />;
+                      }
 
-                  const dayLogs = getDayAttendance(day);
-                  const isPresent = dayLogs.some(l => l.status === 'PRESENT');
-                  const isAbsent = dayLogs.some(l => l.status === 'ABSENT');
+                      const dayLogs = getDayAttendance(day);
+                      const isPresent = dayLogs.some(l => l.status === 'PRESENT');
+                      const isAbsent = dayLogs.some(l => l.status === 'ABSENT');
 
-                  let cellStyle = 'bg-muted/10 border-border/40';
-                  if (isPresent) cellStyle = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold';
-                  if (isAbsent) cellStyle = 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 font-bold';
+                      let cellStyle = 'bg-muted/10 border-border/40';
+                      if (isPresent) cellStyle = 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-bold';
+                      if (isAbsent) cellStyle = 'bg-red-500/10 border-red-500/30 text-red-600 dark:text-red-400 font-bold';
 
-                  return (
-                    <div 
-                      key={`day-${day}`}
-                      className={`relative aspect-square flex flex-col items-center justify-center border rounded-2xl transition-all ${cellStyle}`}
-                    >
-                      <span className="text-sm">{day}</span>
-                      
-                      {/* Dots/Badges */}
-                      <div className="flex gap-0.5 mt-1">
-                        {dayLogs.map((log) => (
-                          <span 
-                            key={log.id} 
-                            className={`h-1.5 w-1.5 rounded-full ${
-                              log.status === 'PRESENT' ? 'bg-emerald-500' : 'bg-red-500'
-                            }`}
-                            title={`${log.subject.name}: ${log.status}`}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+                      return (
+                        <div 
+                          key={`day-${day}`}
+                          className={`relative aspect-square flex flex-col items-center justify-center rounded-2xl border transition-all ${cellStyle}`}
+                        >
+                          <span className="text-sm">{day}</span>
+                          
+                          {/* Dots/Badges */}
+                          <div className="mt-1 flex gap-0.5">
+                            {dayLogs.map((log) => (
+                              <span 
+                                key={log.id} 
+                                className={`h-1.5 w-1.5 rounded-full ${
+                                  log.status === 'PRESENT' ? 'bg-emerald-500' : 'bg-red-500'
+                                }`}
+                                title={`${log.subject.name}: ${log.status}`}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -177,7 +181,7 @@ export function StudentAttendanceClient({ logs, subjects }: StudentAttendanceCli
 
         {/* Subject wise stats */}
         <div className="space-y-4">
-          <h3 className="font-semibold text-lg">Subject-wise Analytics</h3>
+          <h3 className="text-lg font-semibold">Subject-wise Analytics</h3>
 
           <div className="space-y-4">
             {subjects.map((sub) => {

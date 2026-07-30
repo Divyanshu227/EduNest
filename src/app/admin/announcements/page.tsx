@@ -34,9 +34,34 @@ export default async function AdminAnnouncementsPage() {
     orderBy: { name: 'asc' },
   });
 
+  const normalizedAttachments = (attachments: unknown) => {
+    if (!Array.isArray(attachments)) return undefined;
+
+    return attachments
+      .filter((attachment): attachment is { url: string; name: string; type: string } => {
+        return Boolean(
+          attachment &&
+          typeof attachment === 'object' &&
+          'url' in attachment &&
+          'name' in attachment &&
+          'type' in attachment
+        );
+      })
+      .map((attachment) => ({
+        url: attachment.url,
+        name: attachment.name,
+        type: attachment.type
+      }));
+  };
+
+  const initialAnnouncements = announcements.map((announcement) => ({
+    ...announcement,
+    attachments: normalizedAttachments(announcement.attachments)
+  }));
+
   return (
     <AdminAnnouncementsClient 
-      initialAnnouncements={announcements}
+      initialAnnouncements={initialAnnouncements}
       users={users}
     />
   );

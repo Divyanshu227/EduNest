@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Users, Trash, Edit2 } from 'lucide-react';
+import { Loader2, Plus, Users, Trash, Edit2, Upload, Camera, Shield } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -22,8 +22,11 @@ type UserType = {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string | null;
   createdAt: Date;
 };
+
+const MASTER_ADMIN_EMAIL = 'admin@edunest.dev';
 
 export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] }) {
   const router = useRouter();
@@ -32,12 +35,16 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     password: '',
-    role: 'STUDENT'
+    role: 'STUDENT',
+    avatarUrl: '' as string | undefined
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -46,14 +53,45 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
 
   const openCreateForm = () => {
     setEditingUser(null);
-    setFormData({ name: '', email: '', password: '', role: 'STUDENT' });
+    setFormData({ name: '', email: '', password: '', role: 'STUDENT', avatarUrl: undefined });
+    setAvatarPreview(null);
     setIsOpen(true);
   };
 
   const openEditForm = (user: UserType) => {
     setEditingUser(user);
-    setFormData({ name: user.name, email: user.email, password: '', role: user.role });
+    setFormData({ name: user.name, email: user.email, password: '', role: user.role, avatarUrl: user.avatarUrl || undefined });
+    setAvatarPreview(user.avatarUrl || null);
     setIsOpen(true);
+  };
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Please select an image file.');
+      return;
+    }
+
+    setUploadingAvatar(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      fd.append('folder', 'avatars');
+
+      const res = await fetch('/api/upload', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json();
+
+      setAvatarPreview(data.url);
+      setFormData(prev => ({ ...prev, avatarUrl: data.url }));
+    } catch (err: any) {
+      alert(`Upload failed: ${err.message}`);
+    } finally {
+      setUploadingAvatar(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -68,9 +106,11 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
           email: formData.email,
           role: formData.role
         };
-        // Only update password if provided
         if (formData.password) {
           payload.password = formData.password;
+        }
+        if (formData.avatarUrl) {
+          payload.avatarUrl = formData.avatarUrl;
         }
 
         const res = await fetch(`/api/admin/users/${editingUser.id}`, {
@@ -86,7 +126,8 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
           ...u,
           name: data.user.name,
           email: data.user.email,
-          role: data.user.role
+          role: data.user.role,
+          avatarUrl: data.user.avatarUrl
         } : u));
       } else {
         const res = await fetch('/api/admin/users', {
@@ -104,6 +145,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
             name: data.user.name,
             email: data.user.email,
             role: data.user.role,
+            avatarUrl: null,
             createdAt: new Date()
           },
           ...prev
@@ -111,7 +153,8 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
       }
       
       setIsOpen(false);
-      setFormData({ name: '', email: '', password: '', role: 'STUDENT' });
+      setFormData({ name: '', email: '', password: '', role: 'STUDENT', avatarUrl: undefined });
+      setAvatarPreview(null);
       router.refresh();
       
     } catch (err: any) {
@@ -141,6 +184,8 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
     }
   };
 
+  const isMasterAdmin = (email: string) => email === MASTER_ADMIN_EMAIL;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
@@ -168,6 +213,44 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
             </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
+              {/* Avatar upload (shown when editing) */}
+              {editingUser && (
+                <div className="space-y-2">
+                  <Label>Profile Picture</Label>
+                  <div className="flex items-center gap-4">
+                    <div
+                      className="relative group cursor-pointer"
+                      onClick={() => fileInputRef.current?.click()}
+                    >
+                      {avatarPreview ? (
+                        <img src={avatarPreview} alt="Avatar" className="h-14 w-14 rounded-xl object-cover border-2 border-primary/20" />
+                      ) : (
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+                          {formData.name?.[0] || '?'}
+                        </div>
+                      )}
+                      <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {uploadingAvatar ? (
+                          <Loader2 className="h-4 w-4 text-white animate-spin" />
+                        ) : (
+                          <Camera className="h-4 w-4 text-white" />
+                        )}
+                      </div>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      Click to upload a new avatar for this user.
+                    </div>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleAvatarUpload}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input 
@@ -226,7 +309,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
                 </div>
               )}
               
-              <Button type="submit" className="w-full" disabled={isSubmitting}>
+              <Button type="submit" className="w-full" disabled={isSubmitting || uploadingAvatar}>
                 {isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
                 {editingUser ? 'Save Changes' : 'Create Account'}
               </Button>
@@ -245,7 +328,8 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
         </CardHeader>
         <CardContent>
           <div className="rounded-md border border-border/50">
-            <div className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] border-b border-border/50 bg-muted/50 p-4 font-medium">
+            <div className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] border-b border-border/50 bg-muted/50 p-4 font-medium">
+              <div className="w-10"></div>
               <div>Name</div>
               <div>Email</div>
               <div>Role</div>
@@ -258,8 +342,24 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
                 <div className="p-8 text-center text-muted-foreground">No users found.</div>
               ) : (
                 users.map((user) => (
-                  <div key={user.id} className="grid grid-cols-[2fr_2fr_1fr_1fr_auto] items-center p-4 text-sm transition-colors hover:bg-muted/20">
-                    <div className="font-medium">{user.name}</div>
+                  <div key={user.id} className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] items-center p-4 text-sm transition-colors hover:bg-muted/20">
+                    <div className="w-10">
+                      {user.avatarUrl ? (
+                        <img src={user.avatarUrl} alt={user.name} className="h-8 w-8 rounded-lg object-cover" />
+                      ) : (
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
+                          {user.name?.[0] || '?'}
+                        </div>
+                      )}
+                    </div>
+                    <div className="font-medium flex items-center gap-1.5">
+                      {user.name}
+                      {isMasterAdmin(user.email) && (
+                        <span title="Master Admin" aria-label="Master Admin">
+                          <Shield className="h-3.5 w-3.5 text-amber-500" />
+                        </span>
+                      )}
+                    </div>
                     <div className="text-muted-foreground">{user.email}</div>
                     <div>
                       <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
@@ -273,9 +373,11 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
                       <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-accent rounded-lg" onClick={() => openEditForm(user)}>
                         <Edit2 className="h-4 w-4 text-foreground" />
                       </Button>
-                      <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 rounded-lg" onClick={() => handleDelete(user.id)}>
-                        <Trash className="h-4 w-4 text-destructive" />
-                      </Button>
+                      {!isMasterAdmin(user.email) && (
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 rounded-lg" onClick={() => handleDelete(user.id)}>
+                          <Trash className="h-4 w-4 text-destructive" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))

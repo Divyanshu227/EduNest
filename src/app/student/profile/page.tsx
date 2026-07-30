@@ -20,16 +20,16 @@ export default async function StudentProfilePage() {
   ]);
 
   return (
-    <div className="space-y-6 max-w-2xl">
+    <div className="max-w-2xl space-y-6">
       {/* Header */}
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-4xl">My Profile</h2>
+        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">My Profile</h2>
       </div>
 
       <Card className="border-border/60 bg-card/85 backdrop-blur overflow-hidden">
         <CardHeader className="pb-4 border-b border-border/40 bg-muted/20">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <AvatarUpload
               currentAvatarUrl={session.user.avatarUrl}
               userName={session.user.name ?? 'Student'}
@@ -60,7 +60,7 @@ export default async function StudentProfilePage() {
             </div>
 
             {/* Statistics Cards */}
-            <div className="grid grid-cols-3 gap-3 col-span-2 border-t border-border/40 pt-6">
+            <div className="grid grid-cols-1 gap-3 border-t border-border/40 pt-6 sm:col-span-2 sm:grid-cols-3">
               {[
                 [GraduationCap, 'Notes Reading', progressCount, 'active books'],
                 [Award, 'Quizzes Taken', attemptsCount, 'submitted attempts'],

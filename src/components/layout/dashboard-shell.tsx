@@ -1,8 +1,9 @@
 "use client";
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, GraduationCap, LayoutDashboard, MoonStar, Settings2, Users2, Sparkles, Video } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutDashboard, MoonStar, Settings2, Users2, Sparkles, Video, Menu, X } from 'lucide-react';
 import type { UserRole } from '@prisma/client';
 import type { ReactNode } from 'react';
 import { NAVIGATION } from '@/lib/constants';
@@ -34,48 +35,90 @@ export function DashboardShell({
 }) {
   const pathname = usePathname();
   const navItems = role === 'ADMIN' ? NAVIGATION.admin : NAVIGATION.student;
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  const sidebarContent = (
+    <>
+      <div className="mb-8 flex items-center gap-3">
+        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
+          <span className="text-lg font-bold">E</span>
+        </div>
+        <div>
+          <p className="text-lg font-semibold leading-none">EduNest</p>
+          <p className="text-xs text-muted-foreground">{role === 'ADMIN' ? 'Teacher Console' : 'Student Space'}</p>
+        </div>
+      </div>
+
+      <nav className="space-y-1">
+        {navItems.map((item) => {
+          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={() => setMobileOpen(false)}
+              className={cn(
+                'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all hover:bg-accent hover:text-accent-foreground',
+                active && 'bg-primary text-primary-foreground shadow-glow'
+              )}
+            >
+              {roleIcons[item.label] ?? <LayoutDashboard className="h-4 w-4" />}
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+    </>
+  );
 
   return (
-    <div className="min-h-screen bg-background text-foreground md:grid md:grid-cols-[280px_1fr]">
-      <aside className="border-r border-border/60 bg-card/80 px-5 py-6 backdrop-blur xl:px-6">
-        <div className="mb-8 flex items-center gap-3">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
-            <span className="text-lg font-bold">E</span>
-          </div>
-          <div>
-            <p className="text-lg font-semibold leading-none">EduNest</p>
-            <p className="text-xs text-muted-foreground">{role === 'ADMIN' ? 'Teacher Console' : 'Student Space'}</p>
-          </div>
-        </div>
-
-        <nav className="space-y-2">
-          {navItems.map((item) => {
-            const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={cn(
-                  'flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition-all hover:bg-accent hover:text-accent-foreground',
-                  active && 'bg-primary text-primary-foreground shadow-glow'
-                )}
-              >
-                {roleIcons[item.label] ?? <LayoutDashboard className="h-4 w-4" />}
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Desktop sidebar */}
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-[280px] overflow-y-auto border-r border-border/60 bg-card/80 px-5 py-6 backdrop-blur md:block xl:px-6">
+        {sidebarContent}
       </aside>
 
-      <div className="flex min-h-screen flex-col">
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden" onClick={() => setMobileOpen(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        </div>
+      )}
+
+      {/* Mobile sidebar drawer */}
+      <aside
+        className={cn(
+          'fixed inset-y-0 left-0 z-50 w-[min(86vw,20rem)] overflow-y-auto border-r border-border/60 bg-card px-5 py-6 backdrop-blur transition-transform duration-300 ease-in-out md:hidden',
+          mobileOpen ? 'translate-x-0' : '-translate-x-full'
+        )}
+      >
+        <button
+          onClick={() => setMobileOpen(false)}
+          className="absolute right-4 top-5 flex h-8 w-8 items-center justify-center rounded-lg hover:bg-muted"
+        >
+          <X className="h-5 w-5" />
+        </button>
+        {sidebarContent}
+      </aside>
+
+      {/* Main content area */}
+      <div className="flex min-h-screen flex-col md:pl-[280px]">
         <header className="sticky top-0 z-20 border-b border-border/60 bg-background/85 backdrop-blur">
-          <div className="flex items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-            <div>
-              <p className="text-sm text-muted-foreground">Logged in as</p>
-              <h1 className="text-xl font-semibold">{name}</h1>
+          <div className="flex flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6 lg:px-8">
+            <div className="flex min-w-0 items-center gap-3">
+              {/* Hamburger button for mobile */}
+              <button
+                onClick={() => setMobileOpen(true)}
+                className="flex h-9 w-9 items-center justify-center rounded-xl hover:bg-muted md:hidden"
+              >
+                <Menu className="h-5 w-5" />
+              </button>
+              <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">Logged in as</p>
+                <h1 className="truncate text-lg font-semibold sm:text-xl">{name}</h1>
+              </div>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2 sm:justify-end sm:gap-3">
               <NotificationCenter />
               <ThemeToggle />
               <LogoutButton />

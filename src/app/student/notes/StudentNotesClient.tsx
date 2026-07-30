@@ -80,11 +80,11 @@ export function StudentNotesClient({ subjects, notes, progress }: StudentNotesCl
       {/* Header */}
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Study Materials</h2>
+        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Study Materials</h2>
       </div>
 
       {/* Subject selector slider/grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {subjects.map((sub) => {
           const isActive = sub.id === selectedSubjectId;
           return (

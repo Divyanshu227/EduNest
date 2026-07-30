@@ -25,7 +25,7 @@ export default async function StudentDashboardPage() {
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
           <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Dashboard</p>
-          <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Welcome back, {session?.user.name}</h2>
+          <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Welcome back, {session?.user.name}</h2>
         </div>
         <Badge>Role: Student</Badge>
       </div>

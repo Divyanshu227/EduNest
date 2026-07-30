@@ -55,11 +55,11 @@ export function StudentTestsClient({ tests }: StudentTestsClientProps) {
       {/* Header */}
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Quizzes & Tests</h2>
+        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Quizzes & Tests</h2>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex border-b border-border/40 pb-px">
+      <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
         {[
           ['all', `All Tests (${tests.length})`],
           ['pending', `Pending (${pendingTests.length})`],
@@ -68,10 +68,10 @@ export function StudentTestsClient({ tests }: StudentTestsClientProps) {
           <button
             key={key}
             onClick={() => setFilter(key as any)}
-            className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all ${
+            className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
               filter === key
-                ? 'border-primary text-foreground'
-                : 'border-transparent text-muted-foreground hover:text-foreground'
+                ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+                : 'border-border/60 bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
             }`}
           >
             {label}

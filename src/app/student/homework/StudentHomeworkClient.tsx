@@ -89,21 +89,21 @@ export function StudentHomeworkClient({ homeworkList: initialList }: StudentHome
       {/* Header */}
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Center</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-4xl">My Homework</h2>
+        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">My Homework</h2>
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex border-b border-border/40 pb-px">
+      <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
         <button
           onClick={() => {
             setFilter('pending');
             const pFirst = pendingHomework[0];
             if (pFirst) handleSelectHomework(pFirst);
           }}
-          className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all ${
+          className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'pending'
-              ? 'border-primary text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
         >
           To-Do Assignments ({pendingHomework.length})
@@ -114,19 +114,19 @@ export function StudentHomeworkClient({ homeworkList: initialList }: StudentHome
             const cFirst = completedHomework[0];
             if (cFirst) handleSelectHomework(cFirst);
           }}
-          className={`border-b-2 px-6 py-3 text-sm font-semibold transition-all ${
+          className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'completed'
-              ? 'border-primary text-foreground'
-              : 'border-transparent text-muted-foreground hover:text-foreground'
+              ? 'border-primary bg-primary text-primary-foreground shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
         >
           Completed Assignments ({completedHomework.length})
         </button>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,340px)_minmax(0,1fr)]">
         {/* Active homework list */}
-        <div className="space-y-3">
+        <div className="space-y-3 min-w-0">
           {activeList.map((hw) => {
             const isActive = hw.id === selectedHwId;
             const isPastDue = new Date() > new Date(hw.dueDate);
@@ -174,9 +174,9 @@ export function StudentHomeworkClient({ homeworkList: initialList }: StudentHome
         </div>
 
         {/* Selected Homework detail and Submission box */}
-        <div className="lg:col-span-2">
+        <div className="min-w-0">
           {selectedHw ? (
-            <Card className="border-border/60 bg-card/85 backdrop-blur">
+            <Card className="min-w-0 border-border/60 bg-card/85 backdrop-blur">
               <CardHeader className="pb-4 border-b border-border/40">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
