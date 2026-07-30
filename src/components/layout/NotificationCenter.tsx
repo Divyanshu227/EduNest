@@ -118,7 +118,7 @@ export function NotificationCenter() {
             initial={{ opacity: 0, y: 10, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 10, scale: 0.95 }}
-            className="absolute right-0 mt-2 z-50 w-80 sm:w-96 rounded-3xl border border-border/60 bg-background/95 p-4 shadow-2xl backdrop-blur"
+            className="absolute left-0 sm:left-auto sm:right-0 mt-2 z-50 w-80 sm:w-96 rounded-3xl border border-border/60 bg-background/95 p-4 shadow-2xl backdrop-blur"
           >
             <div className="flex items-center justify-between pb-3 border-b border-border/40 mb-2">
               <h4 className="font-bold text-sm">Notifications</h4>
