@@ -58,12 +58,17 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
     setError(null);
 
     try {
+      const startTimeIso = new Date(formData.startTime).toISOString();
+
       const res = await fetch('/api/classes', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          ...formData,
+          startTime: startTimeIso
+        })
       });
 
       const data = await res.json();
