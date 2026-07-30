@@ -1,0 +1,587 @@
+"use client";
+
+import { useState } from 'react';
+import { Plus, Edit2, Trash2, Calendar, FileText, CheckCircle2, AlertCircle, X, ExternalLink, GraduationCap } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
+
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface Submission {
+  id: string;
+  homeworkId: string;
+  studentId: string;
+  submittedAt: string | Date;
+  status: 'PENDING' | 'SUBMITTED' | 'LATE';
+  textAnswer: string | null;
+  attachments: any;
+  feedback: string | null;
+  score: number | null;
+  student: Student;
+}
+
+interface Homework {
+  id: string;
+  title: string;
+  instructions: string;
+  dueDate: string | Date;
+  subjectId: string;
+  chapterId: string | null;
+  attachments: any;
+  subject: { name: string; color: string };
+  chapter: { name: string } | null;
+  submissions: Submission[];
+}
+
+interface AdminHomeworkClientProps {
+  initialHomework: any[];
+  subjects: any[];
+  students: Student[];
+}
+
+export function AdminHomeworkClient({ initialHomework, subjects, students }: AdminHomeworkClientProps) {
+  const [homeworkList, setHomeworkList] = useState<Homework[]>(initialHomework);
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
+  const [selectedHomeworkForGrading, setSelectedHomeworkForGrading] = useState<Homework | null>(null);
+
+  // Form states
+  const [title, setTitle] = useState('');
+  const [instructions, setInstructions] = useState('');
+  const [dueDate, setDueDate] = useState('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id || '');
+  const [selectedChapterId, setSelectedChapterId] = useState('');
+  const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+
+  // Grading form states
+  const [gradingFeedback, setGradingFeedback] = useState<Record<string, string>>({});
+  const [gradingScore, setGradingScore] = useState<Record<string, string>>({});
+  const [gradingSubmitting, setGradingSubmitting] = useState<Record<string, boolean>>({});
+
+  const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
+  const chapters = selectedSubject?.chapters || [];
+
+  const handleSubjectChange = (subjectId: string) => {
+    setSelectedSubjectId(subjectId);
+    const sub = subjects.find(s => s.id === subjectId);
+    setSelectedChapterId(sub?.chapters[0]?.id || '');
+  };
+
+  const openCreateForm = () => {
+    setEditingHomework(null);
+    setTitle('');
+    setInstructions('');
+    
+    // Default due date: tomorrow
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    setDueDate(tomorrow.toISOString().slice(0, 16));
+    
+    const firstSubId = subjects[0]?.id || '';
+    setSelectedSubjectId(firstSubId);
+    const firstSub = subjects.find(s => s.id === firstSubId);
+    setSelectedChapterId(firstSub?.chapters[0]?.id || '');
+    setUploadedAttachments([]);
+    setIsFormOpen(true);
+  };
+
+  const openEditForm = (hw: Homework) => {
+    setEditingHomework(hw);
+    setTitle(hw.title);
+    setInstructions(hw.instructions);
+    
+    const formattedDate = new Date(hw.dueDate).toISOString().slice(0, 16);
+    setDueDate(formattedDate);
+    
+    setSelectedSubjectId(hw.subjectId);
+    setSelectedChapterId(hw.chapterId || '');
+    setUploadedAttachments(Array.isArray(hw.attachments) ? hw.attachments : []);
+    setIsFormOpen(true);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!title || !instructions || !dueDate || !selectedSubjectId) {
+      alert('Please fill in all required fields.');
+      return;
+    }
+
+    setSubmitting(true);
+    const payload = {
+      title,
+      instructions,
+      dueDate: new Date(dueDate).toISOString(),
+      subjectId: selectedSubjectId,
+      chapterId: selectedChapterId || undefined,
+      attachments: uploadedAttachments
+    };
+
+    try {
+      if (editingHomework) {
+        // Edit flow
+        const res = await fetch(`/api/homework/${editingHomework.id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Update failed');
+        const updated = await res.json();
+        
+        setHomeworkList(prev => prev.map(h => h.id === editingHomework.id ? {
+          ...h,
+          ...updated.data,
+          subject: subjects.find((s: any) => s.id === selectedSubjectId),
+          chapter: chapters.find((c: any) => c.id === selectedChapterId) || null
+        } : h));
+      } else {
+        // Create flow
+        const res = await fetch('/api/homework', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) throw new Error('Create failed');
+        const created = await res.json();
+        
+        setHomeworkList(prev => [
+          {
+            ...created.data,
+            subject: subjects.find((s: any) => s.id === selectedSubjectId),
+            chapter: chapters.find((c: any) => c.id === selectedChapterId) || null,
+            submissions: []
+          },
+          ...prev
+        ]);
+      }
+      setIsFormOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this homework? This will delete all student submissions too.')) return;
+
+    try {
+      const res = await fetch(`/api/homework/${id}`, {
+        method: 'DELETE'
+      });
+
+      if (!res.ok) throw new Error('Delete failed');
+      setHomeworkList(prev => prev.filter(h => h.id !== id));
+      if (selectedHomeworkForGrading?.id === id) {
+        setSelectedHomeworkForGrading(null);
+      }
+    } catch (err: any) {
+      alert(err.message);
+    }
+  };
+
+  const handleGradeSubmit = async (submissionId: string) => {
+    const feedback = gradingFeedback[submissionId] || '';
+    const score = gradingScore[submissionId] || '';
+
+    if (score === '') {
+      alert('Please enter a score.');
+      return;
+    }
+
+    setGradingSubmitting(prev => ({ ...prev, [submissionId]: true }));
+
+    try {
+      const res = await fetch('/api/homework/submissions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          feedback,
+          score
+        })
+      });
+
+      if (!res.ok) throw new Error('Grading failed');
+      const updated = await res.json();
+
+      // Update in local state
+      setHomeworkList(prev => prev.map(hw => {
+        if (hw.submissions.some(s => s.id === submissionId)) {
+          return {
+            ...hw,
+            submissions: hw.submissions.map(s => s.id === submissionId ? { ...s, ...updated.data } : s)
+          };
+        }
+        return hw;
+      }));
+
+      // Update active grading view
+      if (selectedHomeworkForGrading) {
+        setSelectedHomeworkForGrading(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            submissions: prev.submissions.map(s => s.id === submissionId ? { ...s, ...updated.data } : s)
+          };
+        });
+      }
+
+      alert('Homework graded successfully!');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setGradingSubmitting(prev => ({ ...prev, [submissionId]: false }));
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Class Work</p>
+          <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Manage Homework</h2>
+        </div>
+        <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
+          <Plus className="h-4 w-4" /> Create Homework
+        </Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Homework List Panel */}
+        <div className="lg:col-span-2 space-y-4">
+          <h3 className="font-semibold text-lg">Homework Assignments</h3>
+          
+          <div className="space-y-4">
+            {homeworkList.map((hw) => {
+              const isPastDue = new Date() > new Date(hw.dueDate);
+              const submissionCount = hw.submissions.length;
+              
+              return (
+                <Card key={hw.id} className={`overflow-hidden border-border/60 bg-card/85 backdrop-blur hover:border-primary/30 transition-all ${
+                  selectedHomeworkForGrading?.id === hw.id ? 'ring-2 ring-primary/20' : ''
+                }`}>
+                  <CardHeader className="pb-3">
+                    <div className="flex items-center justify-between gap-2 mb-2">
+                      <div className="flex items-center gap-2">
+                        <Badge style={{ backgroundColor: `${hw.subject.color}15`, color: hw.subject.color, borderColor: `${hw.subject.color}30` }} variant="outline">
+                          {hw.subject.name}
+                        </Badge>
+                        {hw.chapter && (
+                          <span className="text-xs text-muted-foreground">{hw.chapter.name}</span>
+                        )}
+                      </div>
+                      <Badge variant={isPastDue ? "destructive" : "secondary"} className="text-[10px] flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        Due {new Date(hw.dueDate).toLocaleDateString()} {new Date(hw.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                      </Badge>
+                    </div>
+                    <CardTitle className="text-xl">{hw.title}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <p className="text-sm text-muted-foreground line-clamp-2">{hw.instructions}</p>
+                    
+                    {/* Attachments preview */}
+                    {Array.isArray(hw.attachments) && hw.attachments.length > 0 && (
+                      <div className="flex flex-wrap gap-2">
+                        {hw.attachments.map((att: any, idx: number) => (
+                          <a 
+                            key={idx}
+                            href={att.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center gap-1 text-[10px] font-medium border border-border/60 rounded-xl px-3 py-1.5 hover:bg-muted bg-background/50"
+                          >
+                            <FileText className="h-3 w-3 text-primary" /> {att.name || 'Attachment'}
+                          </a>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between border-t border-border/40 pt-3">
+                      <span className="text-xs text-muted-foreground">
+                        {submissionCount} / {students.length} Submissions received
+                      </span>
+
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          size="sm" 
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedHomeworkForGrading(hw);
+                            // Load existing grading feedback/score values
+                            const feedback: Record<string, string> = {};
+                            const scores: Record<string, string> = {};
+                            hw.submissions.forEach(sub => {
+                              feedback[sub.id] = sub.feedback || '';
+                              scores[sub.id] = sub.score !== null ? String(sub.score) : '';
+                            });
+                            setGradingFeedback(feedback);
+                            setGradingScore(scores);
+                          }}
+                          className="rounded-xl flex items-center gap-1"
+                        >
+                          <GraduationCap className="h-4 w-4" /> Grade submissions
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-accent rounded-lg" onClick={() => openEditForm(hw)}>
+                          <Edit2 className="h-4 w-4" />
+                        </Button>
+                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 rounded-lg" onClick={() => handleDelete(hw.id)}>
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+
+            {!homeworkList.length && (
+              <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6">
+                <p className="text-muted-foreground">No homework tasks created yet. Click "Create Homework" to get started.</p>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Grading Panel */}
+        <div className="space-y-4">
+          <h3 className="font-semibold text-lg">Grading Desk</h3>
+          
+          {selectedHomeworkForGrading ? (
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-border/60 bg-card p-5">
+                <div className="flex justify-between items-start mb-3">
+                  <h4 className="font-bold text-lg leading-tight">{selectedHomeworkForGrading.title}</h4>
+                  <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg" onClick={() => setSelectedHomeworkForGrading(null)}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">Grade and provide feedback to students below.</p>
+              </div>
+
+              {selectedHomeworkForGrading.submissions.length ? selectedHomeworkForGrading.submissions.map((sub) => (
+                <Card key={sub.id} className="border-border/60 bg-card/85 backdrop-blur overflow-hidden">
+                  <CardHeader className="pb-3 border-b border-border/40">
+                    <div className="flex justify-between items-center gap-2">
+                      <div>
+                        <h4 className="font-semibold text-sm">{sub.student.name}</h4>
+                        <p className="text-[10px] text-muted-foreground">{sub.student.email}</p>
+                      </div>
+                      <Badge variant={sub.status === 'LATE' ? 'destructive' : 'secondary'} className="text-[9px]">
+                        {sub.status === 'LATE' ? 'Submitted Late' : 'Submitted'}
+                      </Badge>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="pt-4 space-y-4">
+                    {sub.textAnswer && (
+                      <div className="rounded-2xl bg-muted p-4 space-y-1">
+                        <p className="text-xs font-semibold text-muted-foreground">Student Response:</p>
+                        <p className="text-sm whitespace-pre-wrap">{sub.textAnswer}</p>
+                      </div>
+                    )}
+
+                    {/* Student Attachments */}
+                    {Array.isArray(sub.attachments) && sub.attachments.length > 0 && (
+                      <div className="space-y-1.5">
+                        <p className="text-[10px] font-semibold text-muted-foreground">Uploaded Work:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {sub.attachments.map((att: any, idx: number) => (
+                            <a 
+                              key={idx}
+                              href={att.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-[10px] font-medium border border-border/60 rounded-xl px-3 py-1.5 hover:bg-muted bg-background/50"
+                            >
+                              <FileText className="h-3.5 w-3.5 text-primary" /> {att.name || 'Worksheet'} <ExternalLink className="h-2.5 w-2.5 ml-1" />
+                            </a>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Grading Form */}
+                    <div className="space-y-3 pt-3 border-t border-border/40">
+                      <div className="flex gap-4 items-center">
+                        <div className="space-y-1 w-24">
+                          <Label htmlFor={`score-${sub.id}`} className="text-xs">Score</Label>
+                          <Input
+                            id={`score-${sub.id}`}
+                            type="number"
+                            step="0.5"
+                            placeholder="Score"
+                            value={gradingScore[sub.id] || ''}
+                            onChange={(e) => setGradingScore(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                          />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <Label htmlFor={`feedback-${sub.id}`} className="text-xs">Feedback / Comments</Label>
+                          <Input
+                            id={`feedback-${sub.id}`}
+                            placeholder="Great job! Keep it up."
+                            value={gradingFeedback[sub.id] || ''}
+                            onChange={(e) => setGradingFeedback(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        onClick={() => handleGradeSubmit(sub.id)}
+                        disabled={gradingSubmitting[sub.id]}
+                        className="w-full rounded-xl flex items-center justify-center gap-1 text-xs"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" /> 
+                        {gradingSubmitting[sub.id] ? 'Saving...' : 'Submit Grade & Review'}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              )) : (
+                <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6 min-h-[200px]">
+                  <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
+                  <p className="text-xs text-muted-foreground">No submissions have been uploaded for this homework yet.</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6 min-h-[300px]">
+              <GraduationCap className="h-10 w-10 text-muted-foreground mb-2" />
+              <p className="text-xs text-muted-foreground">Select a homework assignment and click "Grade Submissions" to get started.</p>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Homework Creation Modal */}
+      <AnimatePresence>
+        {isFormOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-2xl rounded-3xl border border-border/60 bg-background/95 p-6 shadow-2xl backdrop-blur max-h-[90vh] overflow-y-auto"
+            >
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-4 top-4 h-8 w-8 rounded-lg hover:bg-muted"
+                onClick={() => setIsFormOpen(false)}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+
+              <h3 className="font-[var(--font-heading)] text-2xl font-bold mb-4">
+                {editingHomework ? 'Edit Homework Assignment' : 'Create Homework Assignment'}
+              </h3>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="subject">Subject *</Label>
+                    <select
+                      id="subject"
+                      value={selectedSubjectId}
+                      onChange={(e) => handleSubjectChange(e.target.value)}
+                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      {subjects.map(s => (
+                        <option key={s.id} value={s.id}>{s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="chapter">Chapter (Optional)</Label>
+                    <select
+                      id="chapter"
+                      value={selectedChapterId}
+                      onChange={(e) => setSelectedChapterId(e.target.value)}
+                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                    >
+                      <option value="">No Chapter Assigned</option>
+                      {chapters.map((c: any) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <Label htmlFor="title">Homework Title *</Label>
+                    <Input
+                      id="title"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      placeholder="e.g., Chapter 2 Fraction Worksheet"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="dueDate">Due Date & Time *</Label>
+                    <Input
+                      id="dueDate"
+                      type="datetime-local"
+                      value={dueDate}
+                      onChange={(e) => setDueDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="instructions">Instructions / Questions *</Label>
+                  <Textarea
+                    id="instructions"
+                    value={instructions}
+                    onChange={(e) => setInstructions(e.target.value)}
+                    placeholder="Enter instructions, questions, or requirements..."
+                    required
+                    rows={4}
+                  />
+                </div>
+
+                {/* Attachments */}
+                <div className="space-y-2 border-t border-border/40 pt-4">
+                  <Label>Homework Worksheets / Documents (Optional)</Label>
+                  <CloudinaryUploader
+                    value={uploadedAttachments}
+                    onChange={setUploadedAttachments}
+                    accept="image/*,application/pdf"
+                    folder="homework_attachments"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-3 border-t border-border/40 pt-4 mt-6">
+                  <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={submitting} className="rounded-xl">
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={submitting} className="rounded-xl shadow-glow">
+                    {submitting ? 'Saving...' : editingHomework ? 'Save Changes' : 'Publish Homework'}
+                  </Button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
