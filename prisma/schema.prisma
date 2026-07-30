@@ -66,6 +66,8 @@ model User {
   reading       ReadingProgress[]   @relation("ReadingProgressUser")
   markedAttend  Attendance[]        @relation("AttendanceMarker")
   testAttempts  TestAttempt[]       @relation("TestAttemptStudent")
+  teacherClasses LiveClass[]        @relation("TeacherLiveClasses")
+  studentClasses LiveClass[]        @relation("StudentLiveClasses")
 
   @@index([role])
 }
@@ -250,14 +252,15 @@ model Attendance {
 }
 
 model Announcement {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  title     String
-  message   String
-  audience  String   @default("all")
-  authorId  String   @db.ObjectId
-  pinned    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  message     String
+  audience    String   @default("all")
+  authorId    String   @db.ObjectId
+  pinned      Boolean  @default(false)
+  attachments Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   author User @relation("AnnouncementAuthor", fields: [authorId], references: [id])
 
@@ -295,3 +298,21 @@ model TestAttempt {
   @@unique([testId, studentId])
   @@index([studentId])
 }
+
+model LiveClass {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  title       String
+  meetLink    String
+  startTime   DateTime
+  durationMin Int      @default(60)
+  teacherId   String   @db.ObjectId
+  studentId   String   @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  teacher User @relation("TeacherLiveClasses", fields: [teacherId], references: [id], onDelete: Cascade)
+  student User @relation("StudentLiveClasses", fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@index([studentId, startTime])
+  @@index([teacherId, startTime])
+}

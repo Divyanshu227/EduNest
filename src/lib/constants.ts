@@ -5,6 +5,7 @@ export const APP_NAME = 'EduNest';
 export const NAVIGATION = {
   admin: [
     { label: 'Dashboard', href: '/admin' },
+    { label: 'Classes', href: '/admin/classes' },
     { label: 'Users', href: '/admin/users' },
     { label: 'Subjects', href: '/admin/subjects' },
     { label: 'Chapters', href: '/admin/chapters' },
@@ -19,6 +20,7 @@ export const NAVIGATION = {
   ],
   student: [
     { label: 'Dashboard', href: '/student' },
+    { label: 'Classes', href: '/student/classes' },
     { label: 'My Notes', href: '/student/notes' },
     { label: 'Homework', href: '/student/homework' },
     { label: 'Tests', href: '/student/tests' },

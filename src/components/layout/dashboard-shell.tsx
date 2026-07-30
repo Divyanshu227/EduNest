@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, GraduationCap, LayoutDashboard, MoonStar, Settings2, Users2, Sparkles } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutDashboard, MoonStar, Settings2, Users2, Sparkles, Video } from 'lucide-react';
 import type { UserRole } from '@prisma/client';
 import type { ReactNode } from 'react';
 import { NAVIGATION } from '@/lib/constants';
@@ -13,6 +13,7 @@ import { NotificationCenter } from '@/components/layout/NotificationCenter';
 
 const roleIcons: Record<string, ReactNode> = {
   Dashboard: <LayoutDashboard className="h-4 w-4" />,
+  Classes: <Video className="h-4 w-4" />,
   Users: <Users2 className="h-4 w-4" />,
   Subjects: <BookOpen className="h-4 w-4" />,
   Chapters: <Sparkles className="h-4 w-4" />,
