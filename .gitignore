@@ -1,0 +1,32 @@
+# Next.js build output
+.next/
+out/
+build/
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Local configuration and secret files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Database storage folders
+mongodb_data/
+
+# Log files and debug scripts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+auth-debug.log
+attempt-login.js
+test-login.js
+check-url.js
+
+# OS metadata files
+.DS_Store
+Thumbs.db
