@@ -1,0 +1,17 @@
+{
+  "name": "EduNest",
+  "short_name": "EduNest",
+  "description": "Premium home tuition LMS for a Class 5 learner.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}
