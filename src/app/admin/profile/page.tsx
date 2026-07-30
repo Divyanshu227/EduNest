@@ -3,6 +3,7 @@ import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { User, Mail, Shield, BookOpen } from 'lucide-react';
+import { AvatarUpload } from '@/components/profile/AvatarUpload';
 
 export default async function AdminProfilePage() {
   const session = await auth();
@@ -27,12 +28,14 @@ export default async function AdminProfilePage() {
       <Card className="border-border/60 bg-card/85 backdrop-blur overflow-hidden">
         <CardHeader className="pb-4 border-b border-border/40 bg-muted/20">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground font-black text-2xl shadow-glow">
-              {session.user.name?.[0] || 'T'}
-            </div>
+            <AvatarUpload
+              currentAvatarUrl={session.user.avatarUrl}
+              userName={session.user.name ?? 'Teacher'}
+              fallbackLetter={session.user.name?.[0] || 'T'}
+            />
             <div>
               <CardTitle className="text-2xl font-bold">{session.user.name}</CardTitle>
-              <CardDescription className="text-xs mt-1">Teacher Account</CardDescription>
+              <CardDescription className="text-xs mt-1">Teacher Account — Click avatar to change</CardDescription>
             </div>
           </div>
         </CardHeader>
