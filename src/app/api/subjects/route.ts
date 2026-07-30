@@ -32,13 +32,21 @@ export async function POST(request: Request) {
     return jsonError('Teacher account not found', 404);
   }
 
-  const subject = await prisma.subject.create({
-    data: {
-      ...body.data,
-      slug: slugify(body.data.name),
-      teacherId: teacher.id
-    }
-  });
+  try {
+    const subject = await prisma.subject.create({
+      data: {
+        ...body.data,
+        slug: slugify(body.data.name),
+        teacherId: teacher.id
+      }
+    });
 
-  return NextResponse.json({ data: subject }, { status: 201 });
+    return NextResponse.json({ data: subject }, { status: 201 });
+  } catch (error: any) {
+    console.error("Subject creation error:", error);
+    if (error.code === 'P2002') {
+      return jsonError('A subject with this name already exists.', 409);
+    }
+    return jsonError('Internal Server Error', 500);
+  }
 }

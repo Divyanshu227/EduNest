@@ -80,8 +80,11 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
         body: JSON.stringify(payload)
       });
 
-      if (!res.ok) throw new Error('Create subject failed');
       const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Create subject failed');
+      }
 
       const createdSubject: Subject = {
         ...data.data,
