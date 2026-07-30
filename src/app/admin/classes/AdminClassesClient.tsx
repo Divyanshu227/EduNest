@@ -39,6 +39,11 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+
+  const upcomingClasses = classes.filter(c => new Date(c.startTime) >= new Date());
+  const pastClasses = classes.filter(c => new Date(c.startTime) < new Date());
+  const displayedClasses = activeTab === 'upcoming' ? upcomingClasses : pastClasses;
 
   const [formData, setFormData] = useState({
     title: '',
@@ -116,20 +121,40 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-[var(--font-heading)] text-3xl">Live Classes</h2>
           <p className="text-sm text-muted-foreground">Schedule and manage 1-on-1 live sessions with your students.</p>
         </div>
         
-        <Dialog open={isOpen} onOpenChange={setIsOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="mr-2 h-4 w-4" />
-              Schedule Class
+        <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex bg-muted/50 p-1 rounded-xl">
+            <Button 
+              variant={activeTab === 'upcoming' ? 'default' : 'ghost'} 
+              className="rounded-lg text-sm"
+              onClick={() => setActiveTab('upcoming')}
+            >
+              Upcoming
             </Button>
-          </DialogTrigger>
-          <DialogContent className="glass max-h-[90vh] overflow-y-auto">
+            <Button 
+              variant={activeTab === 'past' ? 'default' : 'ghost'} 
+              className="rounded-lg text-sm"
+              onClick={() => setActiveTab('past')}
+            >
+              Past
+            </Button>
+          </div>
+
+          <Dialog open={isOpen} onOpenChange={setIsOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="mr-2 h-4 w-4" />
+                Schedule Class
+              </Button>
+            </DialogTrigger>
+          </Dialog>
+        </div>
+        <DialogContent className="glass max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Schedule a New Class</DialogTitle>
               <DialogDescription>
@@ -223,13 +248,13 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {classes.length === 0 ? (
+        {displayedClasses.length === 0 ? (
           <div className="col-span-full flex h-48 items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center">
-            <p className="text-muted-foreground">No classes scheduled. Click "Schedule Class" to add one.</p>
+            <p className="text-muted-foreground">No {activeTab} classes scheduled. {activeTab === 'upcoming' && 'Click "Schedule Class" to add one.'}</p>
           </div>
         ) : (
-          classes.map((c) => {
-            const isPast = new Date(c.startTime) < new Date();
+          displayedClasses.map((c) => {
+            const isPast = activeTab === 'past';
             return (
               <Card key={c.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between">
                 <CardHeader className="pb-3">
@@ -258,11 +283,13 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                     </div>
                   </div>
                   
-                  <div className="border-t border-border/40 pt-3 flex justify-end">
-                    <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
-                      <Video className="h-4 w-4" /> Open Meet <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
+                  {!isPast && (
+                    <div className="border-t border-border/40 pt-3 flex justify-end">
+                      <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+                        <Video className="h-4 w-4" /> Open Meet <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );

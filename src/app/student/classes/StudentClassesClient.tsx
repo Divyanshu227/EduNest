@@ -20,25 +20,49 @@ type LiveClassType = {
 
 export function StudentClassesClient({ initialClasses }: { initialClasses: any[] }) {
   const [classes] = useState<LiveClassType[]>(initialClasses);
+  const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+
+  const upcomingClasses = classes.filter(c => new Date(c.startTime) >= new Date());
+  const pastClasses = classes.filter(c => new Date(c.startTime) < new Date());
+  const displayedClasses = activeTab === 'upcoming' ? upcomingClasses : pastClasses;
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-[var(--font-heading)] text-3xl">My Live Classes</h2>
           <p className="text-sm text-muted-foreground">View and join your scheduled live sessions with teachers.</p>
         </div>
+        
+        <div className="flex bg-muted/50 p-1 rounded-xl">
+          <Button 
+            variant={activeTab === 'upcoming' ? 'default' : 'ghost'} 
+            className="rounded-lg text-sm"
+            onClick={() => setActiveTab('upcoming')}
+          >
+            Upcoming
+          </Button>
+          <Button 
+            variant={activeTab === 'past' ? 'default' : 'ghost'} 
+            className="rounded-lg text-sm"
+            onClick={() => setActiveTab('past')}
+          >
+            Past
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {classes.length === 0 ? (
+        {displayedClasses.length === 0 ? (
           <div className="col-span-full flex flex-col h-64 items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6">
             <Video className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground font-semibold">No live classes scheduled for you right now.</p>
+            <p className="text-muted-foreground font-semibold">
+              No {activeTab} live classes found.
+            </p>
           </div>
         ) : (
-          classes.map((c) => {
-            const isPast = new Date(c.startTime) < new Date();
+          displayedClasses.map((c) => {
+            const isPast = activeTab === 'past';
             
             return (
               <Card key={c.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between">
@@ -65,13 +89,15 @@ export function StudentClassesClient({ initialClasses }: { initialClasses: any[]
                     </div>
                   </div>
                   
-                  <div className="border-t border-border/40 pt-4 mt-2">
-                    <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="block">
-                      <Button className="w-full flex items-center justify-center gap-2 rounded-xl shadow-glow" variant={isPast ? "secondary" : "default"}>
-                        <Video className="h-4 w-4" /> {isPast ? 'View Past Meeting Link' : 'Join Now'}
-                      </Button>
-                    </a>
-                  </div>
+                  {!isPast && (
+                    <div className="border-t border-border/40 pt-4 mt-2">
+                      <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="block">
+                        <Button className="w-full flex items-center justify-center gap-2 rounded-xl shadow-glow" variant="default">
+                          <Video className="h-4 w-4" /> Join Now
+                        </Button>
+                      </a>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             );
