@@ -28,9 +28,16 @@ export default async function AdminAnnouncementsPage() {
     ]
   });
 
+  // Fetch all users so teachers can target specific people
+  const users = await prisma.user.findMany({
+    select: { id: true, name: true, role: true },
+    orderBy: { name: 'asc' },
+  });
+
   return (
     <AdminAnnouncementsClient 
-      initialAnnouncements={announcements} 
+      initialAnnouncements={announcements}
+      users={users}
     />
   );
 }

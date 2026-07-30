@@ -23,7 +23,12 @@ export const announcementSchema = z.object({
   title: z.string().min(3),
   message: z.string().min(5),
   audience: z.string().default('all'),
-  pinned: z.coerce.boolean().default(false)
+  pinned: z.coerce.boolean().default(false),
+  attachments: z.array(z.object({
+    url: z.string().url(),
+    name: z.string(),
+    type: z.string()
+  })).optional().default([])
 });
 
 export const homeworkSchema = z.object({
