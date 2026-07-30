@@ -44,6 +44,11 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       where: { homeworkId: id }
     });
 
+    // Delete related notifications
+    await prisma.notification.deleteMany({
+      where: { link: { contains: id } }
+    });
+
     // Delete the homework itself
     await prisma.homework.delete({
       where: { id }

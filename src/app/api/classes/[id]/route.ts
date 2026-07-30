@@ -19,6 +19,9 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
       return NextResponse.json({ error: 'Not authorized or not found' }, { status: 403 });
     }
 
+    // Delete related notifications
+    await prisma.notification.deleteMany({ where: { link: { contains: id } } });
+
     await prisma.liveClass.delete({
       where: { id },
     });

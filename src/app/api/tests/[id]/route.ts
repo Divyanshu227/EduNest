@@ -75,6 +75,9 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
     await prisma.question.deleteMany({ where: { testId: id } });
     await prisma.testAttempt.deleteMany({ where: { testId: id } });
     
+    // Delete related notifications
+    await prisma.notification.deleteMany({ where: { link: { contains: id } } });
+    
     // Delete test
     await prisma.test.delete({ where: { id } });
 

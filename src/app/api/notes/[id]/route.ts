@@ -69,6 +69,10 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   try {
+    // Delete related notifications and progress
+    await prisma.notification.deleteMany({ where: { link: { contains: id } } });
+    await prisma.readingProgress.deleteMany({ where: { noteId: id } });
+
     await prisma.note.delete({
       where: { id }
     });
