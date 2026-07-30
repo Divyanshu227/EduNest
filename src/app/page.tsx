@@ -19,7 +19,9 @@ export default async function HomePage() {
             <div className="inline-flex items-center rounded-full border border-white/15 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-white/80 backdrop-blur">
               Learning dashboard for teachers and students
             </div>
-            <p className="mt-6 text-sm font-medium uppercase tracking-[0.35em] text-emerald-100/70 sm:text-base">EduNest</p>
+            <div className="mt-6 mb-2">
+              <img src="/logo.png" alt="EduNest" className="h-24 sm:h-32 w-auto object-contain drop-shadow-xl filter brightness-[1.1] contrast-[1.1]" />
+            </div>
             <h1 className="mt-4 font-[var(--font-heading)] text-4xl leading-tight text-balance sm:text-5xl lg:text-7xl">
               A cleaner, calmer home for everyday school learning.
             </h1>

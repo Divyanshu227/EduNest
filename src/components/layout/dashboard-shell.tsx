@@ -42,21 +42,26 @@ export function DashboardShell({
 
   const sidebarContent = (
     <>
-      <div className="mb-8 flex items-center gap-3">
+      <div className="mb-6 flex flex-col items-center border-b border-border/40 pb-4">
+        <img src="/logo.png" alt="EduNest" className="h-20 w-auto object-contain" />
+        <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-2">{role === 'ADMIN' ? 'Teacher Console' : 'Student Space'}</p>
+      </div>
+
+      <div className="mb-6 flex items-center gap-3 px-2">
         {avatarUrl ? (
           <img
             src={avatarUrl}
             alt={name}
-            className="h-12 w-12 rounded-2xl border border-primary/20 object-cover shadow-glow"
+            className="h-10 w-10 rounded-2xl border border-primary/20 object-cover shadow-glow"
           />
         ) : (
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
-            <span className="text-lg font-bold">{name[0] ?? 'E'}</span>
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-glow">
+            <span className="text-sm font-bold">{name[0] ?? 'E'}</span>
           </div>
         )}
-        <div>
-          <p className="text-lg font-semibold leading-none">EduNest</p>
-          <p className="text-xs text-muted-foreground">{role === 'ADMIN' ? 'Teacher Console' : 'Student Space'}</p>
+        <div className="flex-1 overflow-hidden">
+          <p className="text-sm font-semibold truncate">{name}</p>
+          <p className="text-xs text-muted-foreground truncate">{role === 'ADMIN' ? 'Teacher' : 'Student'}</p>
         </div>
       </div>
 

@@ -13,8 +13,8 @@ export default async function LoginPage() {
   return (
     <main className="grid min-h-screen place-items-center px-4 py-10">
       <div className="w-full max-w-md space-y-6">
-        <div className="mb-2 text-center">
-          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-primary">EduNest</p>
+        <div className="mb-4 flex flex-col items-center text-center">
+          <img src="/logo.png" alt="EduNest" className="h-28 w-auto object-contain mb-2 drop-shadow-md" />
           <h1 className="mt-2 font-[var(--font-heading)] text-3xl font-black">Sign in securely</h1>
           <p className="mt-1 text-xs text-muted-foreground">Sign in to access your dashboard.</p>
         </div>
