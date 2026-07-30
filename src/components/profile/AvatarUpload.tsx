@@ -14,6 +14,21 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const readErrorMessage = async (response: Response, fallback: string) => {
+    const raw = await response.text();
+
+    if (!raw) {
+      return fallback;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as { error?: string; message?: string };
+      return parsed.error || parsed.message || fallback;
+    } catch {
+      return raw;
+    }
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -43,7 +58,9 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
         body: formData
       });
 
-      if (!uploadRes.ok) throw new Error('Upload failed');
+      if (!uploadRes.ok) {
+        throw new Error(await readErrorMessage(uploadRes, 'Upload failed'));
+      }
       const uploadData = await uploadRes.json();
 
       // Save to user profile
@@ -53,11 +70,14 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
         body: JSON.stringify({ avatarUrl: uploadData.url })
       });
 
-      if (!profileRes.ok) throw new Error('Profile update failed');
+      if (!profileRes.ok) {
+        throw new Error(await readErrorMessage(profileRes, 'Profile update failed'));
+      }
 
       setAvatarUrl(uploadData.url);
-    } catch (err: any) {
-      alert(`Failed to update avatar: ${err.message}`);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Unknown error';
+      alert(`Failed to update avatar: ${message}`);
     } finally {
       setUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';

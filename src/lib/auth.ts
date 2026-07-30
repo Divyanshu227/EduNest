@@ -19,6 +19,12 @@ function hasRole(user: unknown): user is { role: UserRole; avatarUrl?: string | 
   return typeof user === 'object' && user !== null && 'role' in user;
 }
 
+function hasAuthenticatedUserShape(
+  user: unknown
+): user is { id: string; role: UserRole; avatarUrl?: string | null } {
+  return typeof user === 'object' && user !== null && 'id' in user && 'role' in user;
+}
+
 export const authConfig = {
   session: {
     strategy: 'jwt' as const
@@ -68,7 +74,11 @@ export const authConfig = {
   ],
   callbacks: {
     async jwt({ token, user }) {
-      if (hasRole(user)) {
+      if (hasAuthenticatedUserShape(user)) {
+        token.sub = user.id;
+        token.role = user.role;
+        token.avatarUrl = user.avatarUrl ?? null;
+      } else if (hasRole(user)) {
         token.role = user.role;
         token.avatarUrl = user.avatarUrl ?? null;
       }
