@@ -72,7 +72,7 @@ export function PushNotificationButton() {
         return;
       }
 
-      const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+      const registration = await navigator.serviceWorker.ready;
       const messaging = await getFirebaseMessaging();
 
       if (!messaging) {

@@ -1,23 +1,13 @@
-import { NextResponse } from 'next/server';
-
-export const runtime = 'nodejs';
-
-function getEnvValue(name: string) {
-  return process.env[name] ?? '';
-}
-
-export async function GET() {
-  const body = `
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.13.2/firebase-messaging-compat.js');
 
 firebase.initializeApp({
-  apiKey: '${getEnvValue('NEXT_PUBLIC_FIREBASE_API_KEY')}',
-  authDomain: '${getEnvValue('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN')}',
-  projectId: '${getEnvValue('NEXT_PUBLIC_FIREBASE_PROJECT_ID')}',
-  storageBucket: '${getEnvValue('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET')}',
-  messagingSenderId: '${getEnvValue('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID')}',
-  appId: '${getEnvValue('NEXT_PUBLIC_FIREBASE_APP_ID')}'
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID
 });
 
 const messaging = firebase.messaging();
@@ -53,12 +43,3 @@ self.addEventListener('notificationclick', (event) => {
     })
   );
 });
-`;
-
-  return new NextResponse(body, {
-    headers: {
-      'Content-Type': 'application/javascript; charset=utf-8',
-      'Cache-Control': 'no-store'
-    }
-  });
-}
