@@ -18,6 +18,11 @@ const nextConfig = {
   experimental: {
     serverActions: {
       bodySizeLimit: '20mb'
+    },
+    turbo: {
+      resolveAlias: {
+        canvas: './empty-module.js'
+      }
     }
   },
   webpack: (config, { dev }) => {
