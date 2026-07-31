@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Upload, X, ArrowUp, ArrowDown, FileText } from 'lucide-react';
+import { Upload, X, ArrowUp, ArrowDown, FileText, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { uploadAction } from '@/app/actions/upload';
@@ -148,7 +148,7 @@ export function CloudinaryUploader({
             {uploading ? 'Uploading assets...' : 'Drag & drop files here, or click to browse'}
           </div>
           <p className="text-xs text-muted-foreground">
-            Supports Images or PDFs
+            Supports Images, PDFs, or Videos
           </p>
         </div>
       </div>
@@ -157,6 +157,8 @@ export function CloudinaryUploader({
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {value.map((file, index) => {
             const isPdf = file.url.endsWith('.pdf') || file.name?.endsWith('.pdf');
+            const isVideo = file.url.match(/\.(mp4|webm|ogg|mov)$/i) || file.name?.match(/\.(mp4|webm|ogg|mov)$/i) || file.url.includes('/video/upload/');
+            
             return (
               <div
                 key={file.publicId + index}
@@ -165,6 +167,10 @@ export function CloudinaryUploader({
                 {isPdf ? (
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
                     <FileText className="h-6 w-6" />
+                  </div>
+                ) : isVideo ? (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-500">
+                    <Video className="h-6 w-6" />
                   </div>
                 ) : (
                   <div
@@ -175,7 +181,7 @@ export function CloudinaryUploader({
                 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold">{file.name || 'File'}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">{isPdf ? 'PDF document' : 'Image'}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase">{isPdf ? 'PDF document' : isVideo ? 'Video' : 'Image'}</p>
                 </div>
 
                 <div className="flex flex-col gap-1">

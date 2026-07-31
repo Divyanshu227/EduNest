@@ -344,7 +344,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                       <CloudinaryUploader
                         value={uploadedAttachments}
                         onChange={setUploadedAttachments}
-                        accept="image/*,application/pdf"
+                        accept="image/*,application/pdf,video/*"
                         folder="submissions_attachments"
                       />
                     </div>
