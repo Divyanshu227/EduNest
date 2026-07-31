@@ -19,15 +19,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return jsonError('Note not found', 404);
   }
 
-  // Get student's reading progress if user is student
-  let progress = null;
-  if (session.session.user.role === 'STUDENT') {
-    progress = await prisma.readingProgress.findMany({
-      where: { userId: session.session.user.id, noteId: id }
-    });
-  }
-
-  return NextResponse.json({ data: { note, progress } });
+  return NextResponse.json({ data: { note, progress: null } });
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -70,9 +62,8 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
   }
 
   try {
-    // Delete related notifications and progress
+    // Delete related notifications
     await prisma.notification.deleteMany({ where: { link: { contains: id } } });
-    await prisma.readingProgress.deleteMany({ where: { noteId: id } });
 
     await prisma.note.delete({
       where: { id }

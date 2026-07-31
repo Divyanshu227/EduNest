@@ -15,7 +15,6 @@ interface StudentChapterDashboardClientProps {
   notes: any[];
   homeworks: any[];
   tests: any[];
-  progress: any[];
 }
 
 export function StudentChapterDashboardClient({
@@ -23,8 +22,7 @@ export function StudentChapterDashboardClient({
   subject,
   notes,
   homeworks,
-  tests,
-  progress
+  tests
 }: StudentChapterDashboardClientProps) {
   const [activeTab, setActiveTab] = useState<'notes' | 'homework' | 'tests'>('notes');
 
@@ -90,7 +88,6 @@ export function StudentChapterDashboardClient({
             >
               <StudentNotesClient 
                 notes={notes}
-                progress={progress}
                 subjects={[{ ...subject, chapters: [chapter] }]}
                 fixedSubjectId={subject.id} 
                 fixedChapterId={chapter.id} 

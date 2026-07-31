@@ -31,20 +31,8 @@ export default async function StudentNoteDetailPage({ params }: PageProps) {
     notFound();
   }
 
-  // Get initial page from reading progress
-  // Note: For MIXED, we track progress on the notebook image list.
-  const assetType = note.type === 'PDF' ? 'PDF' : 'IMAGE';
-  const progress = await prisma.readingProgress.findUnique({
-    where: {
-      userId_noteId_assetType: {
-        userId: session.user.id,
-        noteId: id,
-        assetType
-      }
-    }
-  });
-
-  const initialPage = progress ? progress.page : 1;
+  // Always start at page 1 since progress tracking is removed
+  const initialPage = 1;
 
   // Extract YouTube ID safely for embedding
   const getYoutubeEmbedUrl = (url: string | null) => {

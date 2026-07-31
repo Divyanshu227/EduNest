@@ -34,21 +34,14 @@ interface Note {
   chapter: { name: string };
 }
 
-interface ReadingProgress {
-  noteId: string;
-  page: number;
-  assetType: string;
-}
-
 interface StudentNotesClientProps {
   subjects: Subject[];
   notes: Note[];
-  progress: ReadingProgress[];
   fixedSubjectId?: string;
   fixedChapterId?: string;
 }
 
-export function StudentNotesClient({ subjects, notes, progress, fixedSubjectId, fixedChapterId }: StudentNotesClientProps) {
+export function StudentNotesClient({ subjects, notes, fixedSubjectId, fixedChapterId }: StudentNotesClientProps) {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string>(fixedSubjectId || subjects[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChapterId, setSelectedChapterId] = useState<string>(fixedChapterId || 'all');
@@ -64,18 +57,6 @@ export function StudentNotesClient({ subjects, notes, progress, fixedSubjectId, 
     
     return matchesSubject && matchesChapter && matchesSearch;
   });
-
-  const getProgressForNote = (noteId: string, type: string, maxPages: number) => {
-    if (maxPages <= 0) return 0;
-    const record = progress.find(p => p.noteId === noteId && p.assetType === (type === 'MIXED' ? 'IMAGE' : type));
-    if (!record) return 0;
-    return Math.min(100, Math.round((record.page / maxPages) * 100));
-  };
-
-  const getProgressPageForNote = (noteId: string, type: string) => {
-    const record = progress.find(p => p.noteId === noteId && p.assetType === (type === 'MIXED' ? 'IMAGE' : type));
-    return record ? record.page : 0;
-  };
 
   return (
     <div className="space-y-6">
@@ -169,9 +150,6 @@ export function StudentNotesClient({ subjects, notes, progress, fixedSubjectId, 
       {/* Notes Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {filteredNotes.map((note) => {
-          const completion = getProgressForNote(note.id, note.type, note.pageCount);
-          const currentPage = getProgressPageForNote(note.id, note.type);
-          
           return (
             <Card key={note.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur hover:shadow-lg transition-all flex flex-col justify-between">
               <CardHeader className="pb-3">
@@ -186,21 +164,7 @@ export function StudentNotesClient({ subjects, notes, progress, fixedSubjectId, 
               </CardHeader>
               
               <CardContent className="pt-0 space-y-4">
-                {/* Reading Progress indicator */}
-                <div className="space-y-1.5 border-t border-border/40 pt-3">
-                  <div className="flex justify-between text-[10px] text-muted-foreground">
-                    <span>{completion > 0 ? `Reading: Page ${currentPage}/${note.pageCount}` : 'Not started'}</span>
-                    <span>{completion}%</span>
-                  </div>
-                  <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
-                    <div 
-                      className="h-full bg-primary rounded-full transition-all duration-300"
-                      style={{ width: `${completion}%`, backgroundColor: selectedSubject?.color }}
-                    />
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-1">
+                <div className="flex items-center justify-between pt-3 border-t border-border/40 mt-2">
                   <span className="text-[10px] text-muted-foreground">
                     Updated {new Date(note.lastUpdated).toLocaleDateString()}
                   </span>

@@ -4,16 +4,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 
 async function getDashboardData() {
-  const [notes, homework, tests, attendance, announcements, progress] = await Promise.all([
+  const [notes, homework, tests, attendance, announcements] = await Promise.all([
     prisma.note.count(),
     prisma.homework.count(),
     prisma.test.count(),
     prisma.attendance.count(),
-    prisma.announcement.findMany({ orderBy: { createdAt: 'desc' }, take: 3 }),
-    prisma.readingProgress.count()
+    prisma.announcement.count()
   ]);
 
-  return { notes, homework, tests, attendance, announcements, progress };
+  return { notes, homework, tests, attendance, announcements };
 }
 
 export default async function AdminDashboardPage() {
@@ -30,13 +29,12 @@ export default async function AdminDashboardPage() {
         <Badge>Role: Admin</Badge>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         {[
           ['Total Notes', data.notes],
           ['Homework Created', data.homework],
           ['Tests Created', data.tests],
-          ['Attendance', data.attendance],
-          ['Student Progress', data.progress]
+          ['Recent Announcements', data.announcements]
         ].map(([label, value]) => (
           <Card key={label} className="border-border/60 bg-card/80 backdrop-blur">
             <CardHeader className="pb-2">

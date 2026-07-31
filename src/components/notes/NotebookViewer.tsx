@@ -27,29 +27,7 @@ export function NotebookViewer({ noteId, images = [], initialPage = 1 }: Noteboo
   const totalPages = images.length;
   const currentImage = images[currentPage - 1];
 
-  // Save reading progress on page change
-  useEffect(() => {
-    if (!noteId || currentPage < 1) return;
-    
-    const saveProgress = async () => {
-      try {
-        await fetch('/api/reading-progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            noteId,
-            assetType: 'IMAGE',
-            page: currentPage
-          })
-        });
-      } catch (error) {
-        console.error('Error saving reading progress:', error);
-      }
-    };
-
-    const timer = setTimeout(saveProgress, 1000); // Debounce database saves
-    return () => clearTimeout(timer);
-  }, [noteId, currentPage]);
+  // Save reading progress removed
 
   const handlePrevPage = () => {
     if (currentPage > 1) {

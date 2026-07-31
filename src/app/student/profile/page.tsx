@@ -13,8 +13,7 @@ export default async function StudentProfilePage() {
   }
 
   // Get aggregated stats for this student
-  const [progressCount, attemptsCount, attendanceCount] = await Promise.all([
-    prisma.readingProgress.count({ where: { userId: session.user.id } }),
+  const [attemptsCount, attendanceCount] = await Promise.all([
     prisma.testAttempt.count({ where: { studentId: session.user.id } }),
     prisma.attendance.count({ where: { studentId: session.user.id } })
   ]);
@@ -62,7 +61,6 @@ export default async function StudentProfilePage() {
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 gap-3 border-t border-border/40 pt-6 sm:col-span-2 sm:grid-cols-3">
               {[
-                [GraduationCap, 'Notes Reading', progressCount, 'active books'],
                 [Award, 'Quizzes Taken', attemptsCount, 'submitted attempts'],
                 [CheckCircle, 'Attendance logs', attendanceCount, 'marked classes']
               ].map(([Icon, label, value, desc]) => {

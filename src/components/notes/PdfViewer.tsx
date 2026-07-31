@@ -21,26 +21,7 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
   const handlePageChange = (page: number) => {
-    // page index in @react-pdf-viewer is 0-indexed, database is 1-indexed
-    const pageNum = page + 1;
-    
-    // Save reading progress
-    const saveProgress = async () => {
-      try {
-        await fetch('/api/reading-progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            noteId,
-            assetType: 'PDF',
-            page: pageNum
-          })
-        });
-      } catch (error) {
-        console.error('Error saving PDF reading progress:', error);
-      }
-    };
-    saveProgress();
+    // Progress tracking removed
   };
 
   if (loadError || !url) {

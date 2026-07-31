@@ -10,7 +10,6 @@ export const NAVIGATION = {
     { label: 'Subjects', href: '/admin/subjects' },
     { label: 'Attendance', href: '/admin/attendance' },
     { label: 'Announcements', href: '/admin/announcements' },
-    { label: 'Student Progress', href: '/admin/progress' },
     { label: 'Profile', href: '/admin/profile' },
     { label: 'Settings', href: '/admin/settings' }
   ],
