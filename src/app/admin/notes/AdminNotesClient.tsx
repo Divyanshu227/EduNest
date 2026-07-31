@@ -16,6 +16,12 @@ interface Chapter {
   name: string;
 }
 
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface Subject {
   id: string;
   name: string;
@@ -48,15 +54,17 @@ interface Note {
   youtubeUrl: string | null;
   subject: { name: string; color: string };
   chapter: { name: string };
+  assignedStudentIds: string[];
   lastUpdated: string | Date;
 }
 
 interface AdminNotesClientProps {
   initialNotes: any[];
   subjects: any[];
+  students: Student[];
 }
 
-export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientProps) {
+export function AdminNotesClient({ initialNotes, subjects, students }: AdminNotesClientProps) {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
@@ -73,6 +81,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
   const [uploadedImages, setUploadedImages] = useState<NoteImage[]>([]);
   const [uploadedPdfs, setUploadedPdfs] = useState<NotePdf[]>([]);
   const [pageCountInput, setPageCountInput] = useState<string>('');
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
@@ -98,6 +107,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
     setUploadedImages([]);
     setUploadedPdfs([]);
     setPageCountInput('');
+    setSelectedStudentIds(students.map(s => s.id));
     setIsFormOpen(true);
   };
 
@@ -117,6 +127,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
     setUploadedImages(noteImages);
     setUploadedPdfs(notePdfs);
     setPageCountInput(note.pageCount?.toString() || '');
+    setSelectedStudentIds(note.assignedStudentIds || []);
     setIsFormOpen(true);
   };
 
@@ -124,6 +135,10 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
     e.preventDefault();
     if (!title || !selectedSubjectId || !selectedChapterId) {
       alert('Please fill in all required fields.');
+      return;
+    }
+    if (selectedStudentIds.length === 0) {
+      alert('Please select at least one student.');
       return;
     }
 
@@ -137,7 +152,8 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
       youtubeUrl,
       images: noteType === 'PDF' ? [] : uploadedImages,
       pdfs: noteType === 'IMAGE' ? [] : uploadedPdfs,
-      pageCount: noteType === 'PDF' ? (parseInt(pageCountInput) || uploadedPdfs.length) : uploadedImages.length
+      pageCount: noteType === 'PDF' ? (parseInt(pageCountInput) || uploadedPdfs.length) : uploadedImages.length,
+      assignedStudentIds: selectedStudentIds
     };
 
     try {
@@ -235,7 +251,7 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
             <CardContent className="pt-0 space-y-4">
               <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-3">
                 <span>{note.chapter.name}</span>
-                <span>Pages: {note.pageCount || 0}</span>
+                <span>Pages: {note.pageCount || 0} | Assigned: {note.assignedStudentIds?.length || students.length}</span>
               </div>
               
               <div className="flex items-center gap-2 border-t border-border/40 pt-3">
@@ -374,6 +390,43 @@ export function AdminNotesClient({ initialNotes, subjects }: AdminNotesClientPro
                       placeholder="https://youtube.com/watch?v=..."
                     />
                   </div>
+                </div>
+
+                {/* Student Selection */}
+                <div className="space-y-1.5 border-t border-border/40 pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Assign to Students *</Label>
+                    <div className="space-x-2 text-xs">
+                      <button type="button" onClick={() => setSelectedStudentIds(students.map(s => s.id))} className="text-primary hover:underline">Select All</button>
+                      <span className="text-muted-foreground">|</span>
+                      <button type="button" onClick={() => setSelectedStudentIds([])} className="text-primary hover:underline">Deselect All</button>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 border border-border/60 rounded-xl p-3 max-h-40 overflow-y-auto bg-background/50">
+                    {students.map(student => (
+                      <label key={student.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1.5 rounded-md">
+                        <input
+                          type="checkbox"
+                          className="rounded border-border/60 text-primary focus:ring-primary h-4 w-4"
+                          checked={selectedStudentIds.includes(student.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStudentIds(prev => [...prev, student.id]);
+                            } else {
+                              setSelectedStudentIds(prev => prev.filter(id => id !== student.id));
+                            }
+                          }}
+                        />
+                        <span className="truncate" title={student.name}>{student.name}</span>
+                      </label>
+                    ))}
+                    {students.length === 0 && (
+                      <p className="text-xs text-muted-foreground col-span-full py-2">No students found.</p>
+                    )}
+                  </div>
+                  {selectedStudentIds.length === 0 && (
+                    <p className="text-xs text-destructive mt-1">Please select at least one student.</p>
+                  )}
                 </div>
 
                 {/* Upload Section depending on NoteType */}

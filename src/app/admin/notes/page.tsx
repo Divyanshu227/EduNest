@@ -32,10 +32,17 @@ export default async function AdminNotesPage() {
     }
   });
 
+  const students = await prisma.user.findMany({
+    where: { role: 'STUDENT' },
+    select: { id: true, name: true, email: true },
+    orderBy: { name: 'asc' }
+  });
+
   return (
     <AdminNotesClient 
       initialNotes={notes} 
       subjects={subjects} 
+      students={students}
     />
   );
 }

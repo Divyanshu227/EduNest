@@ -50,6 +50,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         pdfs: body.pdfs !== undefined ? body.pdfs : undefined,
         pageCount: body.pageCount !== undefined ? body.pageCount : undefined,
         type: body.type,
+        assignedStudentIds: body.assignedStudentIds !== undefined ? body.assignedStudentIds : undefined,
         lastUpdated: new Date()
       }
     });

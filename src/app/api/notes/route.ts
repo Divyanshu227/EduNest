@@ -1,9 +1,15 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { requireRole, jsonError } from '@/lib/api';
+import { requireRole, requireUser, jsonError } from '@/lib/api';
 import { noteMetadataSchema } from '@/lib/validators';
 
 export async function GET(request: Request) {
+  const session = await requireUser();
+
+  if ('error' in session) {
+    return session.error;
+  }
+
   const url = new URL(request.url);
   const subjectId = url.searchParams.get('subjectId');
   const chapterId = url.searchParams.get('chapterId');
@@ -13,7 +19,13 @@ export async function GET(request: Request) {
     where: {
       ...(subjectId ? { subjectId } : {}),
       ...(chapterId ? { chapterId } : {}),
-      ...(q ? { title: { contains: q, mode: 'insensitive' } } : {})
+      ...(q ? { title: { contains: q, mode: 'insensitive' } } : {}),
+      ...(session.session.user.role === 'STUDENT' ? {
+        OR: [
+          { assignedStudentIds: { isEmpty: true } },
+          { assignedStudentIds: { has: session.session.user.id } }
+        ]
+      } : {})
     },
     orderBy: { lastUpdated: 'desc' },
     include: { subject: true, chapter: true }
@@ -46,6 +58,7 @@ export async function POST(request: Request) {
       images: parsed.data.images,
       pdfs: parsed.data.pdfs,
       pageCount: parsed.data.pageCount,
+      assignedStudentIds: parsed.data.assignedStudentIds,
       lastUpdated: new Date()
     }
   });

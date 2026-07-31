@@ -67,7 +67,8 @@ export const noteMetadataSchema = z.object({
   noteType: z.enum(['IMAGE', 'PDF', 'MIXED']),
   images: z.array(z.any()).optional().default([]),
   pdfs: z.array(z.any()).optional().default([]),
-  pageCount: z.coerce.number().int().optional().default(0)
+  pageCount: z.coerce.number().int().optional().default(0),
+  assignedStudentIds: z.array(z.string()).min(1, 'Select at least one student')
 });
 
 export const homeworkSubmissionSchema = z.object({

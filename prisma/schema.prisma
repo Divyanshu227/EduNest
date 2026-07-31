@@ -124,6 +124,7 @@ model Note {
   pdfs         Json?
   youtubeUrl   String?
   pageCount    Int               @default(0)
+  assignedStudentIds String[]    @db.ObjectId @default([])
   lastUpdated  DateTime          @default(now())
   createdAt    DateTime          @default(now())
   updatedAt    DateTime          @updatedAt
