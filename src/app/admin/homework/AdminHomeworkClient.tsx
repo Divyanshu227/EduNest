@@ -68,6 +68,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
   const [gradingFeedback, setGradingFeedback] = useState<Record<string, string>>({});
   const [gradingScore, setGradingScore] = useState<Record<string, string>>({});
   const [gradingSubmitting, setGradingSubmitting] = useState<Record<string, boolean>>({});
+  const [editingGrades, setEditingGrades] = useState<Record<string, boolean>>({});
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
@@ -240,6 +241,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
       }
 
       alert('Homework graded successfully!');
+      setEditingGrades(prev => ({ ...prev, [submissionId]: false }));
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -381,8 +383,8 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
                         <h4 className="font-semibold text-sm">{sub.student.name}</h4>
                         <p className="text-[10px] text-muted-foreground">{sub.student.email}</p>
                       </div>
-                      <Badge variant={sub.status === 'LATE' ? 'destructive' : 'secondary'} className="text-[9px]">
-                        {sub.status === 'LATE' ? 'Submitted Late' : 'Submitted'}
+                      <Badge variant={sub.score !== null ? 'default' : sub.status === 'LATE' ? 'destructive' : 'secondary'} className="text-[9px]">
+                        {sub.score !== null ? 'Graded' : sub.status === 'LATE' ? 'Submitted Late' : 'Submitted'}
                       </Badge>
                     </div>
                   </CardHeader>
@@ -416,38 +418,77 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
 
                     {/* Grading Form */}
                     <div className="space-y-3 pt-3 border-t border-border/40">
-                      <div className="flex gap-4 items-center">
-                        <div className="space-y-1 w-24">
-                          <Label htmlFor={`score-${sub.id}`} className="text-xs">Score</Label>
-                          <Input
-                            id={`score-${sub.id}`}
-                            type="number"
-                            step="0.5"
-                            placeholder="Score"
-                            value={gradingScore[sub.id] || ''}
-                            onChange={(e) => setGradingScore(prev => ({ ...prev, [sub.id]: e.target.value }))}
-                          />
+                      {sub.score !== null && !editingGrades[sub.id] ? (
+                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                              <CheckCircle2 className="h-4 w-4" /> Graded & Reviewed
+                            </div>
+                            <Button variant="ghost" size="sm" onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: true}))} className="h-7 text-xs">
+                              <Edit2 className="h-3 w-3 mr-1" /> Edit
+                            </Button>
+                          </div>
+                          <div className="flex gap-4">
+                            <div>
+                              <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
+                              <span className="text-xl font-black text-primary">{sub.score}</span>
+                            </div>
+                            {sub.feedback && (
+                              <div>
+                                <span className="text-[10px] text-muted-foreground uppercase font-bold block">Feedback</span>
+                                <span className="text-sm text-foreground">{sub.feedback}</span>
+                              </div>
+                            )}
+                          </div>
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <Label htmlFor={`feedback-${sub.id}`} className="text-xs">Feedback / Comments</Label>
-                          <Input
-                            id={`feedback-${sub.id}`}
-                            placeholder="Great job! Keep it up."
-                            value={gradingFeedback[sub.id] || ''}
-                            onChange={(e) => setGradingFeedback(prev => ({ ...prev, [sub.id]: e.target.value }))}
-                          />
-                        </div>
-                      </div>
+                      ) : (
+                        <>
+                          <div className="flex gap-4 items-center">
+                            <div className="space-y-1 w-24">
+                              <Label htmlFor={`score-${sub.id}`} className="text-xs">Score</Label>
+                              <Input
+                                id={`score-${sub.id}`}
+                                type="number"
+                                step="0.5"
+                                placeholder="Score"
+                                value={gradingScore[sub.id] || ''}
+                                onChange={(e) => setGradingScore(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                              />
+                            </div>
+                            <div className="flex-1 space-y-1">
+                              <Label htmlFor={`feedback-${sub.id}`} className="text-xs">Feedback / Comments</Label>
+                              <Input
+                                id={`feedback-${sub.id}`}
+                                placeholder="Great job! Keep it up."
+                                value={gradingFeedback[sub.id] || ''}
+                                onChange={(e) => setGradingFeedback(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                              />
+                            </div>
+                          </div>
 
-                      <Button
-                        size="sm"
-                        onClick={() => handleGradeSubmit(sub.id)}
-                        disabled={gradingSubmitting[sub.id]}
-                        className="w-full rounded-xl flex items-center justify-center gap-1 text-xs"
-                      >
-                        <CheckCircle2 className="h-3.5 w-3.5" /> 
-                        {gradingSubmitting[sub.id] ? 'Saving...' : 'Submit Grade & Review'}
-                      </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              size="sm"
+                              onClick={() => handleGradeSubmit(sub.id)}
+                              disabled={gradingSubmitting[sub.id]}
+                              className="flex-1 rounded-xl flex items-center justify-center gap-1 text-xs"
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5" /> 
+                              {gradingSubmitting[sub.id] ? 'Saving...' : (sub.score !== null ? 'Update Grade' : 'Submit Grade & Review')}
+                            </Button>
+                            {sub.score !== null && (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: false}))}
+                                className="rounded-xl text-xs"
+                              >
+                                Cancel
+                              </Button>
+                            )}
+                          </div>
+                        </>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
