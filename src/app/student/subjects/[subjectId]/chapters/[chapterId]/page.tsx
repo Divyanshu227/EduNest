@@ -27,11 +27,14 @@ export default async function StudentChapterDashboardPage({ params }: { params: 
   }
 
   // Fetch only content assigned to this student or published
-  const [notes, homeworks, tests, progress] = await Promise.all([
+  const [notes, homeworks, tests] = await Promise.all([
     prisma.note.findMany({
       where: { 
         chapterId,
-        assignedStudentIds: { has: session.user.id }
+        OR: [
+          { assignedStudentIds: { has: session.user.id } },
+          { assignedStudentIds: { isEmpty: true } }
+        ]
       },
       include: {
         subject: { select: { name: true, color: true } },
@@ -42,7 +45,10 @@ export default async function StudentChapterDashboardPage({ params }: { params: 
     prisma.homework.findMany({
       where: { 
         chapterId,
-        assignedStudentIds: { has: session.user.id }
+        OR: [
+          { assignedStudentIds: { has: session.user.id } },
+          { assignedStudentIds: { isEmpty: true } }
+        ]
       },
       include: {
         subject: { select: { name: true, color: true } },
@@ -67,9 +73,6 @@ export default async function StudentChapterDashboardPage({ params }: { params: 
         }
       },
       orderBy: { createdAt: 'desc' }
-    }),
-    prisma.readingProgress.findMany({
-      where: { userId: session.user.id }
     })
   ]);
 
@@ -80,7 +83,6 @@ export default async function StudentChapterDashboardPage({ params }: { params: 
       notes={notes}
       homeworks={homeworks}
       tests={tests}
-      progress={progress}
     />
   );
 }

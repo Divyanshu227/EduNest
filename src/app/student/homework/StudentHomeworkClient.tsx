@@ -30,7 +30,7 @@ interface StudentHomeworkClientProps {
 export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectId, fixedChapterId }: StudentHomeworkClientProps) {
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialList);
   const [selectedHwId, setSelectedHwId] = useState<string>(homeworkList[0]?.id || '');
-  const [filter, setFilter] = useState<'pending' | 'completed'>('pending');
+  const [filter, setFilter] = useState<'todo' | 'overdue' | 'in_review' | 'completed'>('todo');
 
   // Submission Form State
   const [textAnswer, setTextAnswer] = useState('');
@@ -40,11 +40,30 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
   const selectedHw = homeworkList.find(h => h.id === selectedHwId);
   const userSubmission = selectedHw?.submissions[0] || null;
 
-  // Split homework by status
-  const pendingHomework = homeworkList.filter(h => h.submissions.length === 0);
-  const completedHomework = homeworkList.filter(h => h.submissions.length > 0);
+  // Split homework by status and date
+  const now = new Date();
+  
+  const todoHomework = homeworkList
+    .filter(h => h.submissions.length === 0 && new Date(h.dueDate) >= now)
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
 
-  const activeList = filter === 'pending' ? pendingHomework : completedHomework;
+  const overdueHomework = homeworkList
+    .filter(h => h.submissions.length === 0 && new Date(h.dueDate) < now)
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
+  const inReviewHomework = homeworkList
+    .filter(h => h.submissions.length > 0 && h.submissions[0].score === null)
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
+  const completedHomework = homeworkList
+    .filter(h => h.submissions.length > 0 && h.submissions[0].score !== null)
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime());
+
+  const activeList = 
+    filter === 'todo' ? todoHomework : 
+    filter === 'overdue' ? overdueHomework : 
+    filter === 'in_review' ? inReviewHomework :
+    completedHomework;
 
   const handleSelectHomework = (hw: Homework) => {
     setSelectedHwId(hw.id);
@@ -100,31 +119,55 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
       <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
         <button
           onClick={() => {
-            setFilter('pending');
-            const pFirst = pendingHomework[0];
-            if (pFirst) handleSelectHomework(pFirst);
+            setFilter('todo');
+            if (todoHomework[0]) handleSelectHomework(todoHomework[0]);
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
-            filter === 'pending'
+            filter === 'todo'
               ? 'border-primary bg-primary text-primary-foreground shadow-sm'
               : 'border-border/60 bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
         >
-          To-Do Assignments ({pendingHomework.length})
+          To-Do ({todoHomework.length})
+        </button>
+        <button
+          onClick={() => {
+            setFilter('overdue');
+            if (overdueHomework[0]) handleSelectHomework(overdueHomework[0]);
+          }}
+          className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
+            filter === 'overdue'
+              ? 'border-destructive bg-destructive text-destructive-foreground shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
+          }`}
+        >
+          Overdue ({overdueHomework.length})
+        </button>
+        <button
+          onClick={() => {
+            setFilter('in_review');
+            if (inReviewHomework[0]) handleSelectHomework(inReviewHomework[0]);
+          }}
+          className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
+            filter === 'in_review'
+              ? 'border-amber-500 bg-amber-500 text-white shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-amber-500/10 hover:text-amber-500'
+          }`}
+        >
+          In Review ({inReviewHomework.length})
         </button>
         <button
           onClick={() => {
             setFilter('completed');
-            const cFirst = completedHomework[0];
-            if (cFirst) handleSelectHomework(cFirst);
+            if (completedHomework[0]) handleSelectHomework(completedHomework[0]);
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'completed'
-              ? 'border-primary bg-primary text-primary-foreground shadow-sm'
-              : 'border-border/60 bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
+              ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-emerald-500/10 hover:text-emerald-500'
           }`}
         >
-          Completed Assignments ({completedHomework.length})
+          Completed ({completedHomework.length})
         </button>
       </div>
 
@@ -224,21 +267,58 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                 )}
 
                 {/* Submission status or editor */}
-                {userSubmission?.score !== null && userSubmission?.score !== undefined ? (
-                  // Graded view
-                  <div className="rounded-3xl border border-emerald-500/20 bg-emerald-500/5 p-5 space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-lg">
-                      <CheckCircle2 className="h-5 w-5" /> Graded & Reviewed
+                {userSubmission ? (
+                  // Submitted view
+                  <div className={`rounded-3xl border p-5 space-y-4 ${
+                    userSubmission.score !== null 
+                      ? 'border-emerald-500/20 bg-emerald-500/5' 
+                      : 'border-amber-500/20 bg-amber-500/5'
+                  }`}>
+                    <div className={`flex items-center gap-2 font-bold text-lg ${
+                      userSubmission.score !== null ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                    }`}>
+                      {userSubmission.score !== null ? (
+                        <><CheckCircle2 className="h-5 w-5" /> Graded & Approved</>
+                      ) : (
+                        <><AlertCircle className="h-5 w-5" /> Pending Teacher Review</>
+                      )}
                     </div>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      <div className="bg-background/80 rounded-2xl p-4 border border-border/40">
-                        <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
-                        <span className="text-3xl font-black text-primary">{userSubmission.score}</span>
-                      </div>
-                      {userSubmission.feedback && (
+                    
+                    {userSubmission.score !== null && (
+                      <div className="grid gap-2 sm:grid-cols-2">
                         <div className="bg-background/80 rounded-2xl p-4 border border-border/40">
-                          <span className="text-[10px] text-muted-foreground uppercase font-bold block">Teacher Feedback</span>
-                          <span className="text-sm text-foreground mt-1 block">{userSubmission.feedback}</span>
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
+                          <span className="text-3xl font-black text-primary">{userSubmission.score}</span>
+                        </div>
+                        {userSubmission.feedback && (
+                          <div className="bg-background/80 rounded-2xl p-4 border border-border/40">
+                            <span className="text-[10px] text-muted-foreground uppercase font-bold block">Teacher Feedback</span>
+                            <span className="text-sm text-foreground mt-1 block">{userSubmission.feedback}</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="bg-background/80 rounded-2xl p-4 border border-border/40 mt-4">
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Your Submission Details</span>
+                      <p className="text-sm text-foreground whitespace-pre-wrap">{userSubmission.textAnswer || 'No written response.'}</p>
+                      
+                      {Array.isArray(userSubmission.attachments) && userSubmission.attachments.length > 0 && (
+                        <div className="mt-4">
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Attached Files</span>
+                          <div className="flex flex-wrap gap-2">
+                            {userSubmission.attachments.map((att: any, idx: number) => (
+                              <a 
+                                key={idx}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
+                              >
+                                <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />
+                              </a>
+                            ))}
+                          </div>
                         </div>
                       )}
                     </div>

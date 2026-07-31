@@ -27,11 +27,21 @@ export default async function StudentSubjectChaptersPage({ params }: { params: P
     where: { subjectId: subject.id },
     include: {
       notes: { 
-        where: { assignedStudentIds: { has: session.user.id } },
+        where: { 
+          OR: [
+            { assignedStudentIds: { has: session.user.id } },
+            { assignedStudentIds: { isEmpty: true } }
+          ]
+        },
         select: { id: true } 
       },
       homework: { 
-        where: { assignedStudentIds: { has: session.user.id } },
+        where: { 
+          OR: [
+            { assignedStudentIds: { has: session.user.id } },
+            { assignedStudentIds: { isEmpty: true } }
+          ]
+        },
         select: { id: true } 
       },
       tests: { 

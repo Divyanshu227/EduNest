@@ -3,22 +3,25 @@ import { auth } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-async function getStudentDashboardData() {
-  const [notes, homework, attendance, announcements, recentNotes, readingProgress] = await Promise.all([
-    prisma.note.count(),
-    prisma.homework.count(),
-    prisma.attendance.count(),
+async function getStudentDashboardData(userId: string) {
+  const [notes, homework, attendance, announcements, recentNotes] = await Promise.all([
+    prisma.note.count({ where: { OR: [{ assignedStudentIds: { has: userId } }, { assignedStudentIds: { isEmpty: true } }] } }),
+    prisma.homework.count({ where: { OR: [{ assignedStudentIds: { has: userId } }, { assignedStudentIds: { isEmpty: true } }] } }),
+    prisma.attendance.count({ where: { studentId: userId } }),
     prisma.announcement.findMany({ orderBy: { createdAt: 'desc' }, take: 3 }),
-    prisma.note.findMany({ orderBy: { lastUpdated: 'desc' }, take: 4, include: { subject: true, chapter: true } }),
-    prisma.readingProgress.findMany({ orderBy: { updatedAt: 'desc' }, take: 5 })
+    prisma.note.findMany({ 
+      where: { OR: [{ assignedStudentIds: { has: userId } }, { assignedStudentIds: { isEmpty: true } }] },
+      orderBy: { lastUpdated: 'desc' }, take: 4, include: { subject: true, chapter: true } 
+    })
   ]);
 
-  return { notes, homework, attendance, announcements, recentNotes, readingProgress };
+  return { notes, homework, attendance, announcements, recentNotes };
 }
 
 export default async function StudentDashboardPage() {
   const session = await auth();
-  const data = await getStudentDashboardData();
+  if (!session?.user) return <div className="p-6">Unauthorized</div>;
+  const data = await getStudentDashboardData(session.user.id);
 
   return (
     <div className="space-y-6">
@@ -32,7 +35,6 @@ export default async function StudentDashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
         {[
-          ['Continue Reading', data.readingProgress.length || 0],
           ['Homework Due', data.homework],
           ['Attendance Percentage', `${Math.round((data.attendance / Math.max(data.attendance || 1, 1)) * 100)}%`],
           ['Latest Announcement', data.announcements.length],

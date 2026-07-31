@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Youtube, Image as ImageIcon, FileText, CheckCircle2, ChevronRight, X } from 'lucide-react';
+import { Plus, Edit2, Trash2, Youtube, Image as ImageIcon, FileText, CheckCircle2, ChevronRight, X, Calendar } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -247,9 +247,15 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
         </div>
       )}
 
-      {/* Grid of Notes */}
+      {/* Header and Grid of Notes */}
+      <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-6">
+        <h3 className="font-semibold text-lg">Study Notes</h3>
+      </div>
+
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {notes.map((note) => (
+        {notes
+          .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
+          .map((note) => (
           <Card key={note.id} className="relative overflow-hidden border-border/60 bg-card/80 backdrop-blur group flex flex-col justify-between">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2 mb-2">
@@ -263,14 +269,27 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                 </Badge>
               </div>
               <CardTitle className="line-clamp-1">{note.title}</CardTitle>
-              <CardDescription className="line-clamp-2 mt-1 min-h-[40px]">{note.description || 'No description provided.'}</CardDescription>
+              <CardDescription className="line-clamp-2 mt-1 min-h-[40px] text-foreground/80">{note.description || 'No description provided.'}</CardDescription>
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
-              <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border/40 pt-3">
+              <div className="flex items-center gap-1.5 text-xs text-foreground/80 font-medium">
+                <Calendar className="h-3.5 w-3.5" />
+                {new Date(note.lastUpdated).toLocaleDateString()}
+              </div>
+              
+              <div className="flex items-center justify-between text-xs text-foreground/80 border-t border-border/40 pt-3">
                 {!fixedChapterId && <span>{note.chapter.name}</span>}
                 {fixedChapterId && <span>Pages: {note.pageCount || 0}</span>}
-                {!fixedChapterId && <span>Pages: {note.pageCount || 0} | Assigned: {note.assignedStudentIds?.length || students.length}</span>}
-                {fixedChapterId && <span>Assigned: {note.assignedStudentIds?.length || students.length}</span>}
+                {!fixedChapterId && <span>Pages: {note.pageCount || 0}</span>}
+              </div>
+              
+              <div className="text-xs text-foreground/80 border-t border-border/40 pt-3">
+                <span className="font-semibold block mb-1 text-foreground/90">Assigned to:</span>
+                <span className="line-clamp-2 text-foreground">
+                  {!note.assignedStudentIds?.length || note.assignedStudentIds?.length === students.length 
+                    ? 'All Students' 
+                    : note.assignedStudentIds?.map(id => students.find(s => s.id === id)?.name).filter(Boolean).join(', ') || 'No students assigned'}
+                </span>
               </div>
               
               <div className="flex items-center gap-2 border-t border-border/40 pt-3">

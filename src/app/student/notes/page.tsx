@@ -18,6 +18,12 @@ export default async function StudentNotesPage() {
   });
 
   const notes = await prisma.note.findMany({
+    where: {
+      OR: [
+        { assignedStudentIds: { has: session.user.id } },
+        { assignedStudentIds: { isEmpty: true } }
+      ]
+    },
     include: {
       subject: true,
       chapter: true
@@ -27,15 +33,10 @@ export default async function StudentNotesPage() {
     }
   });
 
-  const readingProgress = await prisma.readingProgress.findMany({
-    where: { userId: session.user.id }
-  });
-
   return (
     <StudentNotesClient 
       subjects={subjects} 
       notes={notes} 
-      progress={readingProgress} 
     />
   );
 }

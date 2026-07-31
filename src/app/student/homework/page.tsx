@@ -11,6 +11,12 @@ export default async function StudentHomeworkPage() {
 
   // Get homework list along with student's own submission for each
   const homeworkList = await prisma.homework.findMany({
+    where: {
+      OR: [
+        { assignedStudentIds: { has: session.user.id } },
+        { assignedStudentIds: { isEmpty: true } }
+      ]
+    },
     include: {
       subject: true,
       chapter: true,

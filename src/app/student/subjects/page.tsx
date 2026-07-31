@@ -13,9 +13,28 @@ export default async function StudentSubjectsPage() {
   const subjects = await prisma.subject.findMany({
     include: {
       chapters: { select: { id: true } },
-      notes: { select: { id: true } },
-      homework: { select: { id: true } },
-      tests: { select: { id: true } }
+      notes: { 
+        where: {
+          OR: [
+            { assignedStudentIds: { has: session.user.id } },
+            { assignedStudentIds: { isEmpty: true } }
+          ]
+        },
+        select: { id: true } 
+      },
+      homework: { 
+        where: {
+          OR: [
+            { assignedStudentIds: { has: session.user.id } },
+            { assignedStudentIds: { isEmpty: true } }
+          ]
+        },
+        select: { id: true } 
+      },
+      tests: { 
+        where: { isPublished: true },
+        select: { id: true } 
+      }
     },
     orderBy: { sortOrder: 'asc' }
   });

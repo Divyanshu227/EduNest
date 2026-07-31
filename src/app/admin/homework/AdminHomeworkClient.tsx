@@ -57,6 +57,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
   const [selectedHomeworkForGrading, setSelectedHomeworkForGrading] = useState<Homework | null>(null);
+  const [filter, setFilter] = useState<'active' | 'past' | 'all'>('active');
 
   // Form states
   const [title, setTitle] = useState('');
@@ -289,10 +290,52 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Homework List Panel */}
         <div className="lg:col-span-2 space-y-4">
-          <h3 className="font-semibold text-lg">Homework Assignments</h3>
+          <div className="flex items-center justify-between border-b border-border/40 pb-3">
+            <h3 className="font-semibold text-lg">Homework Assignments</h3>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setFilter('active')}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                  filter === 'active'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                Active
+              </button>
+              <button
+                onClick={() => setFilter('past')}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                  filter === 'past'
+                    ? 'bg-destructive text-destructive-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                Past Due
+              </button>
+              <button
+                onClick={() => setFilter('all')}
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                  filter === 'all'
+                    ? 'bg-primary text-primary-foreground shadow-sm'
+                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                }`}
+              >
+                All
+              </button>
+            </div>
+          </div>
           
           <div className="space-y-4">
-            {homeworkList.map((hw) => {
+            {homeworkList
+              .filter(hw => {
+                if (filter === 'all') return true;
+                const isPastDue = new Date() > new Date(hw.dueDate);
+                if (filter === 'active') return !isPastDue;
+                if (filter === 'past') return isPastDue;
+                return true;
+              })
+              .map((hw) => {
               const isPastDue = new Date() > new Date(hw.dueDate);
               const submissionCount = hw.submissions.length;
               
@@ -320,7 +363,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     <CardTitle className="text-xl">{hw.title}</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    <p className="text-sm text-muted-foreground line-clamp-2">{hw.instructions}</p>
+                    <p className="text-sm text-foreground/80 line-clamp-2">{hw.instructions}</p>
                     
                     {/* Attachments preview */}
                     {Array.isArray(hw.attachments) && hw.attachments.length > 0 && (
@@ -339,9 +382,18 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                       </div>
                     )}
 
+                    <div className="border-t border-border/40 pt-3 mb-3">
+                      <span className="text-[10px] font-semibold text-foreground/90 uppercase block mb-1">Assigned To:</span>
+                      <p className="text-xs text-foreground line-clamp-2">
+                        {!hw.assignedStudentIds?.length || hw.assignedStudentIds?.length === students.length 
+                          ? 'All Students' 
+                          : hw.assignedStudentIds?.map(id => students.find(s => s.id === id)?.name).filter(Boolean).join(', ') || 'No students assigned'}
+                      </p>
+                    </div>
+
                     <div className="flex items-center justify-between border-t border-border/40 pt-3">
-                      <span className="text-xs text-muted-foreground">
-                        {submissionCount} / {hw.assignedStudentIds?.length || students.length} Submissions received
+                      <span className="text-xs text-foreground/80">
+                        {submissionCount} / {hw.assignedStudentIds?.length || students.length} Submissions
                       </span>
 
                       <div className="flex items-center gap-2">
@@ -377,7 +429,11 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
               );
             })}
 
-            {!homeworkList.length && (
+            {!homeworkList.filter(hw => {
+                if (filter === 'all') return true;
+                const isPastDue = new Date() > new Date(hw.dueDate);
+                return filter === 'active' ? !isPastDue : isPastDue;
+              }).length && (
               <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6">
                 <p className="text-muted-foreground">No homework tasks created yet. Click "Create Homework" to get started.</p>
               </div>
