@@ -4,15 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 
 async function getDashboardData() {
-  const [notes, homework, tests, attendance, announcements] = await Promise.all([
+  const [notes, homework, tests, attendance, announcementsCount, recentAnnouncements] = await Promise.all([
     prisma.note.count(),
     prisma.homework.count(),
     prisma.test.count(),
     prisma.attendance.count(),
-    prisma.announcement.count()
+    prisma.announcement.count(),
+    prisma.announcement.findMany({ orderBy: { createdAt: 'desc' }, take: 3 })
   ]);
 
-  return { notes, homework, tests, attendance, announcements };
+  return { notes, homework, tests, attendance, announcementsCount, recentAnnouncements };
 }
 
 export default async function AdminDashboardPage() {
@@ -34,7 +35,7 @@ export default async function AdminDashboardPage() {
           ['Total Notes', data.notes],
           ['Homework Created', data.homework],
           ['Tests Created', data.tests],
-          ['Recent Announcements', data.announcements]
+          ['Total Announcements', data.announcementsCount]
         ].map(([label, value]) => (
           <Card key={label} className="border-border/60 bg-card/80 backdrop-blur">
             <CardHeader className="pb-2">
@@ -52,7 +53,7 @@ export default async function AdminDashboardPage() {
             <CardDescription>Keep the student informed with class updates and reminders.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {data.announcements.length ? data.announcements.map((announcement) => (
+            {data.recentAnnouncements.length ? data.recentAnnouncements.map((announcement) => (
               <div key={announcement.id} className="rounded-2xl bg-muted p-4">
                 <div className="flex items-center justify-between gap-3">
                   <p className="font-semibold">{announcement.title}</p>
