@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Worker, Viewer } from '@react-pdf-viewer/core';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
-import { ExternalLink, FileText } from 'lucide-react';
+import { ExternalLink, FileText, Download, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 // Import react-pdf-viewer styles
@@ -18,7 +18,37 @@ interface PdfViewerProps {
 
 export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
   const [loadError, setLoadError] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
+
+  const handleDownload = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!url) return;
+    
+    try {
+      setIsDownloading(true);
+      // Fetch the raw file from Cloudinary (or any URL)
+      const response = await fetch(url);
+      const blob = await response.blob();
+      
+      // Create a local object URL to force the browser to download it with a .pdf extension
+      const objectUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = `EduNest_Notes_${noteId}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
+    } catch (error) {
+      console.error('Download failed:', error);
+      // Fallback if CORS prevents fetch
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const handlePageChange = (page: number) => {
     // Progress tracking removed
@@ -36,10 +66,11 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
             This might be due to security sandbox restrictions or resource accessibility. You can view it directly in your browser.
           </p>
         </div>
-        <Button asChild>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2">
-            Open PDF in New Tab <ExternalLink className="h-4 w-4" />
-          </a>
+        <Button onClick={handleDownload} disabled={isDownloading}>
+          <span className="flex items-center gap-2">
+            {isDownloading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Download PDF'} 
+            {!isDownloading && <Download className="h-4 w-4" />}
+          </span>
         </Button>
       </div>
     );
@@ -52,10 +83,11 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
     <div className="h-[600px] sm:h-[800px] overflow-hidden rounded-3xl border border-border/60 bg-card shadow-lg flex flex-col">
       <div className="flex items-center justify-between border-b border-border/60 bg-muted/40 px-6 py-3">
         <span className="text-sm font-medium">EduNest PDF Reader</span>
-        <Button variant="outline" size="sm" asChild>
-          <a href={url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs">
-            Open Direct <ExternalLink className="h-3.5 w-3.5" />
-          </a>
+        <Button variant="outline" size="sm" onClick={handleDownload} disabled={isDownloading}>
+          <span className="flex items-center gap-1.5 text-xs">
+            {isDownloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : 'Download PDF'} 
+            {!isDownloading && <Download className="h-3.5 w-3.5" />}
+          </span>
         </Button>
       </div>
       <div className="flex-1 overflow-hidden relative">
