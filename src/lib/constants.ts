@@ -8,6 +8,8 @@ export const NAVIGATION = {
     { label: 'Classes', href: '/admin/classes' },
     { label: 'Users', href: '/admin/users' },
     { label: 'Subjects', href: '/admin/subjects' },
+    { label: 'Notes', href: '/admin/notes' },
+    { label: 'Homework', href: '/admin/homework' },
     { label: 'Attendance', href: '/admin/attendance' },
     { label: 'Announcements', href: '/admin/announcements' },
     { label: 'Profile', href: '/admin/profile' },
@@ -17,6 +19,8 @@ export const NAVIGATION = {
     { label: 'Dashboard', href: '/student' },
     { label: 'Classes', href: '/student/classes' },
     { label: 'Subjects', href: '/student/subjects' },
+    { label: 'Notes', href: '/student/notes' },
+    { label: 'Homework', href: '/student/homework' },
     { label: 'Attendance', href: '/student/attendance' },
     { label: 'Announcements', href: '/student/announcements' },
     { label: 'Profile', href: '/student/profile' }

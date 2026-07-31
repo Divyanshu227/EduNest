@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BookOpen, GraduationCap, LayoutDashboard, MoonStar, Settings2, Users2, Sparkles, Video, Menu, X } from 'lucide-react';
+import { BookOpen, GraduationCap, LayoutDashboard, MoonStar, Settings2, Users2, Sparkles, Video, Menu, X, FileText, ClipboardList } from 'lucide-react';
 import type { UserRole } from '@prisma/client';
 import type { ReactNode } from 'react';
 import { NAVIGATION } from '@/lib/constants';
@@ -19,8 +19,8 @@ const roleIcons: Record<string, ReactNode> = {
   Users: <Users2 className="h-4 w-4" />,
   Subjects: <BookOpen className="h-4 w-4" />,
   Chapters: <Sparkles className="h-4 w-4" />,
-  Notes: <GraduationCap className="h-4 w-4" />,
-  Homework: <Users2 className="h-4 w-4" />,
+  Notes: <FileText className="h-4 w-4" />,
+  Homework: <ClipboardList className="h-4 w-4" />,
   Tests: <Settings2 className="h-4 w-4" />,
   Attendance: <MoonStar className="h-4 w-4" />
 };
