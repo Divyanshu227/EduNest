@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Plus, BookOpen, Layers, X, FolderHeart, Palette, Hash, Trash2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -137,7 +138,8 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
       {/* Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {subjects.map((sub) => (
-          <Card key={sub.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between">
+          <Link key={sub.id} href={`/admin/subjects/${sub.id}`}>
+            <Card className="relative h-full overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between hover:border-primary/50 transition-colors">
             {/* Color Accent bar */}
             <div className="h-2 w-full" style={{ backgroundColor: sub.color }} />
             
@@ -146,7 +148,7 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
                 <Badge variant="outline" style={{ borderColor: `${sub.color}30`, backgroundColor: `${sub.color}10`, color: sub.color }} className="text-[10px]">
                   Sort order: {sub.sortOrder}
                 </Badge>
-                <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={() => handleDelete(sub.id)}>
+                <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={(e) => { e.preventDefault(); handleDelete(sub.id); }}>
                   <Trash2 className="h-3 w-3 text-destructive" />
                 </Button>
               </div>
@@ -169,6 +171,7 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
               </div>
             </CardContent>
           </Card>
+          </Link>
         ))}
 
         {!subjects.length && (

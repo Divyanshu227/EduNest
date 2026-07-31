@@ -23,9 +23,11 @@ interface Homework {
 
 interface StudentHomeworkClientProps {
   homeworkList: Homework[];
+  fixedSubjectId?: string;
+  fixedChapterId?: string;
 }
 
-export function StudentHomeworkClient({ homeworkList: initialList }: StudentHomeworkClientProps) {
+export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectId, fixedChapterId }: StudentHomeworkClientProps) {
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialList);
   const [selectedHwId, setSelectedHwId] = useState<string>(homeworkList[0]?.id || '');
   const [filter, setFilter] = useState<'pending' | 'completed'>('pending');
@@ -87,10 +89,12 @@ export function StudentHomeworkClient({ homeworkList: initialList }: StudentHome
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Center</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">My Homework</h2>
-      </div>
+      {!fixedSubjectId && (
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Center</p>
+          <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">My Homework</h2>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
@@ -143,9 +147,11 @@ export function StudentHomeworkClient({ homeworkList: initialList }: StudentHome
                 }`}
               >
                 <div className="flex justify-between items-start gap-2 mb-3">
-                  <Badge style={{ backgroundColor: `${hw.subject.color}15`, color: hw.subject.color, borderColor: `${hw.subject.color}30` }} variant="outline">
-                    {hw.subject.name}
-                  </Badge>
+                  {!fixedSubjectId && (
+                    <Badge style={{ backgroundColor: `${hw.subject.color}15`, color: hw.subject.color, borderColor: `${hw.subject.color}30` }} variant="outline">
+                      {hw.subject.name}
+                    </Badge>
+                  )}
                   {sub && (
                     <Badge variant={sub.status === 'LATE' ? 'destructive' : 'secondary'} className="text-[9px]">
                       {sub.status === 'LATE' ? 'Submitted Late' : 'Submitted'}

@@ -44,12 +44,14 @@ interface StudentNotesClientProps {
   subjects: Subject[];
   notes: Note[];
   progress: ReadingProgress[];
+  fixedSubjectId?: string;
+  fixedChapterId?: string;
 }
 
-export function StudentNotesClient({ subjects, notes, progress }: StudentNotesClientProps) {
-  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(subjects[0]?.id || '');
+export function StudentNotesClient({ subjects, notes, progress, fixedSubjectId, fixedChapterId }: StudentNotesClientProps) {
+  const [selectedSubjectId, setSelectedSubjectId] = useState<string>(fixedSubjectId || subjects[0]?.id || '');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedChapterId, setSelectedChapterId] = useState<string>('all');
+  const [selectedChapterId, setSelectedChapterId] = useState<string>(fixedChapterId || 'all');
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   
@@ -78,72 +80,78 @@ export function StudentNotesClient({ subjects, notes, progress }: StudentNotesCl
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Study Materials</h2>
-      </div>
+      {!fixedSubjectId && (
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student console</p>
+          <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Study Materials</h2>
+        </div>
+      )}
 
       {/* Subject selector slider/grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {subjects.map((sub) => {
-          const isActive = sub.id === selectedSubjectId;
-          return (
-            <button
-              key={sub.id}
-              onClick={() => {
-                setSelectedSubjectId(sub.id);
-                setSelectedChapterId('all');
-              }}
-              className={`relative overflow-hidden rounded-3xl border p-5 text-left transition-all ${
-                isActive
-                  ? 'border-primary bg-primary/5 shadow-glow ring-2 ring-primary/20'
-                  : 'border-border/60 bg-card/60 hover:bg-card/80'
-              }`}
-            >
-              <div 
-                className="flex h-10 w-10 items-center justify-center rounded-2xl text-white mb-4"
-                style={{ backgroundColor: sub.color }}
+      {!fixedSubjectId && (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {subjects.map((sub) => {
+            const isActive = sub.id === selectedSubjectId;
+            return (
+              <button
+                key={sub.id}
+                onClick={() => {
+                  setSelectedSubjectId(sub.id);
+                  setSelectedChapterId('all');
+                }}
+                className={`relative overflow-hidden rounded-3xl border p-5 text-left transition-all ${
+                  isActive
+                    ? 'border-primary bg-primary/5 shadow-glow ring-2 ring-primary/20'
+                    : 'border-border/60 bg-card/60 hover:bg-card/80'
+                }`}
               >
-                <BookOpen className="h-5 w-5" />
-              </div>
-              <h3 className="font-semibold text-lg">{sub.name}</h3>
-              <p className="text-xs text-muted-foreground mt-1">
-                {notes.filter(n => n.subjectId === sub.id).length} study notes
-              </p>
-            </button>
-          );
-        })}
-      </div>
+                <div 
+                  className="flex h-10 w-10 items-center justify-center rounded-2xl text-white mb-4"
+                  style={{ backgroundColor: sub.color }}
+                >
+                  <BookOpen className="h-5 w-5" />
+                </div>
+                <h3 className="font-semibold text-lg">{sub.name}</h3>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {notes.filter(n => n.subjectId === sub.id).length} study notes
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Search and Chapter filtering */}
       {selectedSubject && (
-        <div className="flex flex-col md:flex-row gap-4 items-center justify-between border-t border-border/40 pt-6">
+        <div className={`flex flex-col md:flex-row gap-4 items-center justify-between ${!fixedSubjectId ? 'border-t border-border/40 pt-6' : ''}`}>
           {/* Chapter pills */}
-          <div className="flex flex-wrap gap-2 w-full md:w-auto">
-            <button
-              onClick={() => setSelectedChapterId('all')}
-              className={`rounded-2xl px-4 py-2 text-xs font-semibold border transition-all ${
-                selectedChapterId === 'all'
-                  ? 'bg-primary border-primary text-primary-foreground shadow-sm'
-                  : 'bg-card border-border/60 hover:bg-muted text-muted-foreground'
-              }`}
-            >
-              All Chapters
-            </button>
-            {selectedSubject.chapters.map((chap) => (
+          {!fixedChapterId ? (
+            <div className="flex flex-wrap gap-2 w-full md:w-auto">
               <button
-                key={chap.id}
-                onClick={() => setSelectedChapterId(chap.id)}
+                onClick={() => setSelectedChapterId('all')}
                 className={`rounded-2xl px-4 py-2 text-xs font-semibold border transition-all ${
-                  selectedChapterId === chap.id
+                  selectedChapterId === 'all'
                     ? 'bg-primary border-primary text-primary-foreground shadow-sm'
                     : 'bg-card border-border/60 hover:bg-muted text-muted-foreground'
                 }`}
               >
-                {chap.name}
+                All Chapters
               </button>
-            ))}
-          </div>
+              {selectedSubject.chapters.map((chap) => (
+                <button
+                  key={chap.id}
+                  onClick={() => setSelectedChapterId(chap.id)}
+                  className={`rounded-2xl px-4 py-2 text-xs font-semibold border transition-all ${
+                    selectedChapterId === chap.id
+                      ? 'bg-primary border-primary text-primary-foreground shadow-sm'
+                      : 'bg-card border-border/60 hover:bg-muted text-muted-foreground'
+                  }`}
+                >
+                  {chap.name}
+                </button>
+              ))}
+            </div>
+          ) : <div className="w-full md:w-auto"></div>}
 
           {/* Search bar */}
           <div className="relative w-full md:w-80">
@@ -171,7 +179,7 @@ export function StudentNotesClient({ subjects, notes, progress }: StudentNotesCl
                   <Badge variant="secondary" className="text-[10px] uppercase">
                     {note.type}
                   </Badge>
-                  <span className="text-xs text-muted-foreground">{note.chapter.name}</span>
+                  {!fixedChapterId && <span className="text-xs text-muted-foreground">{note.chapter.name}</span>}
                 </div>
                 <CardTitle className="line-clamp-1">{note.title}</CardTitle>
                 <CardDescription className="line-clamp-2 mt-1 min-h-[40px]">{note.description || 'Review this material for your syllabus.'}</CardDescription>

@@ -34,9 +34,11 @@ interface Test {
 
 interface StudentTestsClientProps {
   tests: Test[];
+  fixedSubjectId?: string;
+  fixedChapterId?: string;
 }
 
-export function StudentTestsClient({ tests }: StudentTestsClientProps) {
+export function StudentTestsClient({ tests, fixedSubjectId, fixedChapterId }: StudentTestsClientProps) {
   const [filter, setFilter] = useState<'all' | 'pending' | 'completed'>('all');
 
   const pendingTests = tests.filter(t => t.attempts.length === 0);
@@ -53,10 +55,12 @@ export function StudentTestsClient({ tests }: StudentTestsClientProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Quizzes & Tests</h2>
-      </div>
+      {!fixedSubjectId && (
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Console</p>
+          <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Quizzes & Tests</h2>
+        </div>
+      )}
 
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
@@ -89,9 +93,11 @@ export function StudentTestsClient({ tests }: StudentTestsClientProps) {
             <Card key={test.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur hover:shadow-lg transition-all flex flex-col justify-between">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <Badge style={{ backgroundColor: `${test.subject.color}15`, color: test.subject.color, borderColor: `${test.subject.color}30` }} variant="outline">
-                    {test.subject.name}
-                  </Badge>
+                  {!fixedSubjectId && (
+                    <Badge style={{ backgroundColor: `${test.subject.color}15`, color: test.subject.color, borderColor: `${test.subject.color}30` }} variant="outline">
+                      {test.subject.name}
+                    </Badge>
+                  )}
                   {attempt ? (
                     <Badge variant="secondary" className="text-[10px] bg-emerald-500/10 text-emerald-500 border-emerald-500/20">
                       Completed

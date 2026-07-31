@@ -48,9 +48,11 @@ interface AdminHomeworkClientProps {
   initialHomework: any[];
   subjects: any[];
   students: Student[];
+  fixedSubjectId?: string;
+  fixedChapterId?: string;
 }
 
-export function AdminHomeworkClient({ initialHomework, subjects, students }: AdminHomeworkClientProps) {
+export function AdminHomeworkClient({ initialHomework, subjects, students, fixedSubjectId, fixedChapterId }: AdminHomeworkClientProps) {
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialHomework);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
@@ -60,8 +62,8 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
   const [title, setTitle] = useState('');
   const [instructions, setInstructions] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id || '');
-  const [selectedChapterId, setSelectedChapterId] = useState('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState(fixedSubjectId || subjects[0]?.id || '');
+  const [selectedChapterId, setSelectedChapterId] = useState(fixedChapterId || '');
   const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
@@ -91,10 +93,14 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
     tomorrow.setDate(tomorrow.getDate() + 1);
     setDueDate(tomorrow.toISOString().slice(0, 16));
     
-    const firstSubId = subjects[0]?.id || '';
+    const firstSubId = fixedSubjectId || subjects[0]?.id || '';
     setSelectedSubjectId(firstSubId);
-    const firstSub = subjects.find(s => s.id === firstSubId);
-    setSelectedChapterId(firstSub?.chapters[0]?.id || '');
+    if (!fixedChapterId) {
+      const firstSub = subjects.find(s => s.id === firstSubId);
+      setSelectedChapterId(firstSub?.chapters[0]?.id || '');
+    } else {
+      setSelectedChapterId(fixedChapterId);
+    }
     setUploadedAttachments([]);
     setSelectedStudentIds(students.map(s => s.id)); // Default to all students
     setIsFormOpen(true);
@@ -261,15 +267,24 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Class Work</p>
-          <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Manage Homework</h2>
+      {!fixedChapterId && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Class Work</p>
+            <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Manage Homework</h2>
+          </div>
+          <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
+            <Plus className="h-4 w-4" /> Create Homework
+          </Button>
         </div>
-        <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
-          <Plus className="h-4 w-4" /> Create Homework
-        </Button>
-      </div>
+      )}
+      {fixedChapterId && (
+        <div className="flex justify-end">
+          <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
+            <Plus className="h-4 w-4" /> Create Homework
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Homework List Panel */}
@@ -288,10 +303,12 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
                   <CardHeader className="pb-3">
                     <div className="flex items-center justify-between gap-2 mb-2">
                       <div className="flex items-center gap-2">
-                        <Badge style={{ backgroundColor: `${hw.subject.color}15`, color: hw.subject.color, borderColor: `${hw.subject.color}30` }} variant="outline">
-                          {hw.subject.name}
-                        </Badge>
-                        {hw.chapter && (
+                        {!fixedSubjectId && (
+                          <Badge style={{ backgroundColor: `${hw.subject.color}15`, color: hw.subject.color, borderColor: `${hw.subject.color}30` }} variant="outline">
+                            {hw.subject.name}
+                          </Badge>
+                        )}
+                        {!fixedChapterId && hw.chapter && (
                           <span className="text-xs text-muted-foreground">{hw.chapter.name}</span>
                         )}
                       </div>
@@ -541,36 +558,38 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="subject">Subject *</Label>
-                    <select
-                      id="subject"
-                      value={selectedSubjectId}
-                      onChange={(e) => handleSubjectChange(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      {subjects.map(s => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                {!fixedChapterId && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="subject">Subject *</Label>
+                      <select
+                        id="subject"
+                        value={selectedSubjectId}
+                        onChange={(e) => handleSubjectChange(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        {subjects.map(s => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="chapter">Chapter (Optional)</Label>
-                    <select
-                      id="chapter"
-                      value={selectedChapterId}
-                      onChange={(e) => setSelectedChapterId(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="">No Chapter Assigned</option>
-                      {chapters.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="chapter">Chapter (Optional)</Label>
+                      <select
+                        id="chapter"
+                        value={selectedChapterId}
+                        onChange={(e) => setSelectedChapterId(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="">No Chapter Assigned</option>
+                        {chapters.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">

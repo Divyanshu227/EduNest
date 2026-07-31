@@ -46,9 +46,11 @@ interface Test {
 interface AdminTestsClientProps {
   initialTests: any[];
   subjects: any[];
+  fixedSubjectId?: string;
+  fixedChapterId?: string;
 }
 
-export function AdminTestsClient({ initialTests, subjects }: AdminTestsClientProps) {
+export function AdminTestsClient({ initialTests, subjects, fixedSubjectId, fixedChapterId }: AdminTestsClientProps) {
   const [tests, setTests] = useState<Test[]>(initialTests);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingTest, setEditingTest] = useState<Test | null>(null);
@@ -59,8 +61,8 @@ export function AdminTestsClient({ initialTests, subjects }: AdminTestsClientPro
   const [description, setDescription] = useState('');
   const [durationMin, setDurationMin] = useState(30);
   const [isPublished, setIsPublished] = useState(false);
-  const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id || '');
-  const [selectedChapterId, setSelectedChapterId] = useState('');
+  const [selectedSubjectId, setSelectedSubjectId] = useState(fixedSubjectId || subjects[0]?.id || '');
+  const [selectedChapterId, setSelectedChapterId] = useState(fixedChapterId || '');
   const [questions, setQuestions] = useState<Question[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
@@ -80,10 +82,14 @@ export function AdminTestsClient({ initialTests, subjects }: AdminTestsClientPro
     setDurationMin(30);
     setIsPublished(false);
     
-    const firstSubId = subjects[0]?.id || '';
+    const firstSubId = fixedSubjectId || subjects[0]?.id || '';
     setSelectedSubjectId(firstSubId);
-    const firstSub = subjects.find(s => s.id === firstSubId);
-    setSelectedChapterId(firstSub?.chapters[0]?.id || '');
+    if (!fixedChapterId) {
+      const firstSub = subjects.find(s => s.id === firstSubId);
+      setSelectedChapterId(firstSub?.chapters[0]?.id || '');
+    } else {
+      setSelectedChapterId(fixedChapterId);
+    }
     setQuestions([]);
     setIsFormOpen(true);
   };
@@ -284,15 +290,24 @@ export function AdminTestsClient({ initialTests, subjects }: AdminTestsClientPro
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Academic Tests</p>
-          <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Class Room Quizzes</h2>
+      {!fixedChapterId && (
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Academic Tests</p>
+            <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Class Room Quizzes</h2>
+          </div>
+          <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
+            <Plus className="h-4 w-4" /> Create Test Builder
+          </Button>
         </div>
-        <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
-          <Plus className="h-4 w-4" /> Create Test Builder
-        </Button>
-      </div>
+      )}
+      {fixedChapterId && (
+        <div className="flex justify-end">
+          <Button onClick={openCreateForm} className="flex items-center gap-2 rounded-2xl shadow-glow">
+            <Plus className="h-4 w-4" /> Create Test Builder
+          </Button>
+        </div>
+      )}
 
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Quiz List */}
@@ -307,10 +322,12 @@ export function AdminTestsClient({ initialTests, subjects }: AdminTestsClientPro
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <div className="flex items-center gap-2">
-                      <Badge style={{ backgroundColor: `${test.subject.color}15`, color: test.subject.color, borderColor: `${test.subject.color}30` }} variant="outline">
-                        {test.subject.name}
-                      </Badge>
-                      {test.chapter && (
+                      {!fixedSubjectId && (
+                        <Badge style={{ backgroundColor: `${test.subject.color}15`, color: test.subject.color, borderColor: `${test.subject.color}30` }} variant="outline">
+                          {test.subject.name}
+                        </Badge>
+                      )}
+                      {!fixedChapterId && test.chapter && (
                         <span className="text-xs text-muted-foreground">{test.chapter.name}</span>
                       )}
                     </div>
@@ -445,36 +462,38 @@ export function AdminTestsClient({ initialTests, subjects }: AdminTestsClientPro
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="subject">Subject *</Label>
-                    <select
-                      id="subject"
-                      value={selectedSubjectId}
-                      onChange={(e) => handleSubjectChange(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      {subjects.map((s: any) => (
-                        <option key={s.id} value={s.id}>{s.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                {!fixedChapterId && (
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="subject">Subject *</Label>
+                      <select
+                        id="subject"
+                        value={selectedSubjectId}
+                        onChange={(e) => handleSubjectChange(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        {subjects.map((s: any) => (
+                          <option key={s.id} value={s.id}>{s.name}</option>
+                        ))}
+                      </select>
+                    </div>
 
-                  <div className="space-y-1.5">
-                    <Label htmlFor="chapter">Chapter (Optional)</Label>
-                    <select
-                      id="chapter"
-                      value={selectedChapterId}
-                      onChange={(e) => setSelectedChapterId(e.target.value)}
-                      className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
-                    >
-                      <option value="">No Chapter Assigned</option>
-                      {chapters.map((c: any) => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="chapter">Chapter (Optional)</Label>
+                      <select
+                        id="chapter"
+                        value={selectedChapterId}
+                        onChange={(e) => setSelectedChapterId(e.target.value)}
+                        className="w-full h-10 rounded-xl border border-border/60 bg-background px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-1 focus:ring-primary"
+                      >
+                        <option value="">No Chapter Assigned</option>
+                        {chapters.map((c: any) => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-1.5">
