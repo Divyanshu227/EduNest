@@ -20,7 +20,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         dueDate: body.dueDate ? new Date(body.dueDate) : undefined,
         subjectId: body.subjectId,
         chapterId: body.chapterId || null,
-        attachments: body.attachments
+        attachments: body.attachments,
+        assignedStudentIds: body.assignedStudentIds
       }
     });
 

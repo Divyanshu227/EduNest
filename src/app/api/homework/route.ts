@@ -12,6 +12,12 @@ export async function GET() {
   }
 
   const homework = await prisma.homework.findMany({
+    where: session.session.user.role === 'STUDENT' ? {
+      OR: [
+        { assignedStudentIds: { isEmpty: true } },
+        { assignedStudentIds: { has: session.session.user.id } }
+      ]
+    } : undefined,
     orderBy: { createdAt: 'desc' },
     include: { subject: true, chapter: true, submissions: true }
   });
@@ -40,7 +46,14 @@ export async function POST(request: Request) {
     }
   });
 
-  const recipients = await getStudentRecipients();
+  const recipients = await prisma.user.findMany({
+    where: {
+      id: { in: parsed.data.assignedStudentIds },
+      role: 'STUDENT',
+      deviceTokens: { isEmpty: false }
+    }
+  });
+
   await notifyUsers(recipients, {
     title: `New homework: ${parsed.data.title}`,
     body: 'A new homework assignment has been posted.',

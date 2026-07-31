@@ -37,7 +37,8 @@ export const homeworkSchema = z.object({
   subjectId: z.string().min(1),
   chapterId: z.string().optional(),
   dueDate: z.string().datetime(),
-  attachments: z.array(z.any()).optional().default([])
+  attachments: z.array(z.any()).optional().default([]),
+  assignedStudentIds: z.array(z.string()).min(1, 'Select at least one student')
 });
 
 export const testSchema = z.object({

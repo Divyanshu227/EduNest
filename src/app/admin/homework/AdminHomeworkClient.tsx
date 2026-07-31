@@ -41,6 +41,7 @@ interface Homework {
   subject: { name: string; color: string };
   chapter: { name: string } | null;
   submissions: Submission[];
+  assignedStudentIds: string[];
 }
 
 interface AdminHomeworkClientProps {
@@ -62,6 +63,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
   const [selectedSubjectId, setSelectedSubjectId] = useState(subjects[0]?.id || '');
   const [selectedChapterId, setSelectedChapterId] = useState('');
   const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
+  const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   // Grading form states
@@ -94,6 +96,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
     const firstSub = subjects.find(s => s.id === firstSubId);
     setSelectedChapterId(firstSub?.chapters[0]?.id || '');
     setUploadedAttachments([]);
+    setSelectedStudentIds(students.map(s => s.id)); // Default to all students
     setIsFormOpen(true);
   };
 
@@ -108,6 +111,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
     setSelectedSubjectId(hw.subjectId);
     setSelectedChapterId(hw.chapterId || '');
     setUploadedAttachments(Array.isArray(hw.attachments) ? hw.attachments : []);
+    setSelectedStudentIds(hw.assignedStudentIds || []);
     setIsFormOpen(true);
   };
 
@@ -115,6 +119,10 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
     e.preventDefault();
     if (!title || !instructions || !dueDate || !selectedSubjectId) {
       alert('Please fill in all required fields.');
+      return;
+    }
+    if (selectedStudentIds.length === 0) {
+      alert('Please select at least one student.');
       return;
     }
 
@@ -125,7 +133,8 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
       dueDate: new Date(dueDate).toISOString(),
       subjectId: selectedSubjectId,
       chapterId: selectedChapterId || undefined,
-      attachments: uploadedAttachments
+      attachments: uploadedAttachments,
+      assignedStudentIds: selectedStudentIds
     };
 
     try {
@@ -315,7 +324,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
 
                     <div className="flex items-center justify-between border-t border-border/40 pt-3">
                       <span className="text-xs text-muted-foreground">
-                        {submissionCount} / {students.length} Submissions received
+                        {submissionCount} / {hw.assignedStudentIds?.length || students.length} Submissions received
                       </span>
 
                       <div className="flex items-center gap-2">
@@ -597,6 +606,43 @@ export function AdminHomeworkClient({ initialHomework, subjects, students }: Adm
                     required
                     rows={4}
                   />
+                </div>
+
+                {/* Student Selection */}
+                <div className="space-y-1.5 border-t border-border/40 pt-4">
+                  <div className="flex items-center justify-between">
+                    <Label>Assign to Students *</Label>
+                    <div className="space-x-2 text-xs">
+                      <button type="button" onClick={() => setSelectedStudentIds(students.map(s => s.id))} className="text-primary hover:underline">Select All</button>
+                      <span className="text-muted-foreground">|</span>
+                      <button type="button" onClick={() => setSelectedStudentIds([])} className="text-primary hover:underline">Deselect All</button>
+                    </div>
+                  </div>
+                  <div className="grid gap-2 sm:grid-cols-2 md:grid-cols-3 border border-border/60 rounded-xl p-3 max-h-40 overflow-y-auto bg-background/50">
+                    {students.map(student => (
+                      <label key={student.id} className="flex items-center gap-2 text-sm cursor-pointer hover:bg-muted/50 p-1.5 rounded-md">
+                        <input
+                          type="checkbox"
+                          className="rounded border-border/60 text-primary focus:ring-primary h-4 w-4"
+                          checked={selectedStudentIds.includes(student.id)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setSelectedStudentIds(prev => [...prev, student.id]);
+                            } else {
+                              setSelectedStudentIds(prev => prev.filter(id => id !== student.id));
+                            }
+                          }}
+                        />
+                        <span className="truncate" title={student.name}>{student.name}</span>
+                      </label>
+                    ))}
+                    {students.length === 0 && (
+                      <p className="text-xs text-muted-foreground col-span-full py-2">No students found.</p>
+                    )}
+                  </div>
+                  {selectedStudentIds.length === 0 && (
+                    <p className="text-xs text-destructive mt-1">Please select at least one student.</p>
+                  )}
                 </div>
 
                 {/* Attachments */}
