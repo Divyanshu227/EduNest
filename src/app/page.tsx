@@ -1,16 +1,24 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { ArrowRight, BellRing, BookOpenText, ShieldCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { InstallAppButton } from '@/components/install-app-button';
 import { APP_NAME } from '@/lib/constants';
+import { auth } from '@/lib/auth';
 
 export default async function HomePage() {
+  const session = await auth();
+  
+  if (session?.user) {
+    redirect(session.user.home || '/profile');
+  }
+
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top,rgba(59,130,246,0.22),transparent_28%),linear-gradient(135deg,#0f172a_0%,#0b3b53_45%,#14532d_100%)] text-white">
+    <main className="relative min-h-screen overflow-hidden bg-hero-gradient text-white">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-[-8%] top-20 h-56 w-56 rounded-full bg-cyan-300/20 blur-3xl" />
-        <div className="absolute right-[-6%] top-1/3 h-72 w-72 rounded-full bg-emerald-300/20 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-64 w-[34rem] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+        <div className="absolute left-[-8%] top-20 h-56 w-56 rounded-full bg-cyan-500/20 blur-3xl animate-pulse duration-1000" />
+        <div className="absolute right-[-6%] top-1/3 h-72 w-72 rounded-full bg-emerald-500/20 blur-3xl animate-pulse duration-2000" />
+        <div className="absolute bottom-0 left-1/2 h-64 w-[34rem] -translate-x-1/2 rounded-full bg-indigo-500/20 blur-3xl" />
       </div>
 
       <section className="container-shell relative flex min-h-screen items-center py-10 sm:py-16 lg:py-20">
@@ -40,16 +48,16 @@ export default async function HomePage() {
             </div>
 
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
-              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur">
-                <p className="text-2xl font-semibold">1</p>
+              <div className="group rounded-2xl border border-white/12 bg-white/5 p-4 backdrop-blur transition-all hover:bg-white/10 hover:-translate-y-1 hover:shadow-glow">
+                <p className="text-2xl font-semibold text-emerald-400">1</p>
                 <p className="mt-1 text-sm text-white/70">simple place for study flow</p>
               </div>
-              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur">
-                <p className="text-2xl font-semibold">5</p>
+              <div className="group rounded-2xl border border-white/12 bg-white/5 p-4 backdrop-blur transition-all hover:bg-white/10 hover:-translate-y-1 hover:shadow-glow">
+                <p className="text-2xl font-semibold text-cyan-400">5</p>
                 <p className="mt-1 text-sm text-white/70">core learning areas covered</p>
               </div>
-              <div className="rounded-2xl border border-white/12 bg-white/10 p-4 backdrop-blur">
-                <p className="text-2xl font-semibold">24/7</p>
+              <div className="group rounded-2xl border border-white/12 bg-white/5 p-4 backdrop-blur transition-all hover:bg-white/10 hover:-translate-y-1 hover:shadow-glow">
+                <p className="text-2xl font-semibold text-indigo-400">24/7</p>
                 <p className="mt-1 text-sm text-white/70">access across desktop and mobile</p>
               </div>
             </div>
