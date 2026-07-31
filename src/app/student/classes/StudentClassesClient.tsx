@@ -22,8 +22,8 @@ export function StudentClassesClient({ initialClasses }: { initialClasses: any[]
   const [classes] = useState<LiveClassType[]>(initialClasses);
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
-  const upcomingClasses = classes.filter(c => new Date(c.startTime) >= new Date());
-  const pastClasses = classes.filter(c => new Date(c.startTime) < new Date());
+  const upcomingClasses = classes.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) >= new Date());
+  const pastClasses = classes.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) < new Date());
   const displayedClasses = activeTab === 'upcoming' ? upcomingClasses : pastClasses;
 
   return (
