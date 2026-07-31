@@ -31,3 +31,10 @@ check-url.js
 .DS_Store
 Thumbs.db
 prisma/seed.ts
+
+# PWA and Build Generated Files
+public/sw.js
+public/worker-*.js
+public/workbox-*.js
+public/fallback-*.js
+tsconfig.tsbuildinfo
