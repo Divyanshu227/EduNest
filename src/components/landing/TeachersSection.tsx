@@ -10,7 +10,10 @@ const teachers = [
     qualification: "BTech CSE IIIT Bhopal",
     highlights: [
       "99% in CBSE Class 10",
+      "98.2% in Class 12",
       "Mathematics 100/100",
+      "98+ Percentile in JEE Main",
+      "JEE Advanced Qualified",
       "Strong conceptual teaching"
     ],
     bgColor: "bg-blue-50",
@@ -20,9 +23,11 @@ const teachers = [
   {
     name: "Anand Kumar Jha",
     role: "All Subjects Expert",
-    qualification: "MBBS",
+    qualification: "MBBS '31",
     highlights: [
       "97.2% in ICSE Class 10",
+      "95.4% in Class 12",
+      "Under 9k Rank in NEET 2026",
       "Strong conceptual understanding",
       "Mentors students across all subjects"
     ],
