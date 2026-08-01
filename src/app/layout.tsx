@@ -17,10 +17,43 @@ const headingFont = Fraunces({
 
 export const metadata: Metadata = {
   title: {
-    default: APP_NAME,
+    default: `${APP_NAME} | Premium 1-to-1 Online Tuition for Classes VI to X`,
     template: `%s · ${APP_NAME}`
   },
-  description: 'EduNest provides personalized 1-to-1 online tuition classes exclusively for students of Classes VI to X.',
+  description: 'EduNest provides personalized 1-to-1 online tuition classes exclusively for students of Classes VI to X. Learn better and score higher with expert educators.',
+  keywords: ['EduNest', 'Edu Nest', 'online tuition', '1-to-1 tuition', 'Classes VI to X', 'personalized tutoring', 'CBSE online tuition', 'ICSE online tuition', 'best online classes', 'home tuition'],
+  authors: [{ name: APP_NAME }],
+  creator: APP_NAME,
+  publisher: APP_NAME,
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
+  openGraph: {
+    title: `${APP_NAME} | Premium 1-to-1 Online Tuition`,
+    description: 'EduNest provides personalized 1-to-1 online tuition classes exclusively for students of Classes VI to X. Learn better and score higher.',
+    siteName: APP_NAME,
+    locale: 'en_IN',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: `${APP_NAME} | Premium 1-to-1 Online Tuition`,
+    description: 'Personalized 1-to-1 online tuition classes exclusively for students of Classes VI to X.',
+    creator: '@EduNest',
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.png',
