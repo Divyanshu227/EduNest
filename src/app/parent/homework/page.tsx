@@ -30,5 +30,5 @@ export default async function ParentHomeworkPage({
     }
   });
 
-  return <ParentHomeworkClient homeworkList={homework} />;
+  return <ParentHomeworkClient homeworkList={homework} studentId={studentId} />;
 }

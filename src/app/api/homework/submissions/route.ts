@@ -10,7 +10,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { homeworkId, textAnswer, attachments } = await request.json();
+    const { homeworkId, textAnswer, attachments, studentId } = await request.json();
 
     if (!homeworkId) {
       return jsonError('homeworkId is required', 400);
@@ -24,6 +24,17 @@ export async function POST(request: Request) {
       return jsonError('Homework not found', 404);
     }
 
+    let submittingStudentId = session.session.user.id;
+    if (studentId && session.session.user.role === 'PARENT') {
+      const link = await prisma.studentParent.findUnique({
+        where: { studentId_parentId: { studentId, parentId: session.session.user.id } }
+      });
+      if (!link) {
+        return jsonError('Not authorized to submit for this student', 403);
+      }
+      submittingStudentId = studentId;
+    }
+
     // Determine status (LATE if current date is past homework's dueDate)
     const isLate = new Date() > new Date(homework.dueDate);
     const status = isLate ? 'LATE' : 'SUBMITTED';
@@ -32,7 +43,7 @@ export async function POST(request: Request) {
       where: {
         homeworkId_studentId: {
           homeworkId,
-          studentId: session.session.user.id
+          studentId: submittingStudentId
         }
       },
       update: {
@@ -43,7 +54,7 @@ export async function POST(request: Request) {
       },
       create: {
         homeworkId,
-        studentId: session.session.user.id,
+        studentId: submittingStudentId,
         textAnswer,
         attachments: attachments || [],
         status

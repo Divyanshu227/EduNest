@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from 'react';
-import { Calendar, FileText, CheckCircle2, AlertCircle, ExternalLink, HelpCircle, Download, Clock, Paperclip } from 'lucide-react';
+import { Calendar, FileText, CheckCircle2, AlertCircle, ExternalLink, HelpCircle, Download, Clock, Paperclip, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 
 interface Homework {
   id: string;
@@ -20,11 +24,17 @@ interface Homework {
 
 interface ParentHomeworkClientProps {
   homeworkList: Homework[];
+  studentId: string;
 }
 
-export function ParentHomeworkClient({ homeworkList }: ParentHomeworkClientProps) {
+export function ParentHomeworkClient({ homeworkList: initialList, studentId }: ParentHomeworkClientProps) {
+  const [homeworkList, setHomeworkList] = useState<Homework[]>(initialList);
   const [selectedHwId, setSelectedHwId] = useState<string>(homeworkList[0]?.id || '');
   const [filter, setFilter] = useState<'active' | 'in_review' | 'completed'>('active');
+
+  const [textAnswer, setTextAnswer] = useState('');
+  const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
+  const [submitting, setSubmitting] = useState(false);
 
   const selectedHw = homeworkList.find(h => h.id === selectedHwId);
   const userSubmission = selectedHw?.submissions[0] || null;
@@ -50,6 +60,42 @@ export function ParentHomeworkClient({ homeworkList }: ParentHomeworkClientProps
 
   const handleSelectHomework = (hw: Homework) => {
     setSelectedHwId(hw.id);
+    const sub = hw.submissions[0] || null;
+    setTextAnswer(sub?.textAnswer || '');
+    setUploadedAttachments(Array.isArray(sub?.attachments) ? sub.attachments : []);
+  };
+
+  const handleSubmissionSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedHwId) return;
+
+    setSubmitting(true);
+    try {
+      const res = await fetch('/api/homework/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          homeworkId: selectedHwId,
+          textAnswer,
+          attachments: uploadedAttachments,
+          studentId
+        })
+      });
+
+      if (!res.ok) throw new Error('Submission failed');
+      const data = await res.json();
+
+      setHomeworkList(prev => prev.map(h => h.id === selectedHwId ? {
+        ...h,
+        submissions: [data.data]
+      } : h));
+
+      alert('Homework submitted successfully on behalf of student!');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -270,15 +316,34 @@ export function ParentHomeworkClient({ homeworkList }: ParentHomeworkClientProps
                     </div>
                   </div>
                 ) : (
-                  <div className="border-t border-border/40 pt-6">
-                    <div className="rounded-3xl border border-dashed border-border/60 bg-muted/20 p-6 flex flex-col items-center justify-center text-center">
-                      <Clock className="h-8 w-8 text-muted-foreground/50 mb-3" />
-                      <h4 className="font-bold text-foreground">Awaiting Student Submission</h4>
-                      <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                        This homework has not been submitted yet. The deadline is <strong className="text-foreground">{new Date(selectedHw.dueDate).toLocaleString()}</strong>.
-                      </p>
+                  <form onSubmit={handleSubmissionSubmit} className="space-y-4 border-t border-border/40 pt-6">
+                    <h4 className="font-bold text-base">Submit on Behalf of Student</h4>
+                    
+                    <div className="space-y-1.5">
+                      <Label htmlFor="textAnswer">Written Notes / Comments</Label>
+                      <Textarea
+                        id="textAnswer"
+                        value={textAnswer}
+                        onChange={(e) => setTextAnswer(e.target.value)}
+                        placeholder="Write a message or summary of the student's work..."
+                        rows={3}
+                      />
                     </div>
-                  </div>
+
+                    <div className="space-y-2">
+                      <Label>Scanned Answer Sheets / Images / PDFs</Label>
+                      <CloudinaryUploader
+                        value={uploadedAttachments}
+                        onChange={setUploadedAttachments}
+                        accept="image/*,application/pdf,video/*"
+                        folder="submissions_attachments"
+                      />
+                    </div>
+
+                    <Button type="submit" disabled={submitting} className="w-full rounded-2xl shadow-glow flex items-center justify-center gap-2">
+                      <Send className="h-4 w-4" /> {submitting ? 'Submitting...' : 'Upload Submission'}
+                    </Button>
+                  </form>
                 )}
               </CardContent>
             </Card>
