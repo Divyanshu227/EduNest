@@ -41,10 +41,15 @@ export default withPWA({
   dynamicStartUrl: false,
   customWorkerDir: 'worker',
   buildExcludes: [
-    // ALL .json files under /_next/ are internal build manifests.
-    // Vercel does not serve them publicly → they 404 → crashes SW install.
-    /\/_next\/.*\.json$/,
-    // ALL server-side files — never publicly accessible
-    /\/_next\/server\//,
+    // Webpack asset names do NOT contain the "/_next/" prefix during build.
+    // We match the filenames directly to exclude them from the Workbox manifest.
+    /app-build-manifest\.json$/,
+    /build-manifest\.json$/,
+    /react-loadable-manifest\.json$/,
+    /next-font-manifest\.json$/,
+    /next-font-manifest\.js$/,
+    /middleware-build-manifest\.js$/,
+    /middleware-react-loadable-manifest\.js$/,
+    /server\/.*$/,
   ]
 })(nextConfig);
