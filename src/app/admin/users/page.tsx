@@ -18,6 +18,13 @@ export default async function AdminUsersPage() {
       role: true,
       avatarUrl: true,
       createdAt: true,
+      parents: {
+        include: {
+          parent: {
+            select: { name: true, phone: true }
+          }
+        }
+      }
     },
     orderBy: { createdAt: 'desc' }
   });

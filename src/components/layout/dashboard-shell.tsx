@@ -22,7 +22,8 @@ const roleIcons: Record<string, ReactNode> = {
   Notes: <FileText className="h-4 w-4" />,
   Homework: <ClipboardList className="h-4 w-4" />,
   Tests: <Settings2 className="h-4 w-4" />,
-  Attendance: <MoonStar className="h-4 w-4" />
+  Attendance: <MoonStar className="h-4 w-4" />,
+  Parents: <Users2 className="h-4 w-4" />
 };
 
 export function DashboardShell({
@@ -37,7 +38,7 @@ export function DashboardShell({
   children: ReactNode;
 }) {
   const pathname = usePathname();
-  const navItems = role === 'ADMIN' ? NAVIGATION.admin : NAVIGATION.student;
+  const navItems = role === 'ADMIN' ? NAVIGATION.admin : role === 'PARENT' ? NAVIGATION.parent : NAVIGATION.student;
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const sidebarContent = (
@@ -56,7 +57,7 @@ export function DashboardShell({
         )}
         <div>
           <p className="text-lg font-semibold leading-none">EduNest</p>
-          <p className="text-xs text-muted-foreground">{role === 'ADMIN' ? 'Teacher Console' : 'Student Space'}</p>
+          <p className="text-xs text-muted-foreground">{role === 'ADMIN' ? 'Teacher Console' : role === 'PARENT' ? 'Parent Portal' : 'Student Space'}</p>
         </div>
       </div>
 

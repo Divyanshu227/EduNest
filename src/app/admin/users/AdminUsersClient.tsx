@@ -24,6 +24,7 @@ type UserType = {
   role: string;
   avatarUrl?: string | null;
   createdAt: Date;
+  parents?: { parent: { name: string, phone: string | null } }[];
 };
 
 const MASTER_ADMIN_EMAIL = 'admin@edunest.dev';
@@ -368,6 +369,11 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
                     </div>
                     <div className="text-muted-foreground">
                       {new Date(user.createdAt).toLocaleDateString()}
+                      {user.role === 'STUDENT' && user.parents && user.parents.length > 0 && (
+                        <div className="text-xs text-primary mt-1">
+                          Parent: {user.parents[0].parent.name} {user.parents[0].parent.phone ? `(${user.parents[0].parent.phone})` : ''}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center justify-end gap-1">
                       <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-accent rounded-lg" onClick={() => openEditForm(user)}>

@@ -7,6 +7,7 @@ export const NAVIGATION = {
     { label: 'Dashboard', href: '/admin' },
     { label: 'Classes', href: '/admin/classes' },
     { label: 'Users', href: '/admin/users' },
+    { label: 'Parents', href: '/admin/parents' },
     { label: 'Subjects', href: '/admin/subjects' },
     { label: 'Notes', href: '/admin/notes' },
     { label: 'Homework', href: '/admin/homework' },
@@ -24,12 +25,23 @@ export const NAVIGATION = {
     { label: 'Attendance', href: '/student/attendance' },
     { label: 'Announcements', href: '/student/announcements' },
     { label: 'Profile', href: '/student/profile' }
+  ],
+  parent: [
+    { label: 'Dashboard', href: '/parent' },
+    { label: 'Schedule', href: '/parent/schedule' },
+    { label: 'Homework', href: '/parent/homework' },
+    { label: 'Notes', href: '/parent/notes' },
+    { label: 'Tests', href: '/parent/tests' },
+    { label: 'Attendance', href: '/parent/attendance' },
+    { label: 'Announcements', href: '/parent/announcements' },
+    { label: 'Profile', href: '/parent/profile' }
   ]
 } as const;
 
 export const ROLE_HOME: Record<UserRole, string> = {
   ADMIN: '/admin',
-  STUDENT: '/student'
+  STUDENT: '/student',
+  PARENT: '/parent'
 };
 
 export const SUBJECT_ORDER = ['Mathematics', 'English', 'Hindi', 'EVS'] as const;
@@ -42,6 +54,12 @@ export const ACCESS_MATRIX = {
     EVS: true
   },
   STUDENT: {
+    Mathematics: true,
+    English: true,
+    Hindi: true,
+    EVS: true
+  },
+  PARENT: {
     Mathematics: true,
     English: true,
     Hindi: true,

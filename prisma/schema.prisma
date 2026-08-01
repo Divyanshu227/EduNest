@@ -10,6 +10,7 @@ datasource db {
 enum UserRole {
   ADMIN
   STUDENT
+  PARENT
 }
 
 enum NoteType {
@@ -67,6 +68,8 @@ model User {
   testAttempts  TestAttempt[]       @relation("TestAttemptStudent")
   teacherClasses LiveClass[]        @relation("TeacherLiveClasses")
   studentClasses LiveClass[]        @relation("StudentLiveClasses")
+  parentOf       ParentStudent[]    @relation("ParentToStudent")
+  parents        ParentStudent[]    @relation("StudentToParent")
 
   @@index([role])
 }
@@ -302,4 +305,17 @@ model LiveClass {
 
   @@index([studentId, startTime])
   @@index([teacherId, startTime])
+}
+
+model ParentStudent {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  parentId  String   @db.ObjectId
+  studentId String   @db.ObjectId
+  createdAt DateTime @default(now())
+
+  parent  User @relation("ParentToStudent", fields: [parentId], references: [id])
+  student User @relation("StudentToParent", fields: [studentId], references: [id])
+
+  @@unique([parentId, studentId])
+  @@index([studentId])
 }
