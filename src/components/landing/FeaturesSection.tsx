@@ -14,44 +14,24 @@ import {
 
 const features = [
   {
-    title: "One Student One Teacher",
-    description: "100% undivided attention ensuring your child's specific learning needs are met.",
+    title: "1-to-1 Learning",
+    description: "100% undivided attention ensuring the student's specific learning needs are met.",
     icon: User,
   },
   {
-    title: "Personalized Study Plan",
-    description: "Customized curriculum paced perfectly to match your child's learning speed.",
-    icon: Map,
-  },
-  {
-    title: "Weekly Progress Reports",
-    description: "Detailed analytics and insights shared with parents to track improvement.",
-    icon: BarChart,
-  },
-  {
-    title: "Homework Support",
-    description: "Guided assistance to complete school assignments with deep conceptual clarity.",
+    title: "Chapter-based Notes",
+    description: "Organized digital notes and study materials built directly into the platform.",
     icon: BookOpen,
   },
   {
-    title: "Concept Building",
-    description: "Focus on fundamental understanding rather than rote memorization.",
-    icon: Brain,
-  },
-  {
-    title: "Doubt Solving",
-    description: "Instant clarification of queries without hesitation or fear of judgment.",
-    icon: MessageSquare,
-  },
-  {
-    title: "Exam Preparation",
-    description: "Targeted practice, mock tests, and strategies to excel in school exams.",
+    title: "Homework & Tasks",
+    description: "Centralized tracking for school assignments, tests, and announcements.",
     icon: FileText,
   },
   {
-    title: "Flexible Timings",
-    description: "Schedule classes at your convenience, fitting perfectly into your routine.",
-    icon: Clock,
+    title: "Instant Doubt Solving",
+    description: "Direct clarification of queries without hesitation or fear of judgment.",
+    icon: MessageSquare,
   }
 ];
 
@@ -69,7 +49,7 @@ export function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
           {features.map((feature, index) => (
             <motion.div
               key={index}
