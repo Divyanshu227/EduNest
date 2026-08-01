@@ -48,7 +48,9 @@ export async function POST(request: Request) {
 
   const recipients = await prisma.user.findMany({
     where: {
-      id: { in: parsed.data.assignedStudentIds },
+      ...(parsed.data.assignedStudentIds && parsed.data.assignedStudentIds.length > 0
+        ? { id: { in: parsed.data.assignedStudentIds } }
+        : {}),
       role: 'STUDENT',
       deviceTokens: { isEmpty: false }
     }
