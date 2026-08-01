@@ -70,22 +70,13 @@ export function PushNotificationButton() {
         return;
       }
 
-      // Register (or get existing) sw.js — next-pwa generates this file
-      let registration = await navigator.serviceWorker.getRegistration('/');
-      if (!registration) {
-        registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
-        // Wait for the new SW to be active before subscribing
-        await new Promise<void>((resolve) => {
-          if (registration!.active) { resolve(); return; }
-          const sw = registration!.installing ?? registration!.waiting;
-          sw?.addEventListener('statechange', function handler(e) {
-            if ((e.target as ServiceWorker).state === 'activated') {
-              sw.removeEventListener('statechange', handler);
-              resolve();
-            }
-          });
-        });
-      }
+      // Always register sw.js — safe to call multiple times (browser deduplicates).
+      // This ensures the SW exists for ALL users, not just those who've visited before.
+      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+
+      // serviceWorker.ready is guaranteed to resolve once the SW is active.
+      // Now that we've explicitly registered above, this will never hang.
+      const registration = await navigator.serviceWorker.ready;
 
       // Re-use existing subscription or create a new one
       let subscription = await registration.pushManager.getSubscription();
