@@ -21,7 +21,16 @@ export const metadata: Metadata = {
     template: `%s · ${APP_NAME}`
   },
   description: 'EduNest is a premium LMS for a single Class 5 student and two teachers.',
-  manifest: '/manifest.webmanifest'
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/icon.png',
+    apple: '/icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: APP_NAME,
+  }
 };
 
 export const viewport = {

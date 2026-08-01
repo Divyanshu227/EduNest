@@ -18,8 +18,29 @@ export function InstallAppButton({ variant = 'navbar' }: { variant?: 'navbar' | 
 
   const handleInstallClick = async (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // Check for iOS Safari
+    const isIos = () => {
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      return /iphone|ipad|ipod/.test(userAgent);
+    };
+    
+    const isStandalone = () => {
+      return ('standalone' in window.navigator) && (window.navigator as any).standalone;
+    };
+
+    if (isStandalone()) {
+      alert("The app is already installed on your device!");
+      return;
+    }
+
+    if (isIos()) {
+      alert("To install EduNest on your iPhone or iPad:\n\n1. Tap the 'Share' icon at the bottom of Safari (the square with an arrow pointing up).\n2. Scroll down and tap 'Add to Home Screen'.");
+      return;
+    }
+
     if (!deferredPrompt) {
-      alert('The app is already installed or your browser does not support this feature yet.');
+      alert('The app is already installed or your browser does not support automatic installation. You can usually install it from your browser menu.');
       return;
     }
     
