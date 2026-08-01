@@ -9,8 +9,18 @@ export async function GET() {
     return auth.error;
   }
 
+  let userIds = [auth.session.user.id];
+
+  if (auth.session.user.role === 'PARENT') {
+    const parentLinks = await prisma.studentParent.findMany({
+      where: { parentId: auth.session.user.id },
+      select: { studentId: true }
+    });
+    userIds = [...userIds, ...parentLinks.map(p => p.studentId)];
+  }
+
   const notifications = await prisma.notification.findMany({
-    where: { userId: auth.session.user.id },
+    where: { userId: { in: userIds } },
     orderBy: { createdAt: 'desc' }
   });
 
@@ -53,15 +63,33 @@ export async function PATCH(request: Request) {
   try {
     const { notificationId } = await request.json();
 
+    let userIds = [auth.session.user.id];
+    if (auth.session.user.role === 'PARENT') {
+      const parentLinks = await prisma.studentParent.findMany({
+        where: { parentId: auth.session.user.id },
+        select: { studentId: true }
+      });
+      userIds = [...userIds, ...parentLinks.map(p => p.studentId)];
+    }
+
     if (notificationId) {
+      // First, find the notification to ensure we have permission to update it
+      const notification = await prisma.notification.findFirst({
+        where: { id: notificationId, userId: { in: userIds } }
+      });
+
+      if (!notification) {
+        return jsonError('Notification not found or unauthorized', 404);
+      }
+
       const updated = await prisma.notification.update({
-        where: { id: notificationId, userId: auth.session.user.id },
+        where: { id: notificationId },
         data: { readAt: new Date() }
       });
       return NextResponse.json({ data: updated });
     } else {
       const updated = await prisma.notification.updateMany({
-        where: { userId: auth.session.user.id, readAt: null },
+        where: { userId: { in: userIds }, readAt: null },
         data: { readAt: new Date() }
       });
       return NextResponse.json({ data: updated });
