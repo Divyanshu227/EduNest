@@ -1,6 +1,6 @@
 import type { NotificationType, User, UserRole } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
-import { sendPushToTokens } from '@/lib/fcm';
+import { sendPushToSubscription } from '@/lib/webpush';
 
 type NotificationPayload = {
   title: string;
@@ -8,10 +8,6 @@ type NotificationPayload = {
   type: NotificationType;
   link?: string;
 };
-
-function uniqueTokens(users: Pick<User, 'deviceTokens'>[]) {
-  return [...new Set(users.flatMap((user) => user.deviceTokens).filter(Boolean))];
-}
 
 export async function notifyUsers(
   users: Pick<User, 'id' | 'deviceTokens'>[],
@@ -31,8 +27,27 @@ export async function notifyUsers(
     }))
   });
 
-  const tokens = uniqueTokens(users);
-  await sendPushToTokens(tokens, payload);
+  const subscriptions = users
+    .flatMap((user) => user.deviceTokens)
+    .filter(Boolean)
+    .map((tokenStr) => {
+      try {
+        return JSON.parse(tokenStr);
+      } catch (e) {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  const uniqueSubscriptions = Array.from(
+    new Map(subscriptions.map(sub => [sub.endpoint, sub])).values()
+  );
+
+  const pushPromises = uniqueSubscriptions.map((sub) =>
+    sendPushToSubscription(sub, payload)
+  );
+
+  await Promise.allSettled(pushPromises);
 }
 
 export async function getStudentRecipients(audience?: string) {

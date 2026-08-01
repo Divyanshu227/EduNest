@@ -19,17 +19,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
-  const { token } = await request.json();
+  const { subscription } = await request.json();
 
-  if (!token) {
-    return NextResponse.json({ error: 'Missing token' }, { status: 400 });
+  if (!subscription) {
+    return NextResponse.json({ error: 'Missing subscription' }, { status: 400 });
   }
 
   await prisma.user.update({
     where: { id: user.id },
     data: {
       deviceTokens: {
-        push: token
+        push: JSON.stringify(subscription)
       }
     }
   });

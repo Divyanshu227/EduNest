@@ -38,5 +38,6 @@ export default withPWA({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  dynamicStartUrl: false
+  dynamicStartUrl: false,
+  customWorkerDir: 'worker'
 })(nextConfig);
