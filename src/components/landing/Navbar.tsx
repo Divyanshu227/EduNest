@@ -33,9 +33,9 @@ export function Navbar() {
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
             <Button asChild className="bg-navy-900 hover:bg-navy-800 text-white rounded-full px-6 shadow-md font-semibold">
-              <a href={process.env.NEXT_PUBLIC_INQUIRY_FORM_URL || "#"} target="_blank" rel="noopener noreferrer">
+              <Link href="/contact">
                 Enquiry Form
-              </a>
+              </Link>
             </Button>
             <Button asChild className="bg-gold-500 hover:bg-gold-600 text-navy-900 rounded-full px-8 shadow-lg shadow-gold-500/20 font-bold">
               <Link href="/login">

@@ -45,9 +45,9 @@ export function FinalCTASection() {
               className="flex flex-col sm:flex-row items-center justify-center gap-4"
             >
               <Button asChild size="lg" className="w-full sm:w-auto bg-gold-500 hover:bg-gold-600 text-navy-900 font-bold rounded-full h-14 px-8 text-lg shadow-[0_0_20px_rgba(212,175,55,0.4)] transition-all hover:scale-105">
-                <a href={process.env.NEXT_PUBLIC_INQUIRY_FORM_URL || "#"} target="_blank" rel="noopener noreferrer">
+                <Link href="/contact">
                   Enquiry Form
-                </a>
+                </Link>
               </Button>
               
               <Button asChild size="lg" className="w-full sm:w-auto bg-white hover:bg-gray-100 text-navy-900 font-bold rounded-full h-14 px-8 text-lg shadow-lg flex items-center gap-2 transition-all">

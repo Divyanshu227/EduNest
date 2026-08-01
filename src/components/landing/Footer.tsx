@@ -48,9 +48,9 @@ export function Footer() {
                   <FileText className="w-5 h-5 text-gold-400" />
                 </div>
                 <div className="flex items-center h-10">
-                  <a href={process.env.NEXT_PUBLIC_INQUIRY_FORM_URL || "#"} target="_blank" rel="noopener noreferrer" className="text-white font-medium text-sm hover:text-gold-400 transition-colors">
+                  <Link href="/contact" className="text-white font-medium text-sm hover:text-gold-400 transition-colors">
                     Fill Inquiry Form
-                  </a>
+                  </Link>
                 </div>
               </li>
             </ul>
