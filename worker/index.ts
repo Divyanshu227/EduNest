@@ -2,6 +2,13 @@
 
 const sw = self as unknown as ServiceWorkerGlobalScope;
 
+// Immediately take control of all open pages on first install.
+// Without this, serviceWorker.ready never resolves on first visit
+// because the SW is active but not yet controlling any clients.
+sw.addEventListener('activate', (event) => {
+  event.waitUntil(sw.clients.claim());
+});
+
 sw.addEventListener('push', (event) => {
   const data = event.data?.json();
   if (data && data.notification) {
