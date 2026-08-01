@@ -32,6 +32,13 @@ export default async function ParentNotesPage({
     }
   });
 
+  const groupedNotes = notes.reduce((acc, note) => {
+    const subject = note.subject.name;
+    if (!acc[subject]) acc[subject] = [];
+    acc[subject].push(note);
+    return acc;
+  }, {} as Record<string, typeof notes>);
+
   return (
     <div className="space-y-6">
       <div>
@@ -39,52 +46,65 @@ export default async function ParentNotesPage({
         <p className="text-sm text-muted-foreground">Access study materials and resources.</p>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-        {notes.length === 0 ? (
+      <div className="space-y-12">
+        {Object.keys(groupedNotes).length === 0 ? (
           <div className="col-span-full py-12 text-center text-muted-foreground">
             <FileText className="mx-auto h-12 w-12 opacity-20 mb-4" />
             <p>No study notes available.</p>
           </div>
         ) : (
-          notes.map((note) => {
-            const pdfFiles = (note.pdfs as any[]) || [];
-            
-            return (
-              <Card key={note.id} className="glass border-border/60 flex flex-col">
-                <CardHeader>
-                  <div className="flex justify-between items-start mb-2">
-                    <Badge variant="outline" style={{ borderColor: note.subject.color, color: note.subject.color }}>
-                      {note.subject.name}
-                    </Badge>
-                    <Badge variant="secondary" className="text-xs">
-                      {note.type}
-                    </Badge>
-                  </div>
-                  <CardTitle className="text-xl line-clamp-2">{note.title}</CardTitle>
-                  <CardDescription className="line-clamp-1">{note.chapter.name}</CardDescription>
-                </CardHeader>
-                <CardContent className="mt-auto space-y-4">
-                  {note.description && (
-                    <p className="text-sm text-muted-foreground line-clamp-3">{note.description}</p>
-                  )}
-                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                    <Calendar className="h-3 w-3" />
-                    Uploaded {new Date(note.createdAt).toLocaleDateString()}
-                  </div>
+          Object.entries(groupedNotes).map(([subject, subjectNotes]) => (
+            <div key={subject} className="space-y-4">
+              <h3 className="font-semibold text-2xl border-b border-border/40 pb-2">{subject}</h3>
+              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                {subjectNotes.map((note) => {
+                  const pdfFiles = Array.isArray(note.pdfs) ? note.pdfs : [];
+                  const firstPdf = pdfFiles[0];
+                  let pdfUrl = typeof firstPdf === 'string' ? firstPdf : firstPdf?.url;
                   
-                  {pdfFiles.length > 0 && (
-                    <div className="pt-4 border-t border-border/50">
-                      <Button variant="outline" className="w-full" asChild>
-                        <Link href={pdfFiles[0].url} target="_blank" rel="noopener noreferrer">
-                          <Download className="mr-2 h-4 w-4" /> Download PDF
-                        </Link>
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })
+                  if (pdfUrl && pdfUrl.includes('res.cloudinary.com') && !pdfUrl.toLowerCase().endsWith('.pdf')) {
+                    pdfUrl = `${pdfUrl}.pdf`;
+                  }
+                  
+                  return (
+                    <Card key={note.id} className="glass border-border/60 flex flex-col">
+                      <CardHeader>
+                        <div className="flex justify-between items-start mb-2">
+                          <Badge variant="outline" style={{ borderColor: note.subject.color, color: note.subject.color }}>
+                            {note.subject.name}
+                          </Badge>
+                          <Badge variant="secondary" className="text-xs">
+                            {note.type}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl line-clamp-2">{note.title}</CardTitle>
+                        <CardDescription className="line-clamp-1">{note.chapter.name}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="mt-auto space-y-4">
+                        {note.description && (
+                          <p className="text-sm text-muted-foreground line-clamp-3">{note.description}</p>
+                        )}
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Calendar className="h-3 w-3" />
+                          Uploaded {new Date(note.createdAt).toLocaleDateString()}
+                        </div>
+                        
+                        {pdfUrl && (
+                          <div className="pt-4 border-t border-border/50">
+                            <Button variant="outline" className="w-full" asChild>
+                              <Link href={pdfUrl} target="_blank" rel="noopener noreferrer" download={`${note.title.replace(/\s+/g, '_')}.pdf`}>
+                                <Download className="mr-2 h-4 w-4" /> Download PDF
+                              </Link>
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            </div>
+          ))
         )}
       </div>
     </div>
