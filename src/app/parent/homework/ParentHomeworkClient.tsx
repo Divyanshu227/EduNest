@@ -30,7 +30,7 @@ interface ParentHomeworkClientProps {
 export function ParentHomeworkClient({ homeworkList: initialList, studentId }: ParentHomeworkClientProps) {
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialList);
   const [selectedHwId, setSelectedHwId] = useState<string>(homeworkList[0]?.id || '');
-  const [filter, setFilter] = useState<'active' | 'in_review' | 'completed'>('active');
+  const [filter, setFilter] = useState<'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned'>('active');
 
   const [textAnswer, setTextAnswer] = useState('');
   const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
@@ -42,7 +42,11 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
   const now = new Date();
   
   const activeHomework = homeworkList
-    .filter(h => h.submissions.length === 0)
+    .filter(h => h.submissions.length === 0 && !h.title.startsWith('[Reassigned]'))
+    .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()); // Ascending
+
+  const reassignedHomework = homeworkList
+    .filter(h => h.submissions.length === 0 && h.title.startsWith('[Reassigned]'))
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime()); // Ascending
 
   const inReviewHomework = homeworkList
@@ -50,12 +54,18 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
     .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()); // Descending
 
   const completedHomework = homeworkList
-    .filter(h => h.submissions.length > 0 && h.submissions[0].score !== null)
+    .filter(h => h.submissions.length > 0 && h.submissions[0].score !== null && Number(h.submissions[0].score) >= 5)
+    .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()); // Descending
+
+  const rejectedHomework = homeworkList
+    .filter(h => h.submissions.length > 0 && h.submissions[0].score !== null && Number(h.submissions[0].score) < 5)
     .sort((a, b) => new Date(b.dueDate).getTime() - new Date(a.dueDate).getTime()); // Descending
 
   const activeList = 
     filter === 'active' ? activeHomework : 
     filter === 'in_review' ? inReviewHomework :
+    filter === 'rejected' ? rejectedHomework :
+    filter === 'reassigned' ? reassignedHomework :
     completedHomework;
 
   const handleSelectHomework = (hw: Homework) => {
@@ -147,6 +157,32 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           }`}
         >
           Completed ({completedHomework.length})
+        </button>
+        <button
+          onClick={() => {
+            setFilter('rejected');
+            if (rejectedHomework[0]) handleSelectHomework(rejectedHomework[0]);
+          }}
+          className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
+            filter === 'rejected'
+              ? 'border-red-500 bg-red-500 text-white shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-red-500/10 hover:text-red-500'
+          }`}
+        >
+          Rejected ({rejectedHomework.length})
+        </button>
+        <button
+          onClick={() => {
+            setFilter('reassigned');
+            if (reassignedHomework[0]) handleSelectHomework(reassignedHomework[0]);
+          }}
+          className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
+            filter === 'reassigned'
+              ? 'border-purple-500 bg-purple-500 text-white shadow-sm'
+              : 'border-border/60 bg-card text-muted-foreground hover:bg-purple-500/10 hover:text-purple-500'
+          }`}
+        >
+          Reassigned ({reassignedHomework.length})
         </button>
       </div>
 
