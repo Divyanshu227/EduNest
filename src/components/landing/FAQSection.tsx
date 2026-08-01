@@ -11,7 +11,7 @@ const faqs = [
   },
   {
     question: "Which subjects do you offer?",
-    answer: <>We offer <strong>Mathematics, Science, Physics, Chemistry, Biology, English, Social Science, Computer Science</strong>, depending on the student's class and curriculum.</>
+    answer: <>We offer <strong>Mathematics, Science, Physics, Chemistry, Biology, English, Social Science and Computer Science</strong> depending on the student's class and curriculum.</>
   },
   {
     question: "Are the classes one-to-one or in batches?",
