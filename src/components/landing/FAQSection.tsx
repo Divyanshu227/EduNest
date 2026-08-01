@@ -47,7 +47,7 @@ export function FAQSection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-16 items-start">
           
-          <div className="sticky top-32">
+          <div className="lg:sticky lg:top-32 mb-10 lg:mb-0">
             <h2 className="text-sm font-bold tracking-widest text-gold-600 uppercase mb-3">Got Questions?</h2>
             <h3 className="text-3xl md:text-4xl font-[var(--font-heading)] font-bold text-navy-900 mb-6">
               Frequently Asked Questions

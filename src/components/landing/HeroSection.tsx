@@ -101,22 +101,22 @@ export function HeroSection() {
               </div>
 
               {/* Floating Elements */}
-              <motion.div animate={floatingAnimation} className="absolute -top-6 -left-6 bg-white p-4 rounded-2xl shadow-xl border border-navy-50">
-                <div className="text-4xl">🎓</div>
+              <motion.div animate={floatingAnimation} className="absolute -top-4 -left-4 sm:-top-6 sm:-left-6 bg-white p-3 sm:p-4 rounded-2xl shadow-xl border border-navy-50">
+                <div className="text-3xl sm:text-4xl">🎓</div>
               </motion.div>
               
-              <motion.div animate={floatingAnimation} transition={{...floatingAnimation.transition, delay: 0.5}} className="absolute -bottom-8 -right-4 bg-white p-4 rounded-2xl shadow-xl border border-navy-50 flex items-center gap-3">
+              <motion.div animate={floatingAnimation} transition={{...floatingAnimation.transition, delay: 0.5}} className="absolute -bottom-6 -right-2 sm:-bottom-8 sm:-right-4 bg-white p-3 sm:p-4 rounded-2xl shadow-xl border border-navy-50 flex items-center gap-2 sm:gap-3">
                  <div className="bg-green-100 p-2 rounded-full">
-                    <span className="text-xl">📈</span>
+                    <span className="text-lg sm:text-xl">📈</span>
                  </div>
                  <div>
-                   <p className="text-xs text-navy-500 font-medium">Average Score</p>
-                   <p className="text-lg font-bold text-navy-900">95%+</p>
+                   <p className="text-[10px] sm:text-xs text-navy-500 font-medium">Average Score</p>
+                   <p className="text-base sm:text-lg font-bold text-navy-900">95%+</p>
                  </div>
               </motion.div>
 
-              <motion.div animate={floatingAnimation} transition={{...floatingAnimation.transition, delay: 1}} className="absolute top-1/2 -right-10 bg-white p-3 rounded-2xl shadow-xl border border-navy-50">
-                <div className="text-3xl">📐</div>
+              <motion.div animate={floatingAnimation} transition={{...floatingAnimation.transition, delay: 1}} className="absolute top-1/2 -right-2 sm:-right-10 bg-white p-2 sm:p-3 rounded-2xl shadow-xl border border-navy-50">
+                <div className="text-2xl sm:text-3xl">📐</div>
               </motion.div>
             </div>
           </motion.div>
