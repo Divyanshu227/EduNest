@@ -2,36 +2,32 @@
 
 import { motion } from 'framer-motion';
 import { 
-  User, 
-  Map, 
-  BarChart, 
-  BookOpen, 
-  Brain, 
-  MessageSquare, 
-  FileText, 
-  Clock 
+  Users, 
+  Compass, 
+  Clock, 
+  BookOpen 
 } from 'lucide-react';
 
 const features = [
   {
-    title: "1-to-1 Learning",
-    description: "100% undivided attention ensuring the student's specific learning needs are met.",
-    icon: User,
+    title: "Separate Portal for Parents",
+    description: "Dedicated access for parents to track progress, view reports, and stay involved.",
+    icon: Users,
   },
   {
-    title: "Chapter-based Notes",
-    description: "Organized digital notes and study materials built directly into the platform.",
+    title: "Guidance Sessions on Demand",
+    description: "Personalized mentoring and counseling sessions for academic and personal growth.",
+    icon: Compass,
+  },
+  {
+    title: "Flexible Schedule",
+    description: "Schedule and manage classes at your convenience to balance school and tuition.",
+    icon: Clock,
+  },
+  {
+    title: "Homework & Notes",
+    description: "Organized digital notes and centralized tracking for all school assignments.",
     icon: BookOpen,
-  },
-  {
-    title: "Homework & Tasks",
-    description: "Centralized tracking for school assignments, tests, and announcements.",
-    icon: FileText,
-  },
-  {
-    title: "Instant Doubt Solving",
-    description: "Direct clarification of queries without hesitation or fear of judgment.",
-    icon: MessageSquare,
   }
 ];
 
