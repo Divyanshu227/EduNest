@@ -39,7 +39,7 @@ export async function POST(request: Request) {
         url: mockUrl,
         publicId: `mock_${Date.now()}`,
         format: isPdf ? 'pdf' : 'jpg',
-        resourceType: isPdf ? 'raw' : 'image',
+        resourceType: isPdf ? 'image' : 'image',
         isMock: true
       });
     }
