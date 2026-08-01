@@ -21,17 +21,18 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
   const [isDownloading, setIsDownloading] = useState(false);
   const defaultLayoutPluginInstance = defaultLayoutPlugin();
 
-  const proxyUrl = url ? `/api/pdf-proxy?url=${encodeURIComponent(url)}` : '';
-
   const handleDownload = async (e: React.MouseEvent) => {
     e.preventDefault();
     if (!url) return;
     
     try {
       setIsDownloading(true);
-      const response = await fetch(proxyUrl);
-      const blob = await response.blob();
+      const response = await fetch(url);
+      const originalBlob = await response.blob();
+      // Force application/pdf MIME type so the browser doesn't save it as raw
+      const blob = new Blob([originalBlob], { type: 'application/pdf' });
       
+      // Create a local object URL to force the browser to download it with a .pdf extension
       const objectUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objectUrl;
@@ -43,7 +44,12 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
       setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1000);
     } catch (error) {
       console.error('Download failed:', error);
-      window.open(url, '_blank');
+      // Fallback if CORS prevents fetch
+      let fallbackUrl = url;
+      if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
+        fallbackUrl = url.replace('/upload/', `/upload/fl_attachment:EduNest_Notes_${noteId}.pdf/`);
+      }
+      window.open(fallbackUrl, '_blank');
     } finally {
       setIsDownloading(false);
     }
@@ -92,7 +98,7 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
       <div className="flex-1 overflow-hidden relative">
         <Worker workerUrl={workerUrl}>
           <Viewer
-            fileUrl={proxyUrl}
+            fileUrl={url}
             plugins={[defaultLayoutPluginInstance]}
             initialPage={initialPage - 1} // 0-indexed initial page
             onPageChange={(e) => handlePageChange(e.currentPage)}

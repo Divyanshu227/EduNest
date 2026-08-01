@@ -12,7 +12,7 @@ export async function uploadToCloudinary(file: File, folder: string) {
 
   return new Promise<{ secure_url: string; public_id: string; resource_type: string; format?: string }>((resolve, reject) => {
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
-    const resourceType = isPdf ? 'image' : 'auto';
+    const resourceType = isPdf ? 'auto' : 'auto';
     
     const uploadStream = cloudinary.uploader.upload_stream(
       { folder, resource_type: resourceType },
