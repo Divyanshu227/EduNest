@@ -6,7 +6,7 @@ import { Award, BookOpen, Star, GraduationCap } from 'lucide-react';
 const teachers = [
   {
     name: "Divyanshu Kumar Jha",
-    role: "Mathematics Expert",
+    role: "Mathematics & CS Expert",
     qualification: "BTech CSE IIIT Bhopal",
     highlights: [
       "99% in CBSE Class 10",
