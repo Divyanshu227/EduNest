@@ -39,6 +39,30 @@ const config: Config = {
         card: {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))'
+        },
+        navy: {
+          50: '#f0f4f8',
+          100: '#d9e2ec',
+          200: '#bcccdc',
+          300: '#9fb3c8',
+          400: '#829ab1',
+          500: '#627d98',
+          600: '#486581',
+          700: '#334e68',
+          800: '#243b53',
+          900: '#102a43',
+        },
+        gold: {
+          50: '#fcf8ee',
+          100: '#f7edd3',
+          200: '#f1dea9',
+          300: '#eac875',
+          400: '#e4b146',
+          500: '#de9b23',
+          600: '#c57c1b',
+          700: '#a35d18',
+          800: '#854918',
+          900: '#6d3c16',
         }
       },
       borderRadius: {
