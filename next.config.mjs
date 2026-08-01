@@ -39,5 +39,13 @@ export default withPWA({
   register: true,
   skipWaiting: true,
   dynamicStartUrl: false,
-  customWorkerDir: 'worker'
+  customWorkerDir: 'worker',
+  exclude: [
+    // These Next.js internal files are NOT served publicly and cause 404s
+    // which crash workbox precaching and prevent SW from ever activating
+    /app-build-manifest\.json$/,
+    /_buildManifest\.js$/,
+    /_ssgManifest\.js$/,
+    /_middlewareManifest\.js$/,
+  ]
 })(nextConfig);
