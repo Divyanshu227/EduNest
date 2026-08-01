@@ -5,18 +5,26 @@ import { Button } from '@/components/ui/button';
 import { Navbar } from '@/components/landing/Navbar';
 import { Footer } from '@/components/landing/Footer';
 import { Loader2, CheckCircle, AlertCircle } from 'lucide-react';
+import Link from 'next/link';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
-    subject: '',
+    phone: '',
+    location: '',
+    studentClass: '',
+    board: '',
+    preferredLanguage: '',
+    preferredClasses: '',
+    subjects: '',
+    numberOfClasses: '',
     message: ''
   });
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -25,18 +33,41 @@ export default function ContactPage() {
     setStatus('loading');
     setErrorMessage('');
 
+    const combinedMessage = `
+Phone: ${formData.phone}
+Location: ${formData.location}
+Class: ${formData.studentClass}
+Board: ${formData.board}
+Preferred Language: ${formData.preferredLanguage}
+Preferred Classes: ${formData.preferredClasses}
+Subjects: ${formData.subjects}
+No. of Classes: ${formData.numberOfClasses}
+
+Message:
+${formData.message}
+    `.trim();
+
     try {
       const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          subject: formData.studentClass ? `Enquiry for Class ${formData.studentClass}` : 'General Enquiry',
+          message: combinedMessage
+        })
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
         setStatus('success');
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        setFormData({
+          name: '', email: '', phone: '', location: '', studentClass: '',
+          board: '', preferredLanguage: '', preferredClasses: '',
+          subjects: '', numberOfClasses: '', message: ''
+        });
       } else {
         setStatus('error');
         setErrorMessage(data.error || 'Failed to send your message. Please try again later.');
@@ -53,7 +84,7 @@ export default function ContactPage() {
       <Navbar />
       
       <main className="flex-grow pt-32 pb-24 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-2xl mx-auto">
+        <div className="max-w-3xl mx-auto">
           <div className="text-center mb-10">
             <h1 className="text-4xl font-bold text-navy-900 mb-4 font-[var(--font-heading)]">Get In Touch</h1>
             <p className="text-lg text-navy-600">
@@ -84,12 +115,7 @@ export default function ContactPage() {
                   <div>
                     <label htmlFor="name" className="block text-sm font-semibold text-navy-900 mb-2">Full Name *</label>
                     <input
-                      type="text"
-                      id="name"
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleChange}
+                      type="text" id="name" name="name" required value={formData.name} onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
                       placeholder="John Doe"
                     />
@@ -97,42 +123,96 @@ export default function ContactPage() {
                   <div>
                     <label htmlFor="email" className="block text-sm font-semibold text-navy-900 mb-2">Email Address *</label>
                     <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      required
-                      value={formData.email}
-                      onChange={handleChange}
+                      type="email" id="email" name="email" required value={formData.email} onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
                       placeholder="john@example.com"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="phone" className="block text-sm font-semibold text-navy-900 mb-2">Phone Number *</label>
+                    <input
+                      type="tel" id="phone" name="phone" required value={formData.phone} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                      placeholder="+91 9876543210"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="location" className="block text-sm font-semibold text-navy-900 mb-2">Location / City</label>
+                    <input
+                      type="text" id="location" name="location" value={formData.location} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                      placeholder="New Delhi"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="studentClass" className="block text-sm font-semibold text-navy-900 mb-2">Class *</label>
+                    <select
+                      id="studentClass" name="studentClass" required value={formData.studentClass} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                    >
+                      <option value="">Select Class</option>
+                      <option value="Class VI">Class VI</option>
+                      <option value="Class VII">Class VII</option>
+                      <option value="Class VIII">Class VIII</option>
+                      <option value="Class IX">Class IX</option>
+                      <option value="Class X">Class X</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="board" className="block text-sm font-semibold text-navy-900 mb-2">Board *</label>
+                    <select
+                      id="board" name="board" required value={formData.board} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                    >
+                      <option value="">Select Board</option>
+                      <option value="CBSE">CBSE</option>
+                      <option value="ICSE">ICSE</option>
+                      <option value="State Board">State Board</option>
+                      <option value="Other">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="subjects" className="block text-sm font-semibold text-navy-900 mb-2">Subjects Required *</label>
+                    <input
+                      type="text" id="subjects" name="subjects" required value={formData.subjects} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                      placeholder="Maths, Science"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="preferredLanguage" className="block text-sm font-semibold text-navy-900 mb-2">Preferred Language</label>
+                    <input
+                      type="text" id="preferredLanguage" name="preferredLanguage" value={formData.preferredLanguage} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                      placeholder="English, Hindi"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="preferredClasses" className="block text-sm font-semibold text-navy-900 mb-2">Preferred Mode</label>
+                    <select
+                      id="preferredClasses" name="preferredClasses" value={formData.preferredClasses} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                    >
+                      <option value="">Select Mode</option>
+                      <option value="1-to-1 Online">1-to-1 Online</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label htmlFor="numberOfClasses" className="block text-sm font-semibold text-navy-900 mb-2">No. of Classes per Week</label>
+                    <input
+                      type="number" id="numberOfClasses" name="numberOfClasses" min="1" max="7" value={formData.numberOfClasses} onChange={handleChange}
+                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
+                      placeholder="3"
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label htmlFor="subject" className="block text-sm font-semibold text-navy-900 mb-2">Subject / Class</label>
-                  <input
-                    type="text"
-                    id="subject"
-                    name="subject"
-                    value={formData.subject}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
-                    placeholder="e.g. Class 10 Math Tutoring"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="message" className="block text-sm font-semibold text-navy-900 mb-2">Message *</label>
+                  <label htmlFor="message" className="block text-sm font-semibold text-navy-900 mb-2">Additional Message</label>
                   <textarea
-                    id="message"
-                    name="message"
-                    required
-                    rows={5}
-                    value={formData.message}
-                    onChange={handleChange}
+                    id="message" name="message" rows={4} value={formData.message} onChange={handleChange}
                     className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all resize-none"
-                    placeholder="How can we help you?"
+                    placeholder="Any specific requirements or questions?"
                   ></textarea>
                 </div>
 
@@ -148,7 +228,7 @@ export default function ContactPage() {
                         Sending...
                       </>
                     ) : (
-                      'Send Message'
+                      'Submit Enquiry'
                     )}
                   </Button>
                 </div>

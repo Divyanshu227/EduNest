@@ -21,10 +21,10 @@ export function Footer() {
           <div>
             <h4 className="text-white font-bold mb-6 text-lg">Quick Links</h4>
             <ul className="space-y-4">
-              <li><Link href="#home" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Home</Link></li>
-              <li><Link href="#courses" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Subjects</Link></li>
-              <li><Link href="#why-edunest" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Why Choose Us</Link></li>
-              <li><Link href="#faq" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> FAQ</Link></li>
+              <li><Link href="/" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Home</Link></li>
+              <li><Link href="/#courses" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Subjects</Link></li>
+              <li><Link href="/#why-edunest" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Why Choose Us</Link></li>
+              <li><Link href="/#faq" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> FAQ</Link></li>
             </ul>
           </div>
 

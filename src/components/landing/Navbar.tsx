@@ -23,11 +23,11 @@ export function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link href="#home" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Home</Link>
-            <Link href="#courses" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Courses</Link>
-            <Link href="#why-edunest" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Why EduNest</Link>
-            <Link href="#faq" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">FAQ</Link>
-            <Link href="#contact" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Contact</Link>
+            <Link href="/" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Home</Link>
+            <Link href="/#courses" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Courses</Link>
+            <Link href="/#why-edunest" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Why EduNest</Link>
+            <Link href="/#faq" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">FAQ</Link>
+            <Link href="/#contact" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Contact</Link>
           </div>
 
           {/* CTA Button */}
