@@ -91,13 +91,8 @@ export function HeroSection() {
           >
             <div className="relative w-full max-w-lg mx-auto aspect-square">
               {/* Main Image Container */}
-              <div className="absolute inset-0 bg-gradient-to-tr from-navy-900 to-navy-700 rounded-3xl transform rotate-3 scale-105 opacity-10"></div>
-              <div className="absolute inset-0 bg-navy-900 rounded-3xl overflow-hidden shadow-2xl flex items-end justify-center">
-                 {/* Placeholder for Teachers Image - In real app use Next/Image */}
-                 <div className="text-white/50 flex flex-col items-center justify-center h-full">
-                    <p className="text-lg font-medium mb-2">Professional Tutor Portraits Here</p>
-                    <p className="text-sm">(Divyanshu & Anand)</p>
-                 </div>
+              <div className="absolute inset-0 rounded-3xl overflow-hidden flex items-end justify-center">
+                 {/* Image will go here */}
               </div>
 
               {/* Floating Elements */}
