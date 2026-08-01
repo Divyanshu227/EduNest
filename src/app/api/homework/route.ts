@@ -51,8 +51,7 @@ export async function POST(request: Request) {
       ...(parsed.data.assignedStudentIds && parsed.data.assignedStudentIds.length > 0
         ? { id: { in: parsed.data.assignedStudentIds } }
         : {}),
-      role: 'STUDENT',
-      deviceTokens: { isEmpty: false }
+      role: 'STUDENT'
     }
   });
 
