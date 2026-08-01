@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
+import { getCloudinaryDownloadUrl } from '@/lib/utils';
 
 interface Homework {
   id: string;
@@ -290,9 +291,10 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                       {selectedHw.attachments.map((att: any, idx: number) => (
                         <a 
                           key={idx}
-                          href={att.url}
+                          href={getCloudinaryDownloadUrl(att.url, att.name)}
                           target="_blank"
                           rel="noopener noreferrer"
+                          download
                           className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
                         >
                           <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />
@@ -352,9 +354,10 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                             {userSubmission.attachments.map((att: any, idx: number) => (
                               <a 
                                 key={idx}
-                                href={att.url}
+                                href={getCloudinaryDownloadUrl(att.url, att.name)}
                                 target="_blank"
                                 rel="noopener noreferrer"
+                                download
                                 className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
                               >
                                 <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />

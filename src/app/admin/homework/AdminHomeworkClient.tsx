@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
+import { getCloudinaryDownloadUrl } from '@/lib/utils';
 
 interface Student {
   id: string;
@@ -479,9 +480,10 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                         {hw.attachments.map((att: any, idx: number) => (
                           <a 
                             key={idx}
-                            href={att.url}
+                            href={getCloudinaryDownloadUrl(att.url, att.name)}
                             target="_blank"
                             rel="noopener noreferrer"
+                            download
                             className="flex items-center gap-1 text-[10px] font-medium border border-border/60 rounded-xl px-3 py-1.5 hover:bg-muted bg-background/50"
                           >
                             <FileText className="h-3 w-3 text-primary" /> {att.name || 'Attachment'}
@@ -594,9 +596,10 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                           {sub.attachments.map((att: any, idx: number) => (
                             <a 
                               key={idx}
-                              href={att.url}
+                              href={getCloudinaryDownloadUrl(att.url, att.name)}
                               target="_blank"
                               rel="noopener noreferrer"
+                              download
                               className="flex items-center gap-1 text-[10px] font-medium border border-border/60 rounded-xl px-3 py-1.5 hover:bg-muted bg-background/50"
                             >
                               <FileText className="h-3.5 w-3.5 text-primary" /> {att.name || 'Worksheet'} <ExternalLink className="h-2.5 w-2.5 ml-1" />

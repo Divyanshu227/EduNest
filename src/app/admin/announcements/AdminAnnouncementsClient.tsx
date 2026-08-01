@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { getCloudinaryDownloadUrl } from '@/lib/utils';
 
 interface AttachmentType {
   url: string;
@@ -227,7 +228,7 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
                             <img src={att.url} alt={att.name} className="h-16 w-16 object-cover rounded-lg border border-border/40 hover:ring-2 hover:ring-primary transition-all" />
                           </a>
                         ) : (
-                          <a key={i} href={att.url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 rounded-lg border border-border/40 px-2.5 py-1.5 text-[11px] font-medium hover:bg-muted/40 transition-colors">
+                          <a key={i} href={getCloudinaryDownloadUrl(att.url, att.name)} target="_blank" rel="noopener noreferrer" download className="flex items-center gap-1.5 rounded-lg border border-border/40 px-2.5 py-1.5 text-[11px] font-medium hover:bg-muted/40 transition-colors">
                             <FileText className="h-3.5 w-3.5 text-red-400" />
                             <span className="max-w-[100px] truncate">{att.name}</span>
                           </a>

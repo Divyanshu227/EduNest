@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
+import { getCloudinaryDownloadUrl } from '@/lib/utils';
 
 interface Homework {
   id: string;
@@ -267,14 +268,10 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
                     <h4 className="font-semibold text-sm flex items-center gap-1.5"><Paperclip className="w-4 h-4"/> Attachments:</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedHw.attachments.map((att: any, idx: number) => {
-                        let attUrl = att.url;
-                        if (attUrl && attUrl.includes('res.cloudinary.com') && !attUrl.toLowerCase().match(/\.[a-z0-9]+$/i)) {
-                          attUrl = `${attUrl}.pdf`;
-                        }
                         return (
                           <a 
                             key={idx}
-                            href={attUrl}
+                            href={getCloudinaryDownloadUrl(att.url, att.name)}
                             target="_blank"
                             rel="noopener noreferrer"
                             download
@@ -335,14 +332,10 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
                           <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Attached Files</span>
                           <div className="flex flex-wrap gap-2">
                             {userSubmission.attachments.map((att: any, idx: number) => {
-                              let attUrl = att.url;
-                              if (attUrl && attUrl.includes('res.cloudinary.com') && !attUrl.toLowerCase().match(/\.[a-z0-9]+$/i)) {
-                                attUrl = `${attUrl}.pdf`;
-                              }
                               return (
                                 <a 
                                   key={idx}
-                                  href={attUrl}
+                                  href={getCloudinaryDownloadUrl(att.url, att.name)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   download

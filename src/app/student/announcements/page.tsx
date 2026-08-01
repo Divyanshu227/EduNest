@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import { Megaphone, Pin, Users, FileText, Paperclip, Download } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { getCloudinaryDownloadUrl } from '@/lib/utils';
 
 interface AttachmentType {
   url: string;
@@ -128,9 +129,10 @@ export default async function StudentAnnouncementsPage() {
                     {annAttachments.filter(a => a.type === 'pdf').map((att, i) => (
                       <a
                         key={i}
-                        href={att.url}
+                        href={getCloudinaryDownloadUrl(att.url, att.name)}
                         target="_blank"
                         rel="noopener noreferrer"
+                        download
                         className="flex items-center gap-2 rounded-xl border border-border/40 px-3 py-2 text-sm font-medium hover:bg-muted/40 transition-colors w-fit"
                       >
                         <FileText className="h-4 w-4 text-red-400" />
