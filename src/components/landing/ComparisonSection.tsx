@@ -8,7 +8,7 @@ const comparisonData = [
   { feature: "Doubt Solving", edunest: "Instant & Hesitation-free", traditional: "Limited time, fear of judgment" },
   { feature: "Pace of Learning", edunest: "Customized to student", traditional: "Fixed batch pace" },
   { feature: "Flexible Timings", edunest: true, traditional: false },
-  { feature: "Parent Feedback", edunest: "Weekly detailed reports", traditional: "Occasional PTMs" },
+  { feature: "Parent Involvement", edunest: "Separate Parent Portal", traditional: "Occasional PTMs" },
   { feature: "Commute Time", edunest: "Zero (Online)", traditional: "High" },
 ];
 
