@@ -6,24 +6,36 @@ import { ChevronDown } from 'lucide-react';
 
 const faqs = [
   {
-    question: "How are classes conducted?",
-    answer: "All classes are conducted live online via our custom learning platform. We use high-quality video, interactive whiteboards, and digital notes to make the experience seamless and engaging."
+    question: "Which classes do you teach?",
+    answer: <>We provide personalized <strong>1-to-1 online tuition exclusively for students of Classes VI to X</strong>.</>
   },
   {
-    question: "How many classes per week?",
-    answer: "The number of classes is completely customizable based on the student's needs and the subjects chosen. Typically, students opt for 2 to 3 sessions per subject per week."
+    question: "Which subjects do you offer?",
+    answer: <>We offer <strong>Mathematics, Science, Physics, Chemistry, Biology, English, Social Science, Computer Science</strong>, depending on the student's class and curriculum.</>
   },
   {
-    question: "Which boards are covered?",
-    answer: "We cover all major boards including CBSE, ICSE, and State Boards for Classes VI to X. Our curriculum is tailored to match your specific school syllabus perfectly."
+    question: "Are the classes one-to-one or in batches?",
+    answer: <>All our classes are <strong>strictly one-to-one</strong>, ensuring every student receives individual attention and a focused learning experience.</>
   },
   {
-    question: "Can I change timings?",
-    answer: "Yes, flexibility is one of our core advantages. You can easily request a reschedule or change your regular class timings by informing your teacher in advance."
+    question: "Do you provide homework and study notes?",
+    answer: <>Yes. We provide <strong>homework, well-structured study notes, and regular practice questions</strong> to help students strengthen their understanding of each topic.</>
   },
   {
-    question: "Do you provide notes?",
-    answer: "Absolutely. Along with live teaching, we provide chapter-wise digital notes, practice worksheets, and mock test papers directly through the EduNest app."
+    question: "How are the classes conducted?",
+    answer: <>Classes are conducted <strong>online through live interactive sessions</strong>, allowing students to learn comfortably from home.</>
+  },
+  {
+    question: "Can I choose a convenient class timing?",
+    answer: <>Yes. We offer <strong>flexible class timings</strong>, subject to teacher availability, so students can learn at a time that suits them best.</>
+  },
+  {
+    question: "How can I contact EduNest or enroll?",
+    answer: <>You can reach us by filling out the <strong>Enquiry Form</strong> on our website or by sending us an <strong>email</strong>. Our team will get back to you as soon as possible.</>
+  },
+  {
+    question: "Which boards do you cover?",
+    answer: <>We currently teach students following the <strong>CBSE and ICSE</strong> curriculum.</>
   }
 ];
 
