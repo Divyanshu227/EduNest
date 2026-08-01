@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Facebook, Instagram, Twitter, Linkedin, Mail, Phone, MapPin } from 'lucide-react';
+import { Mail, FileText } from 'lucide-react';
 
 export function Footer() {
   return (
@@ -34,21 +34,23 @@ export function Footer() {
             <h4 className="text-white font-bold mb-6 text-lg" id="contact">Contact Us</h4>
             <ul className="space-y-5">
               <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0">
+                <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Mail className="w-5 h-5 text-gold-400" />
                 </div>
-                <div>
-                  <p className="text-white font-medium text-sm">hello@edunest.com</p>
-                  <p className="text-navy-400 text-xs mt-1">Online support 24/7</p>
+                <div className="flex items-center h-10">
+                  <a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hello@edunest.com'}`} className="text-white font-medium text-sm hover:text-gold-400 transition-colors">
+                    {process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'hello@edunest.com'}
+                  </a>
                 </div>
               </li>
               <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0">
-                  <MapPin className="w-5 h-5 text-gold-400" />
+                <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                  <FileText className="w-5 h-5 text-gold-400" />
                 </div>
-                <div>
-                  <p className="text-white font-medium text-sm">New Delhi, India</p>
-                  <p className="text-navy-400 text-xs mt-1">100% Online Classes Globally</p>
+                <div className="flex items-center h-10">
+                  <a href={process.env.NEXT_PUBLIC_INQUIRY_FORM_URL || "#"} target="_blank" rel="noopener noreferrer" className="text-white font-medium text-sm hover:text-gold-400 transition-colors">
+                    Fill Inquiry Form
+                  </a>
                 </div>
               </li>
             </ul>
