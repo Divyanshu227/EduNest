@@ -20,14 +20,4 @@ export function toTitleCase(value: string) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
-export function getCloudinaryDownloadUrl(url: string, name?: string) {
-  if (!url) return '';
-  if (url.includes('res.cloudinary.com') && url.includes('/upload/') && !url.includes('fl_attachment')) {
-    let fileName = name || 'Attachment';
-    if (!fileName.toLowerCase().match(/\.[a-z0-9]+$/i)) {
-      fileName += '.pdf';
-    }
-    return url.replace('/upload/', `/upload/fl_attachment:${encodeURIComponent(fileName)}/`);
-  }
-  return url;
-}
+

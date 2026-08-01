@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
-import { getCloudinaryDownloadUrl } from '@/lib/utils';
+import { DownloadLink } from '@/components/ui/download-link';
 
 interface Homework {
   id: string;
@@ -289,16 +289,14 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                     <h4 className="font-semibold text-sm">Download Worksheets:</h4>
                     <div className="flex flex-wrap gap-2">
                       {selectedHw.attachments.map((att: any, idx: number) => (
-                        <a 
+                        <DownloadLink 
                           key={idx}
-                          href={getCloudinaryDownloadUrl(att.url, att.name)}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          download
+                          url={att.url}
+                          filename={att.name || 'Attachment'}
                           className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
                         >
                           <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />
-                        </a>
+                        </DownloadLink>
                       ))}
                     </div>
                   </div>
@@ -352,16 +350,14 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                           <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Attached Files</span>
                           <div className="flex flex-wrap gap-2">
                             {userSubmission.attachments.map((att: any, idx: number) => (
-                              <a 
+                              <DownloadLink 
                                 key={idx}
-                                href={getCloudinaryDownloadUrl(att.url, att.name)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                download
+                                url={att.url}
+                                filename={att.name || 'Attachment'}
                                 className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
                               >
                                 <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />
-                              </a>
+                              </DownloadLink>
                             ))}
                           </div>
                         </div>

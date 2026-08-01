@@ -45,11 +45,7 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
     } catch (error) {
       console.error('Download failed:', error);
       // Fallback if CORS prevents fetch
-      let fallbackUrl = url;
-      if (url.includes('res.cloudinary.com') && url.includes('/upload/')) {
-        fallbackUrl = url.replace('/upload/', `/upload/fl_attachment:EduNest_Notes_${noteId}.pdf/`);
-      }
-      window.open(fallbackUrl, '_blank');
+      window.open(url, '_blank');
     } finally {
       setIsDownloading(false);
     }
