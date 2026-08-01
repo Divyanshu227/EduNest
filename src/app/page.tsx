@@ -16,7 +16,7 @@ export default async function HomePage() {
   const session = await auth();
   
   if (session?.user) {
-    redirect(session.user.home || '/profile');
+    redirect(session.user.home || '/student');
   }
 
   return (

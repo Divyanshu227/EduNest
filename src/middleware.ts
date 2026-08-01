@@ -32,9 +32,16 @@ export default async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/login', req.url));
   }
 
+  if (pathname === '/') {
+    if (token) {
+      const homeUrl = (token.home as string) || (role === 'ADMIN' ? '/admin' : '/student');
+      return NextResponse.redirect(new URL(homeUrl, req.url));
+    }
+  }
+
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/student/:path*']
+  matcher: ['/admin/:path*', '/student/:path*', '/']
 };
