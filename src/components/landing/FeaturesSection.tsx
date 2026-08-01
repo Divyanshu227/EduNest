@@ -2,6 +2,10 @@
 
 import { motion } from 'framer-motion';
 import { 
+  User, 
+  Calendar, 
+  Brain, 
+  FileText, 
   Users, 
   Compass, 
   Clock, 
@@ -9,6 +13,26 @@ import {
 } from 'lucide-react';
 
 const features = [
+  {
+    title: "1-to-1 Online Classes",
+    description: "100% undivided attention ensuring the student's specific learning needs are met.",
+    icon: User,
+  },
+  {
+    title: "Regular Classes",
+    description: "Consistent and structured learning environment to maintain academic momentum.",
+    icon: Calendar,
+  },
+  {
+    title: "Concept Building",
+    description: "Focus on fundamental understanding rather than rote memorization.",
+    icon: Brain,
+  },
+  {
+    title: "Exam Preparation",
+    description: "Targeted practice, mock tests, and strategies to excel in school exams.",
+    icon: FileText,
+  },
   {
     title: "Separate Portal for Parents",
     description: "Dedicated access for parents to track progress, view reports, and stay involved.",
@@ -45,7 +69,7 @@ export function FeaturesSection() {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {features.map((feature, index) => (
             <motion.div
               key={index}
