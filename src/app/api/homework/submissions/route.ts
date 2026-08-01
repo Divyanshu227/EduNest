@@ -85,7 +85,7 @@ export async function PATCH(request: Request) {
       where: { id: submissionId },
       data: {
         feedback,
-        score: score !== undefined ? Number(score) : undefined
+        score: score === null ? null : (score !== undefined ? Number(score) : undefined)
       }
     });
 

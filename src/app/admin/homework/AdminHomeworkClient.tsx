@@ -262,8 +262,61 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
         });
       }
 
-      alert('Homework graded successfully!');
+      // Auto-reassign modal trigger if score < 5
+      if (Number(score) < 5) {
+        setReassigningSubmission(selectedHomeworkForGrading?.submissions.find(s => s.id === submissionId) || null);
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        setReassignDueDate(tomorrow.toISOString().slice(0, 16));
+      } else {
+        alert('Homework graded successfully!');
+      }
+
       setEditingGrades(prev => ({ ...prev, [submissionId]: false }));
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setGradingSubmitting(prev => ({ ...prev, [submissionId]: false }));
+    }
+  };
+
+  const handleUngradeSubmit = async (submissionId: string) => {
+    if (!confirm('Are you sure you want to ungrade this submission? The score and feedback will be removed.')) return;
+    
+    setGradingSubmitting(prev => ({ ...prev, [submissionId]: true }));
+    try {
+      const res = await fetch('/api/homework/submissions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          feedback: null,
+          score: null
+        })
+      });
+
+      if (!res.ok) throw new Error('Ungrading failed');
+      const updated = await res.json();
+
+      setHomeworkList(prev => prev.map(hw => {
+        if (hw.submissions.some(s => s.id === submissionId)) {
+          return {
+            ...hw,
+            submissions: hw.submissions.map(s => s.id === submissionId ? { ...s, ...updated.data } : s)
+          };
+        }
+        return hw;
+      }));
+
+      if (selectedHomeworkForGrading) {
+        setSelectedHomeworkForGrading(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            submissions: prev.submissions.map(s => s.id === submissionId ? { ...s, ...updated.data } : s)
+          };
+        });
+      }
     } catch (err: any) {
       alert(err.message);
     } finally {
@@ -572,6 +625,9 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                               </Button>
                               <Button variant="ghost" size="sm" onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: true}))} className="h-7 text-xs hover:bg-background/50">
                                 <Edit2 className="h-3 w-3 mr-1" /> Edit
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => handleUngradeSubmit(sub.id)} disabled={gradingSubmitting[sub.id]} className="h-7 text-xs hover:bg-destructive/10 hover:text-destructive">
+                                <Trash2 className="h-3 w-3 mr-1" /> Ungrade
                               </Button>
                             </div>
                           </div>
