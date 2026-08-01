@@ -55,9 +55,9 @@ export function HeroSection() {
             
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
               <Button asChild size="lg" className="bg-navy-900 hover:bg-navy-800 text-white rounded-full h-14 px-8 shadow-lg shadow-navy-900/20 text-lg font-semibold">
-                <Link href="#contact">
-                  Request Demo Class
-                </Link>
+                <a href={process.env.NEXT_PUBLIC_INQUIRY_FORM_URL || "#"} target="_blank" rel="noopener noreferrer">
+                  Enquiry Form
+                </a>
               </Button>
               <Button asChild size="lg" className="bg-gold-500 hover:bg-gold-600 text-navy-900 font-bold rounded-full h-14 px-8 shadow-lg shadow-gold-500/30 text-lg flex items-center gap-2">
                 <Link href="/login">

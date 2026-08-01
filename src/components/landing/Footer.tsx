@@ -3,7 +3,7 @@ import { Mail, FileText } from 'lucide-react';
 
 export function Footer() {
   return (
-    <footer className="bg-navy-950 pt-20 pb-10 border-t border-navy-900">
+    <footer className="bg-navy-900 pt-20 pb-10 border-t border-navy-800">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-16">
           
@@ -34,7 +34,7 @@ export function Footer() {
             <h4 className="text-white font-bold mb-6 text-lg" id="contact">Contact Us</h4>
             <ul className="space-y-5">
               <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-full bg-navy-800 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <Mail className="w-5 h-5 text-gold-400" />
                 </div>
                 <div className="flex items-center h-10">
@@ -44,7 +44,7 @@ export function Footer() {
                 </div>
               </li>
               <li className="flex items-start gap-4">
-                <div className="w-10 h-10 rounded-full bg-navy-900 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <div className="w-10 h-10 rounded-full bg-navy-800 flex items-center justify-center flex-shrink-0 mt-0.5">
                   <FileText className="w-5 h-5 text-gold-400" />
                 </div>
                 <div className="flex items-center h-10">
