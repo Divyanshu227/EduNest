@@ -48,7 +48,7 @@ export function FinalCTASection() {
                 Request Demo Class
               </Button>
               
-              <Button asChild size="lg" variant="outline" className="w-full sm:w-auto border-white/20 bg-white/5 hover:bg-white/10 text-white rounded-full h-14 px-8 text-lg backdrop-blur-sm flex items-center gap-2">
+              <Button asChild size="lg" className="w-full sm:w-auto bg-white hover:bg-gray-100 text-navy-900 font-bold rounded-full h-14 px-8 text-lg shadow-lg flex items-center gap-2 transition-all">
                 <Link href="/login">
                   Open Dashboard <ArrowRight className="w-5 h-5 ml-1" />
                 </Link>
