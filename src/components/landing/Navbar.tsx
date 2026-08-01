@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
+import { Smartphone } from 'lucide-react';
 
 export function Navbar() {
   return (
@@ -28,6 +29,10 @@ export function Navbar() {
             <Link href="/#why-edunest" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Why EduNest</Link>
             <Link href="/#faq" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">FAQ</Link>
             <Link href="/#contact" className="text-navy-700 hover:text-gold-500 transition-colors font-medium">Contact</Link>
+            <a href="#" className="flex items-center gap-1.5 text-navy-700 hover:text-gold-500 transition-colors font-medium bg-navy-50 px-3 py-1.5 rounded-lg border border-navy-100 shadow-sm">
+              <Smartphone className="w-4 h-4" />
+              Download App
+            </a>
           </div>
 
           {/* CTA Button */}

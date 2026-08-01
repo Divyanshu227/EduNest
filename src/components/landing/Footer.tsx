@@ -25,6 +25,7 @@ export function Footer() {
               <li><Link href="/#courses" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Subjects</Link></li>
               <li><Link href="/#why-edunest" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Why Choose Us</Link></li>
               <li><Link href="/#faq" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> FAQ</Link></li>
+              <li><a href="#" className="text-navy-300 hover:text-gold-400 transition-colors text-sm flex items-center gap-2"><span className="w-1.5 h-1.5 rounded-full bg-gold-600"></span> Download App</a></li>
             </ul>
           </div>
 
