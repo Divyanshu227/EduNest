@@ -256,14 +256,20 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
                 {userSubmission ? (
                   <div className={`rounded-3xl border p-5 space-y-4 ${
                     userSubmission.score !== null 
-                      ? 'border-emerald-500/20 bg-emerald-500/5' 
+                      ? (Number(userSubmission.score) < 5 ? 'border-red-500/20 bg-red-500/5' : 'border-emerald-500/20 bg-emerald-500/5')
                       : 'border-amber-500/20 bg-amber-500/5'
                   }`}>
                     <div className={`flex items-center gap-2 font-bold text-lg ${
-                      userSubmission.score !== null ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
+                      userSubmission.score !== null 
+                        ? (Number(userSubmission.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400') 
+                        : 'text-amber-600 dark:text-amber-400'
                     }`}>
                       {userSubmission.score !== null ? (
-                        <><CheckCircle2 className="h-5 w-5" /> Graded & Approved</>
+                        Number(userSubmission.score) < 5 ? (
+                          <><AlertCircle className="h-5 w-5" /> Graded & Rejected, Reassigned</>
+                        ) : (
+                          <><CheckCircle2 className="h-5 w-5" /> Graded & Approved</>
+                        )
                       ) : (
                         <><AlertCircle className="h-5 w-5" /> Pending Teacher Review</>
                       )}
@@ -273,7 +279,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div className="bg-background/80 rounded-2xl p-4 border border-border/40">
                           <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
-                          <span className="text-3xl font-black text-primary">{userSubmission.score}</span>
+                          <span className={`text-3xl font-black ${Number(userSubmission.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-primary'}`}>{userSubmission.score}</span>
                         </div>
                         {userSubmission.feedback && (
                           <div className="bg-background/80 rounded-2xl p-4 border border-border/40">
