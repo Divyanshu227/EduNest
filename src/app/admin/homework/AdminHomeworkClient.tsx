@@ -75,6 +75,12 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
   const [gradingSubmitting, setGradingSubmitting] = useState<Record<string, boolean>>({});
   const [editingGrades, setEditingGrades] = useState<Record<string, boolean>>({});
 
+  // Reassignment form states
+  const [reassigningSubmission, setReassigningSubmission] = useState<Submission | null>(null);
+  const [reassignInstructions, setReassignInstructions] = useState('');
+  const [reassignDueDate, setReassignDueDate] = useState('');
+  const [reassignSubmitting, setReassignSubmitting] = useState(false);
+
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
 
@@ -262,6 +268,55 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
       alert(err.message);
     } finally {
       setGradingSubmitting(prev => ({ ...prev, [submissionId]: false }));
+    }
+  };
+
+  const handleReassignSubmit = async (sub: Submission, hw: Homework) => {
+    if (!reassignInstructions.trim() || !reassignDueDate) {
+      alert("Please provide additional instructions and a new due date.");
+      return;
+    }
+
+    setReassignSubmitting(true);
+    const combinedInstructions = `[REASSIGNMENT INSTRUCTIONS]\n${reassignInstructions}\n\n------------------------\n[ORIGINAL INSTRUCTIONS]\n${hw.instructions}`;
+
+    const payload = {
+      title: `[Reassigned] ${hw.title}`,
+      instructions: combinedInstructions,
+      dueDate: new Date(reassignDueDate).toISOString(),
+      subjectId: hw.subjectId,
+      chapterId: hw.chapterId || undefined,
+      attachments: hw.attachments,
+      assignedStudentIds: [sub.studentId]
+    };
+
+    try {
+      const res = await fetch('/api/homework', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (!res.ok) throw new Error('Failed to reassign homework');
+      const created = await res.json();
+      
+      setHomeworkList(prev => [
+        {
+          ...created.data,
+          subject: subjects.find((s: any) => s.id === hw.subjectId),
+          chapter: chapters.find((c: any) => c.id === hw.chapterId) || null,
+          submissions: []
+        },
+        ...prev
+      ]);
+
+      alert('Homework reassigned successfully! The student will see it in their pending tasks.');
+      setReassigningSubmission(null);
+      setReassignInstructions('');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setReassignSubmitting(false);
     }
   };
 
@@ -501,24 +556,34 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     {/* Grading Form */}
                     <div className="space-y-3 pt-3 border-t border-border/40">
                       {sub.score !== null && !editingGrades[sub.id] ? (
-                        <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-3">
+                        <div className={`rounded-2xl border ${Number(sub.score) < 5 ? 'border-red-500/20 bg-red-500/5' : 'border-emerald-500/20 bg-emerald-500/5'} p-4 space-y-3`}>
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm">
+                            <div className={`flex items-center gap-2 ${Number(sub.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} font-bold text-sm`}>
                               <CheckCircle2 className="h-4 w-4" /> Graded & Reviewed
                             </div>
-                            <Button variant="ghost" size="sm" onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: true}))} className="h-7 text-xs">
-                              <Edit2 className="h-3 w-3 mr-1" /> Edit
-                            </Button>
+                            <div className="flex gap-2">
+                              <Button variant="outline" size="sm" onClick={() => {
+                                setReassigningSubmission(sub);
+                                const tomorrow = new Date();
+                                tomorrow.setDate(tomorrow.getDate() + 1);
+                                setReassignDueDate(tomorrow.toISOString().slice(0, 16));
+                              }} className="h-7 text-xs bg-background">
+                                Reassign
+                              </Button>
+                              <Button variant="ghost" size="sm" onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: true}))} className="h-7 text-xs hover:bg-background/50">
+                                <Edit2 className="h-3 w-3 mr-1" /> Edit
+                              </Button>
+                            </div>
                           </div>
                           <div className="flex gap-4">
                             <div>
                               <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
-                              <span className="text-xl font-black text-primary">{sub.score}</span>
+                              <span className={`text-xl font-black ${Number(sub.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-primary'}`}>{sub.score}</span>
                             </div>
                             {sub.feedback && (
                               <div>
                                 <span className="text-[10px] text-muted-foreground uppercase font-bold block">Feedback</span>
-                                <span className="text-sm text-foreground">{sub.feedback}</span>
+                                <span className={`text-sm ${Number(sub.score) < 5 ? 'text-red-700 dark:text-red-300' : 'text-foreground'}`}>{sub.feedback}</span>
                               </div>
                             )}
                           </div>
@@ -740,6 +805,69 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                   </Button>
                 </div>
               </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Reassign Modal */}
+      <AnimatePresence>
+        {reassigningSubmission && selectedHomeworkForGrading && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm overflow-y-auto">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative w-full max-w-xl rounded-3xl border border-border/60 bg-background/95 p-6 shadow-2xl backdrop-blur max-h-[90vh] overflow-y-auto"
+            >
+              <h3 className="font-[var(--font-heading)] text-2xl font-bold mb-4">Reassign Homework</h3>
+              <div className="space-y-4">
+                <div className="border border-border/60 bg-muted/30 p-3 rounded-xl flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary font-bold">
+                    {reassigningSubmission.student.name[0]}
+                  </div>
+                  <div>
+                    <Label className="text-[10px] uppercase text-muted-foreground">Reassigning to</Label>
+                    <p className="font-semibold text-sm">{reassigningSubmission.student.name}</p>
+                  </div>
+                </div>
+                
+                <div className="space-y-1.5">
+                  <Label htmlFor="reassignDueDate">New Due Date & Time *</Label>
+                  <Input
+                    id="reassignDueDate"
+                    type="datetime-local"
+                    value={reassignDueDate}
+                    onChange={(e) => setReassignDueDate(e.target.value)}
+                    className="rounded-xl h-10"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="reassignInstructions">Additional Instructions for Student *</Label>
+                  <Textarea
+                    id="reassignInstructions"
+                    value={reassignInstructions}
+                    onChange={(e) => setReassignInstructions(e.target.value)}
+                    placeholder="E.g., Please redo questions 4 and 5 as per my feedback..."
+                    rows={4}
+                    className="rounded-xl"
+                  />
+                </div>
+                
+                <div className="bg-muted p-4 rounded-xl border border-border/40">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground mb-2 block">Original Instructions Reference</Label>
+                  <p className="text-xs whitespace-pre-wrap line-clamp-3 text-foreground/80">{selectedHomeworkForGrading.instructions}</p>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-4 border-t border-border/40 mt-4">
+                  <Button variant="outline" onClick={() => setReassigningSubmission(null)} disabled={reassignSubmitting} className="rounded-xl">Cancel</Button>
+                  <Button onClick={() => handleReassignSubmit(reassigningSubmission, selectedHomeworkForGrading)} disabled={reassignSubmitting} className="rounded-xl shadow-glow">
+                    {reassignSubmitting ? 'Reassigning...' : 'Confirm Reassign'}
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </div>
         )}
