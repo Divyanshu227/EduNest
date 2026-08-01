@@ -57,10 +57,23 @@ export function InstallAppButton({ variant = 'navbar' }: { variant?: 'navbar' | 
     }
 
     if (!deferredPrompt) {
-      setDialogMessage({
-        title: "Manual Installation Required",
-        desc: "The app is already installed or your browser does not support automatic installation. You can usually install it from your browser's menu (look for 'Install app' or 'Add to Home Screen')."
-      });
+      const userAgent = window.navigator.userAgent.toLowerCase();
+      
+      let title = "Manual Installation Required";
+      let desc = "The app is already installed or your browser does not support automatic installation. You can usually install it from your browser's menu (look for 'Install app' or 'Add to Home Screen').";
+
+      if (/android/.test(userAgent)) {
+        title = "Install on Android";
+        desc = "To install EduNest on your Android device:\n\n1. Tap the browser menu (usually three dots in the top right).\n2. Select 'Install app' or 'Add to Home screen'.";
+      } else if (/macintosh|mac os x/.test(userAgent)) {
+        title = "Install on Mac";
+        desc = "To install EduNest on your Mac (using Chrome, Edge, or Safari):\n\n• Safari: Click the Share button (square with arrow) and select 'Add to Dock'.\n• Chrome/Edge: Look for the install icon (monitor with a downward arrow) in the right side of your address bar, or go to the browser menu (three dots) and select 'Install EduNest'.";
+      } else if (/windows/.test(userAgent)) {
+        title = "Install on Windows";
+        desc = "To install EduNest on Windows (using Chrome or Edge):\n\n1. Look for the install icon (monitor with a downward arrow or plus sign) in the right side of your address bar.\n2. Click it and select 'Install'.\n\nAlternatively, go to the browser menu (three dots) and select 'Install EduNest' or 'Apps' -> 'Install this site as an app'.";
+      }
+
+      setDialogMessage({ title, desc });
       setDialogOpen(true);
       return;
     }
