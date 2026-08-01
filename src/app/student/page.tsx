@@ -4,16 +4,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 
 async function getStudentDashboardData(userId: string) {
-  const [notes, homework, attendance, announcements, recentNotes] = await Promise.all([
+  const [notes, homework, attendance, recentNotes, allAnnouncements] = await Promise.all([
     prisma.note.count({ where: { OR: [{ assignedStudentIds: { has: userId } }, { assignedStudentIds: { isEmpty: true } }] } }),
     prisma.homework.count({ where: { OR: [{ assignedStudentIds: { has: userId } }, { assignedStudentIds: { isEmpty: true } }] } }),
     prisma.attendance.count({ where: { studentId: userId } }),
-    prisma.announcement.findMany({ orderBy: { createdAt: 'desc' }, take: 3 }),
     prisma.note.findMany({ 
       where: { OR: [{ assignedStudentIds: { has: userId } }, { assignedStudentIds: { isEmpty: true } }] },
       orderBy: { lastUpdated: 'desc' }, take: 4, include: { subject: true, chapter: true } 
-    })
+    }),
+    prisma.announcement.findMany({ orderBy: { createdAt: 'desc' } })
   ]);
+
+  const announcements = allAnnouncements.filter(ann => {
+    const aud = ann.audience;
+    if (aud === 'all') return true;
+    if (aud === 'all_students') return true;
+    if (aud === `student:${userId}`) return true;
+    return false;
+  }).slice(0, 3);
 
   return { notes, homework, attendance, announcements, recentNotes };
 }

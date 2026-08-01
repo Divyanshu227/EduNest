@@ -16,7 +16,15 @@ export default async function ParentAnnouncementsPage({
   const studentId = await getAuthorizedParentStudent(searchParams);
   if (!studentId) return <div className="p-6">No student selected.</div>;
 
-  const announcements = await prisma.announcement.findMany({
+  const student = await prisma.user.findUnique({ where: { id: studentId }, select: { name: true } });
+
+  const getAudienceLabel = (audience: string) => {
+    if (audience === 'all' || audience === 'all_students') return 'General';
+    if (audience.startsWith('student:')) return student?.name ? `For ${student.name}` : 'Personal';
+    return audience;
+  };
+
+  const allAnnouncements = await prisma.announcement.findMany({
     orderBy: [
       { pinned: 'desc' },
       { createdAt: 'desc' }
@@ -24,6 +32,14 @@ export default async function ParentAnnouncementsPage({
     include: {
       author: { select: { name: true } }
     }
+  });
+
+  const announcements = allAnnouncements.filter(ann => {
+    const aud = ann.audience;
+    if (aud === 'all') return true;
+    if (aud === 'all_students') return true;
+    if (aud === `student:${studentId}`) return true;
+    return false;
   });
 
   return (
@@ -54,8 +70,11 @@ export default async function ParentAnnouncementsPage({
                     </CardTitle>
                     <CardDescription>Posted by {announcement.author.name} on {new Date(announcement.createdAt).toLocaleDateString()}</CardDescription>
                   </div>
-                  <Badge variant={announcement.pinned ? "default" : "secondary"}>
-                    {announcement.audience === 'all' ? 'General' : announcement.audience}
+                  <Badge 
+                    variant={announcement.pinned ? "default" : "secondary"}
+                    className={announcement.audience.startsWith('student:') ? 'bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20' : ''}
+                  >
+                    {getAudienceLabel(announcement.audience)}
                   </Badge>
                 </div>
               </CardHeader>
