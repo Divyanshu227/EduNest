@@ -37,15 +37,30 @@ export function PushNotificationButton() {
       }
 
       unsubscribe = onMessage(messaging, (payload) => {
-        const notification = new Notification(payload.notification?.title || 'EduNest', {
-          body: getNotificationBody(payload),
-          icon: '/icon.svg'
-        });
-
-        notification.onclick = () => {
-          const link = payload.fcmOptions?.link || payload.data?.link || '/';
-          window.open(link, '_blank');
-        };
+        console.log('[FCM] Received foreground message:', payload);
+        
+        // Mobile browsers (especially Chrome for Android) DO NOT support the 'new Notification()' 
+        // constructor from the foreground window. We MUST use the service worker to display it.
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.ready.then((registration) => {
+            registration.showNotification(payload.notification?.title || 'EduNest', {
+              body: getNotificationBody(payload),
+              icon: '/icon.svg',
+              data: { url: payload.fcmOptions?.link || payload.data?.link || '/' }
+            });
+          });
+        } else {
+          // Fallback for desktop browsers if needed
+          const notification = new Notification(payload.notification?.title || 'EduNest', {
+            body: getNotificationBody(payload),
+            icon: '/icon.svg'
+          });
+          
+          notification.onclick = () => {
+            const link = payload.fcmOptions?.link || payload.data?.link || '/';
+            window.open(link, '_blank');
+          };
+        }
       });
     }
 
