@@ -9,14 +9,14 @@ import Link from 'next/link';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
-    name: '',
+    parentName: '',
+    studentName: '',
     email: '',
     phone: '',
     location: '',
     studentClass: '',
     board: '',
     preferredLanguage: '',
-    preferredClasses: '',
     subjects: '',
     numberOfClasses: '',
     message: ''
@@ -24,7 +24,7 @@ export default function ContactPage() {
   const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -34,16 +34,21 @@ export default function ContactPage() {
     setErrorMessage('');
 
     const combinedMessage = `
+--- Parent Details ---
+Name: ${formData.parentName}
+Email: ${formData.email}
 Phone: ${formData.phone}
 Location: ${formData.location}
+
+--- Student Details ---
+Name: ${formData.studentName}
 Class: ${formData.studentClass}
 Board: ${formData.board}
-Preferred Language: ${formData.preferredLanguage}
-Preferred Classes: ${formData.preferredClasses}
 Subjects: ${formData.subjects}
+Preferred Language: ${formData.preferredLanguage}
 No. of Classes: ${formData.numberOfClasses}
 
-Message:
+--- Message ---
 ${formData.message}
     `.trim();
 
@@ -52,9 +57,9 @@ ${formData.message}
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name: formData.name,
+          name: formData.parentName,
           email: formData.email,
-          subject: formData.studentClass ? `Enquiry for Class ${formData.studentClass}` : 'General Enquiry',
+          subject: formData.studentClass ? `Enquiry for Class ${formData.studentClass} (${formData.studentName})` : 'General Enquiry',
           message: combinedMessage
         })
       });
@@ -64,9 +69,8 @@ ${formData.message}
       if (res.ok && data.success) {
         setStatus('success');
         setFormData({
-          name: '', email: '', phone: '', location: '', studentClass: '',
-          board: '', preferredLanguage: '', preferredClasses: '',
-          subjects: '', numberOfClasses: '', message: ''
+          parentName: '', studentName: '', email: '', phone: '', location: '', studentClass: '',
+          board: '', preferredLanguage: '', subjects: '', numberOfClasses: '', message: ''
         });
       } else {
         setStatus('error');
@@ -103,7 +107,7 @@ ${formData.message}
                 </Button>
               </div>
             ) : (
-              <form onSubmit={handleSubmit} className="space-y-6">
+              <form onSubmit={handleSubmit} className="space-y-8">
                 {status === 'error' && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg flex items-start gap-3">
                     <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
@@ -111,91 +115,104 @@ ${formData.message}
                   </div>
                 )}
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-semibold text-navy-900 mb-2">Full Name *</label>
-                    <input
-                      type="text" id="name" name="name" required value={formData.name} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="John Doe"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="email" className="block text-sm font-semibold text-navy-900 mb-2">Email Address *</label>
-                    <input
-                      type="email" id="email" name="email" required value={formData.email} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="john@example.com"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="phone" className="block text-sm font-semibold text-navy-900 mb-2">Phone Number *</label>
-                    <input
-                      type="tel" id="phone" name="phone" required value={formData.phone} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="+91 9876543210"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="location" className="block text-sm font-semibold text-navy-900 mb-2">Location / City</label>
-                    <input
-                      type="text" id="location" name="location" value={formData.location} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="New Delhi"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="studentClass" className="block text-sm font-semibold text-navy-900 mb-2">Class *</label>
-                    <input
-                      type="text" id="studentClass" name="studentClass" required value={formData.studentClass} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="e.g. Class 10"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="board" className="block text-sm font-semibold text-navy-900 mb-2">Board *</label>
-                    <input
-                      type="text" id="board" name="board" required value={formData.board} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="e.g. CBSE, ICSE"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="subjects" className="block text-sm font-semibold text-navy-900 mb-2">Subjects Required *</label>
-                    <input
-                      type="text" id="subjects" name="subjects" required value={formData.subjects} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="Maths, Science"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="preferredLanguage" className="block text-sm font-semibold text-navy-900 mb-2">Preferred Language</label>
-                    <input
-                      type="text" id="preferredLanguage" name="preferredLanguage" value={formData.preferredLanguage} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="English, Hindi"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="preferredClasses" className="block text-sm font-semibold text-navy-900 mb-2">Preferred Mode</label>
-                    <input
-                      type="text" id="preferredClasses" name="preferredClasses" value={formData.preferredClasses} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="e.g. 1-to-1 Online"
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="numberOfClasses" className="block text-sm font-semibold text-navy-900 mb-2">No. of Classes per Week</label>
-                    <input
-                      type="text" id="numberOfClasses" name="numberOfClasses" value={formData.numberOfClasses} onChange={handleChange}
-                      className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
-                      placeholder="e.g. 3 days a week"
-                    />
+                {/* Parent Details Section */}
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-navy-900 border-b border-navy-100 pb-2">Parent Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="parentName" className="block text-sm font-semibold text-navy-900 mb-2">Parent's Name *</label>
+                      <input
+                        type="text" id="parentName" name="parentName" required value={formData.parentName} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="John Doe"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="email" className="block text-sm font-semibold text-navy-900 mb-2">Email Address *</label>
+                      <input
+                        type="email" id="email" name="email" required value={formData.email} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="john@example.com"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="phone" className="block text-sm font-semibold text-navy-900 mb-2">Phone Number *</label>
+                      <input
+                        type="tel" id="phone" name="phone" required value={formData.phone} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="+91 9876543210"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="location" className="block text-sm font-semibold text-navy-900 mb-2">Location / City</label>
+                      <input
+                        type="text" id="location" name="location" value={formData.location} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="New Delhi"
+                      />
+                    </div>
                   </div>
                 </div>
 
+                {/* Student Details Section */}
+                <div className="space-y-6">
+                  <h3 className="text-xl font-bold text-navy-900 border-b border-navy-100 pb-2">Student Details</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    <div>
+                      <label htmlFor="studentName" className="block text-sm font-semibold text-navy-900 mb-2">Student's Name *</label>
+                      <input
+                        type="text" id="studentName" name="studentName" required value={formData.studentName} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="Jane Doe"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="studentClass" className="block text-sm font-semibold text-navy-900 mb-2">Class *</label>
+                      <input
+                        type="text" id="studentClass" name="studentClass" required value={formData.studentClass} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="e.g. Class 10"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="board" className="block text-sm font-semibold text-navy-900 mb-2">Board *</label>
+                      <input
+                        type="text" id="board" name="board" required value={formData.board} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="e.g. CBSE, ICSE"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="subjects" className="block text-sm font-semibold text-navy-900 mb-2">Subjects Required *</label>
+                      <input
+                        type="text" id="subjects" name="subjects" required value={formData.subjects} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="Maths, Science"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="preferredLanguage" className="block text-sm font-semibold text-navy-900 mb-2">Preferred Language</label>
+                      <input
+                        type="text" id="preferredLanguage" name="preferredLanguage" value={formData.preferredLanguage} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="English, Hindi"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="numberOfClasses" className="block text-sm font-semibold text-navy-900 mb-2">No. of Classes per Week</label>
+                      <input
+                        type="text" id="numberOfClasses" name="numberOfClasses" value={formData.numberOfClasses} onChange={handleChange}
+                        className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all text-navy-900 placeholder:text-navy-400"
+                        placeholder="e.g. 3 days a week"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Details */}
                 <div>
-                  <label htmlFor="message" className="block text-sm font-semibold text-navy-900 mb-2">Additional Message</label>
+                  <h3 className="text-xl font-bold text-navy-900 border-b border-navy-100 pb-2 mb-6">Additional Details</h3>
+                  <label htmlFor="message" className="block text-sm font-semibold text-navy-900 mb-2">Message</label>
                   <textarea
                     id="message" name="message" rows={4} value={formData.message} onChange={handleChange}
                     className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all resize-none text-navy-900 placeholder:text-navy-400"
