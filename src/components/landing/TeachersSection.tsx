@@ -70,10 +70,9 @@ export function TeachersSection() {
               </div>
               
               <div className="px-8 pb-8 relative">
-                {/* Profile Image Avatar */}
                 <div className={`w-24 h-24 rounded-2xl ${teacher.imagePlaceholder} border-4 border-white shadow-md absolute -top-12 flex items-center justify-center text-navy-600 font-bold text-xl overflow-hidden bg-white`}>
                   {teacher.imageUrl ? (
-                    <img src={teacher.imageUrl} alt={teacher.name} className="w-full h-full object-cover" />
+                    <img src={teacher.imageUrl} alt={teacher.name} className="w-full h-full object-cover object-top" />
                   ) : (
                     teacher.name.charAt(0)
                   )}
