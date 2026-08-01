@@ -63,7 +63,10 @@ export function DashboardShell({
 
       <nav className="space-y-1">
         {navItems.map((item) => {
-          const active = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const active = item.label === 'Dashboard' 
+            ? pathname === item.href 
+            : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          
           return (
             <Link
               key={item.href}
