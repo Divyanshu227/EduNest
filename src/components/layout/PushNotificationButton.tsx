@@ -15,11 +15,53 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
+/**
+ * Wait for a ServiceWorkerRegistration to have an active worker.
+ * Polls and listens to statechange events with a hard timeout.
+ * Does NOT use navigator.serviceWorker.ready (which can hang forever).
+ */
+function waitForActive(
+  registration: ServiceWorkerRegistration,
+  timeoutMs = 8000
+): Promise<ServiceWorkerRegistration> {
+  return new Promise((resolve, reject) => {
+    if (registration.active) {
+      resolve(registration);
+      return;
+    }
+
+    const timer = setTimeout(
+      () => reject(new Error('Service worker activation timed out')),
+      timeoutMs
+    );
+
+    const done = () => {
+      clearTimeout(timer);
+      resolve(registration);
+    };
+
+    const watchWorker = (sw: ServiceWorker | null) => {
+      if (!sw) return;
+      if (sw.state === 'activated') { done(); return; }
+      sw.addEventListener('statechange', () => {
+        if (sw.state === 'activated') done();
+      });
+    };
+
+    // Watch whatever worker is currently being installed/waiting
+    watchWorker(registration.installing ?? registration.waiting);
+
+    // In case a new install starts after we start watching
+    registration.addEventListener('updatefound', () => {
+      watchWorker(registration.installing);
+    });
+  });
+}
+
 export function PushNotificationButton() {
   const [status, setStatus] = useState<'unsupported' | 'idle' | 'enabled' | 'denied' | 'loading'>('idle');
 
   useEffect(() => {
-    // SSR guard + feature detect
     if (
       typeof window === 'undefined' ||
       !('serviceWorker' in navigator) ||
@@ -30,25 +72,18 @@ export function PushNotificationButton() {
       return;
     }
 
-    // Check current permission state first — avoids any SW lookup if already denied
     if (Notification.permission === 'denied') {
       setStatus('denied');
       return;
     }
 
-    // Check if browser already has an active subscription for this origin
-    // Use a race with a timeout so we never hang if sw.js is not yet installed
-    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 3000));
-    const subscriptionCheck = navigator.serviceWorker.getRegistrations().then(async (regs) => {
+    // Check if already subscribed in ANY registered SW
+    navigator.serviceWorker.getRegistrations().then(async (regs) => {
       for (const reg of regs) {
         const sub = await reg.pushManager.getSubscription();
-        if (sub) return sub;
+        if (sub) { setStatus('enabled'); return; }
       }
-      return null;
-    });
-
-    Promise.race([subscriptionCheck, timeout]).then((sub) => {
-      setStatus(sub ? 'enabled' : 'idle');
+      setStatus('idle');
     });
   }, []);
 
@@ -56,7 +91,6 @@ export function PushNotificationButton() {
     try {
       setStatus('loading');
 
-      // Request notification permission
       const permission = await Notification.requestPermission();
       if (permission !== 'granted') {
         setStatus(permission === 'denied' ? 'denied' : 'idle');
@@ -65,42 +99,54 @@ export function PushNotificationButton() {
 
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
-        console.error('[Push] Missing NEXT_PUBLIC_VAPID_PUBLIC_KEY');
+        console.error('[Push] NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set');
+        alert('Push notifications are not configured. Please contact support.');
         setStatus('idle');
         return;
       }
 
-      // Always register sw.js — safe to call multiple times (browser deduplicates).
-      // This ensures the SW exists for ALL users, not just those who've visited before.
-      await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      // ── Step 1: Clean up any stale service workers from old Firebase setup ──
+      // Old Firebase SWs can block the new one from activating
+      const existing = await navigator.serviceWorker.getRegistrations();
+      for (const reg of existing) {
+        const isFirebaseSW = reg.scope.includes('firebase') ||
+          (reg.active?.scriptURL ?? '').includes('firebase');
+        if (isFirebaseSW) {
+          console.log('[Push] Unregistering old Firebase SW:', reg.scope);
+          await reg.unregister();
+        }
+      }
 
-      // serviceWorker.ready is guaranteed to resolve once the SW is active.
-      // Now that we've explicitly registered above, this will never hang.
-      const registration = await navigator.serviceWorker.ready;
+      // ── Step 2: Register sw.js (next-pwa generates this) ──
+      const registration = await navigator.serviceWorker.register('/sw.js', { scope: '/' });
+      console.log('[Push] SW registered, state:', registration.active?.state ?? 'not active yet');
 
-      // Re-use existing subscription or create a new one
-      let subscription = await registration.pushManager.getSubscription();
+      // ── Step 3: Wait for active (with timeout — does NOT use serviceWorker.ready) ──
+      const activeReg = await waitForActive(registration);
+      console.log('[Push] SW is now active');
+
+      // ── Step 4: Subscribe ──
+      let subscription = await activeReg.pushManager.getSubscription();
       if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
+        subscription = await activeReg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(vapidKey)
         });
       }
+      console.log('[Push] Subscribed:', subscription.endpoint);
 
-      // Save subscription to DB
+      // ── Step 5: Save to DB ──
       const res = await fetch('/api/push-tokens', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ subscription })
       });
 
-      if (!res.ok) {
-        throw new Error(`Server returned ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
 
       setStatus('enabled');
     } catch (error) {
-      console.error('[Push] Failed to enable notifications:', error);
+      console.error('[Push] Failed:', error);
       setStatus('idle');
     }
   };
@@ -109,7 +155,7 @@ export function PushNotificationButton() {
 
   if (status === 'enabled') {
     return (
-      <Button variant="outline" size="sm" className="rounded-2xl" onClick={enableNotifications} title="Click to re-sync alerts">
+      <Button variant="outline" size="sm" className="rounded-2xl" onClick={enableNotifications} title="Click to re-sync">
         <BellRing className="mr-2 h-4 w-4 text-primary" />
         Alerts On
       </Button>
