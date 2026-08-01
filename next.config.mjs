@@ -40,18 +40,11 @@ export default withPWA({
   skipWaiting: true,
   dynamicStartUrl: false,
   customWorkerDir: 'worker',
-  exclude: [
-    // Next.js internal build files that are NOT publicly accessible on Vercel
-    // Any 404 during precaching crashes SW installation permanently
-    /app-build-manifest\.json$/,
-    /_buildManifest\.js$/,
-    /_ssgManifest\.js$/,
-    /_middlewareManifest\.js$/,
-    // Server-side manifests - never served publicly
+  buildExcludes: [
+    // ALL .json files under /_next/ are internal build manifests.
+    // Vercel does not serve them publicly → they 404 → crashes SW install.
+    /\/_next\/.*\.json$/,
+    // ALL server-side files — never publicly accessible
     /\/_next\/server\//,
-    /middleware-build-manifest/,
-    /middleware-react-loadable-manifest/,
-    /react-loadable-manifest/,
-    /next-font-manifest/,
   ]
 })(nextConfig);
