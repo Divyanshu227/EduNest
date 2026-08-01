@@ -12,7 +12,7 @@ export async function GET() {
   let userIds = [auth.session.user.id];
 
   if (auth.session.user.role === 'PARENT') {
-    const parentLinks = await prisma.studentParent.findMany({
+    const parentLinks = await prisma.parentStudent.findMany({
       where: { parentId: auth.session.user.id },
       select: { studentId: true }
     });
@@ -65,7 +65,7 @@ export async function PATCH(request: Request) {
 
     let userIds = [auth.session.user.id];
     if (auth.session.user.role === 'PARENT') {
-      const parentLinks = await prisma.studentParent.findMany({
+      const parentLinks = await prisma.parentStudent.findMany({
         where: { parentId: auth.session.user.id },
         select: { studentId: true }
       });

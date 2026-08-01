@@ -26,8 +26,8 @@ export async function POST(request: Request) {
 
     let submittingStudentId = session.session.user.id;
     if (studentId && session.session.user.role === 'PARENT') {
-      const link = await prisma.studentParent.findUnique({
-        where: { studentId_parentId: { studentId, parentId: session.session.user.id } }
+      const link = await prisma.parentStudent.findUnique({
+        where: { parentId_studentId: { studentId, parentId: session.session.user.id } }
       });
       if (!link) {
         return jsonError('Not authorized to submit for this student', 403);
