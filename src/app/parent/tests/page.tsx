@@ -4,7 +4,6 @@ import { getAuthorizedParentStudent } from '@/lib/parent-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { FileEdit } from 'lucide-react';
-import { Progress } from '@/components/ui/progress';
 
 export default async function ParentTestsPage({
   searchParams,
@@ -77,7 +76,12 @@ export default async function ParentTestsPage({
                       <span className="text-muted-foreground">Performance Overview</span>
                       <span className="font-medium">{attempt.percentage >= 80 ? 'Excellent' : attempt.percentage >= 60 ? 'Good' : attempt.percentage >= 40 ? 'Average' : 'Needs Improvement'}</span>
                     </div>
-                    <Progress value={attempt.percentage} className="h-2" />
+                    <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={`h-full rounded-full transition-all duration-500 ${attempt.percentage >= 80 ? 'bg-primary' : attempt.percentage >= 50 ? 'bg-amber-500' : 'bg-destructive'}`}
+                        style={{ width: `${Math.max(0, Math.min(100, attempt.percentage))}%` }}
+                      />
+                    </div>
                   </div>
                 </CardContent>
               </Card>

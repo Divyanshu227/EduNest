@@ -3,13 +3,6 @@
 import { useParentContext } from './ParentContext';
 import { Card } from '@/components/ui/card';
 import { Users } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 export function StudentSwitcher() {
   const { linkedStudents, selectedStudentId, setSelectedStudentId } = useParentContext();
@@ -29,18 +22,18 @@ export function StudentSwitcher() {
       </div>
       
       <div className="w-64">
-        <Select value={selectedStudentId || ''} onValueChange={setSelectedStudentId}>
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a student" />
-          </SelectTrigger>
-          <SelectContent>
-            {linkedStudents.map((student) => (
-              <SelectItem key={student.id} value={student.id}>
-                {student.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select 
+          className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          value={selectedStudentId || ''} 
+          onChange={(e) => setSelectedStudentId(e.target.value)}
+        >
+          <option value="" disabled>Select a student</option>
+          {linkedStudents.map((student) => (
+            <option key={student.id} value={student.id} className="text-black dark:text-white">
+              {student.name}
+            </option>
+          ))}
+        </select>
       </div>
     </Card>
   );
