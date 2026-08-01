@@ -16,45 +16,42 @@ function urlBase64ToUint8Array(base64String: string) {
 }
 
 /**
- * Wait for a ServiceWorkerRegistration to have an active worker.
- * Polls and listens to statechange events with a hard timeout.
- * Does NOT use navigator.serviceWorker.ready (which can hang forever).
+ * Poll until registration.active is set.
+ * next-pwa's sw.js precaches all static assets on first install which can
+ * take 30-60 seconds on first visit. We cannot use a short timeout.
  */
 function waitForActive(
-  registration: ServiceWorkerRegistration,
-  timeoutMs = 8000
+  registration: ServiceWorkerRegistration
 ): Promise<ServiceWorkerRegistration> {
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
+    // Already active — return immediately
     if (registration.active) {
       resolve(registration);
       return;
     }
 
-    const timer = setTimeout(
-      () => reject(new Error('Service worker activation timed out')),
-      timeoutMs
-    );
+    // Poll every 300ms. The SW will activate once precaching finishes.
+    const poll = setInterval(() => {
+      if (registration.active) {
+        clearInterval(poll);
+        resolve(registration);
+      }
+    }, 300);
 
-    const done = () => {
-      clearTimeout(timer);
-      resolve(registration);
-    };
-
-    const watchWorker = (sw: ServiceWorker | null) => {
+    // Also hook state change events as a fast path
+    const watch = (sw: ServiceWorker | null) => {
       if (!sw) return;
-      if (sw.state === 'activated') { done(); return; }
       sw.addEventListener('statechange', () => {
-        if (sw.state === 'activated') done();
+        if (sw.state === 'activated') {
+          clearInterval(poll);
+          resolve(registration);
+        }
       });
     };
 
-    // Watch whatever worker is currently being installed/waiting
-    watchWorker(registration.installing ?? registration.waiting);
-
-    // In case a new install starts after we start watching
-    registration.addEventListener('updatefound', () => {
-      watchWorker(registration.installing);
-    });
+    watch(registration.installing);
+    watch(registration.waiting);
+    registration.addEventListener('updatefound', () => watch(registration.installing));
   });
 }
 
@@ -183,7 +180,7 @@ export function PushNotificationButton() {
         ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
         : <BellRing className="mr-2 h-4 w-4" />
       }
-      {status === 'loading' ? 'Enabling...' : 'Enable Alerts'}
+      {status === 'loading' ? 'Setting up...' : 'Enable Alerts'}
     </Button>
   );
 }
