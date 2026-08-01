@@ -47,7 +47,9 @@ export function PushNotificationButton() {
         return;
       }
 
-      const registration = await navigator.serviceWorker.ready;
+      // Explicitly register to prevent hanging if ready never resolves
+      const registration = await navigator.serviceWorker.register('/sw.js');
+      await navigator.serviceWorker.ready;
       
       const vapidKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
       if (!vapidKey) {
@@ -56,10 +58,13 @@ export function PushNotificationButton() {
         return;
       }
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey)
-      });
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidKey)
+        });
+      }
 
       await fetch('/api/push-tokens', {
         method: 'POST',
@@ -80,8 +85,8 @@ export function PushNotificationButton() {
 
   if (status === 'enabled') {
     return (
-      <Button variant="outline" size="sm" className="rounded-2xl">
-        <BellRing className="mr-2 h-4 w-4 text-primary" />
+      <Button variant="outline" size="sm" className="rounded-2xl" onClick={enableNotifications} disabled={status === 'loading'}>
+        {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4 text-primary" />}
         Alerts On
       </Button>
     );
