@@ -48,6 +48,7 @@ export function FinalCTASection() {
                 <a href={process.env.NEXT_PUBLIC_INQUIRY_FORM_URL || "#"} target="_blank" rel="noopener noreferrer">
                   Enquiry Form
                 </a>
+              </Button>
               
               <Button asChild size="lg" className="w-full sm:w-auto bg-white hover:bg-gray-100 text-navy-900 font-bold rounded-full h-14 px-8 text-lg shadow-lg flex items-center gap-2 transition-all">
                 <Link href="/login">

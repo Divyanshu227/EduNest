@@ -18,7 +18,8 @@ const teachers = [
     ],
     bgColor: "bg-blue-50",
     iconColor: "text-blue-600",
-    imagePlaceholder: "bg-blue-200"
+    imagePlaceholder: "bg-blue-200",
+    imageUrl: process.env.NEXT_PUBLIC_TEACHER_DIVYANSHU_IMAGE
   },
   {
     name: "Anand Kumar Jha",
@@ -33,7 +34,8 @@ const teachers = [
     ],
     bgColor: "bg-emerald-50",
     iconColor: "text-emerald-600",
-    imagePlaceholder: "bg-emerald-200"
+    imagePlaceholder: "bg-emerald-200",
+    imageUrl: process.env.NEXT_PUBLIC_TEACHER_ANAND_IMAGE
   }
 ];
 
@@ -69,8 +71,12 @@ export function TeachersSection() {
               
               <div className="px-8 pb-8 relative">
                 {/* Profile Image Avatar */}
-                <div className={`w-24 h-24 rounded-2xl ${teacher.imagePlaceholder} border-4 border-white shadow-md absolute -top-12 flex items-center justify-center text-navy-600 font-bold text-xl`}>
-                  {teacher.name.charAt(0)}
+                <div className={`w-24 h-24 rounded-2xl ${teacher.imagePlaceholder} border-4 border-white shadow-md absolute -top-12 flex items-center justify-center text-navy-600 font-bold text-xl overflow-hidden bg-white`}>
+                  {teacher.imageUrl ? (
+                    <img src={teacher.imageUrl} alt={teacher.name} className="w-full h-full object-cover" />
+                  ) : (
+                    teacher.name.charAt(0)
+                  )}
                 </div>
 
                 <div className="pt-16">
