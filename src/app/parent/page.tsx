@@ -31,7 +31,7 @@ async function getParentDashboardData(studentId: string) {
 export default async function ParentDashboardPage({
   searchParams,
 }: {
-  searchParams: { student?: string };
+  searchParams: Promise<{ student?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return <div className="p-6">Unauthorized</div>;

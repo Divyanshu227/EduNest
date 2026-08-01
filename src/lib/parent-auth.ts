@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { redirect } from 'next/navigation';
 
-export async function getAuthorizedParentStudent(searchParams: { student?: string }) {
+export async function getAuthorizedParentStudent(searchParamsPromise: Promise<{ student?: string }> | { student?: string }) {
   const session = await auth();
   if (!session?.user || session.user.role !== 'PARENT') {
     redirect('/login');
@@ -17,6 +17,7 @@ export async function getAuthorizedParentStudent(searchParams: { student?: strin
     return null; // Parent has no linked students
   }
 
+  const searchParams = await searchParamsPromise;
   const studentId = searchParams.student || parentData.parentOf[0].studentId;
   
   const isOwner = parentData.parentOf.some(link => link.studentId === studentId);

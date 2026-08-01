@@ -10,7 +10,7 @@ import Link from 'next/link';
 export default async function ParentNotesPage({
   searchParams,
 }: {
-  searchParams: { student?: string };
+  searchParams: Promise<{ student?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return <div className="p-6">Unauthorized</div>;

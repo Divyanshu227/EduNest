@@ -8,7 +8,7 @@ import { Bell, Pin } from 'lucide-react';
 export default async function ParentAnnouncementsPage({
   searchParams,
 }: {
-  searchParams: { student?: string };
+  searchParams: Promise<{ student?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) return <div className="p-6">Unauthorized</div>;
