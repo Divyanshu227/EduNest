@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     default: APP_NAME,
     template: `%s · ${APP_NAME}`
   },
-  description: 'EduNest is a premium LMS for a single Class 5 student and two teachers.',
+  description: 'EduNest provides personalized 1-to-1 online tuition classes exclusively for students of Classes VI to X.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/icon.png',

@@ -1,7 +1,7 @@
 {
   "name": "EduNest",
   "short_name": "EduNest",
-  "description": "Premium home tuition LMS for a Class 5 learner.",
+  "description": "Personalized 1-to-1 online tuition classes exclusively for students of Classes VI to X.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
