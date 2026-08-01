@@ -163,7 +163,7 @@ export function CloudinaryUploader({
       {value.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {value.map((file, index) => {
-            const isPdf = file.url.endsWith('.pdf') || file.name?.endsWith('.pdf');
+            const isPdf = file.url.toLowerCase().endsWith('.pdf') || file.name?.toLowerCase().endsWith('.pdf') || file.url.includes('/raw/upload/');
             const isVideo = file.url.match(/\.(mp4|webm|ogg|mov)$/i) || file.name?.match(/\.(mp4|webm|ogg|mov)$/i) || file.url.includes('/video/upload/');
             
             return (
