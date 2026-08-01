@@ -146,30 +146,19 @@ ${formData.message}
                   </div>
                   <div>
                     <label htmlFor="studentClass" className="block text-sm font-semibold text-navy-900 mb-2">Class *</label>
-                    <select
-                      id="studentClass" name="studentClass" required value={formData.studentClass} onChange={handleChange}
+                    <input
+                      type="text" id="studentClass" name="studentClass" required value={formData.studentClass} onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
-                    >
-                      <option value="">Select Class</option>
-                      <option value="Class VI">Class VI</option>
-                      <option value="Class VII">Class VII</option>
-                      <option value="Class VIII">Class VIII</option>
-                      <option value="Class IX">Class IX</option>
-                      <option value="Class X">Class X</option>
-                    </select>
+                      placeholder="e.g. Class 10"
+                    />
                   </div>
                   <div>
                     <label htmlFor="board" className="block text-sm font-semibold text-navy-900 mb-2">Board *</label>
-                    <select
-                      id="board" name="board" required value={formData.board} onChange={handleChange}
+                    <input
+                      type="text" id="board" name="board" required value={formData.board} onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
-                    >
-                      <option value="">Select Board</option>
-                      <option value="CBSE">CBSE</option>
-                      <option value="ICSE">ICSE</option>
-                      <option value="State Board">State Board</option>
-                      <option value="Other">Other</option>
-                    </select>
+                      placeholder="e.g. CBSE, ICSE"
+                    />
                   </div>
                   <div>
                     <label htmlFor="subjects" className="block text-sm font-semibold text-navy-900 mb-2">Subjects Required *</label>
@@ -189,13 +178,11 @@ ${formData.message}
                   </div>
                   <div>
                     <label htmlFor="preferredClasses" className="block text-sm font-semibold text-navy-900 mb-2">Preferred Mode</label>
-                    <select
-                      id="preferredClasses" name="preferredClasses" value={formData.preferredClasses} onChange={handleChange}
+                    <input
+                      type="text" id="preferredClasses" name="preferredClasses" value={formData.preferredClasses} onChange={handleChange}
                       className="w-full px-4 py-3 rounded-xl border border-navy-200 bg-navy-50/50 focus:bg-white focus:border-gold-500 focus:ring-2 focus:ring-gold-500/20 outline-none transition-all"
-                    >
-                      <option value="">Select Mode</option>
-                      <option value="1-to-1 Online">1-to-1 Online</option>
-                    </select>
+                      placeholder="e.g. 1-to-1 Online"
+                    />
                   </div>
                   <div>
                     <label htmlFor="numberOfClasses" className="block text-sm font-semibold text-navy-900 mb-2">No. of Classes per Week</label>
