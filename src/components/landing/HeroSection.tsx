@@ -87,7 +87,7 @@ export function HeroSection() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="hidden lg:flex relative lg:ml-auto w-full justify-center items-center"
+            className="hidden lg:flex relative lg:ml-auto w-full justify-center items-center mt-10 lg:mt-0"
           >
             <motion.div animate={floatingAnimation}>
               <Image 
@@ -95,7 +95,7 @@ export function HeroSection() {
                 alt="EduNest Dashboard Preview" 
                 width={700}
                 height={500}
-                className="object-contain drop-shadow-2xl scale-110"
+                className="object-contain drop-shadow-2xl scale-[1.15]"
                 priority
               />
             </motion.div>
