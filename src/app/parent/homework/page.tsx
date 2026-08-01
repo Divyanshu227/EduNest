@@ -24,6 +24,7 @@ export default async function ParentHomeworkPage({
     orderBy: { dueDate: 'desc' },
     include: {
       subject: true,
+      chapter: true,
       submissions: {
         where: { studentId }
       }

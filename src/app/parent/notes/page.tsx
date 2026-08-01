@@ -60,7 +60,7 @@ export default async function ParentNotesPage({
                 {subjectNotes.map((note) => {
                   const pdfFiles = Array.isArray(note.pdfs) ? note.pdfs : [];
                   const firstPdf = pdfFiles[0];
-                  let pdfUrl = typeof firstPdf === 'string' ? firstPdf : firstPdf?.url;
+                  let pdfUrl = typeof firstPdf === 'string' ? firstPdf : (firstPdf as any)?.url;
                   
                   if (pdfUrl && pdfUrl.includes('res.cloudinary.com') && !pdfUrl.toLowerCase().endsWith('.pdf')) {
                     pdfUrl = `${pdfUrl}.pdf`;

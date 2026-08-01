@@ -12,7 +12,7 @@ const floatingAnimation = {
     duration: 2,
     repeat: Infinity,
     repeatType: "reverse" as const,
-    ease: "easeInOut"
+    ease: "easeInOut" as const
   }
 };
 
