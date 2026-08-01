@@ -85,8 +85,8 @@ export function PushNotificationButton() {
 
   if (status === 'enabled') {
     return (
-      <Button variant="outline" size="sm" className="rounded-2xl" onClick={enableNotifications} disabled={status === 'loading'}>
-        {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <BellRing className="mr-2 h-4 w-4 text-primary" />}
+      <Button variant="outline" size="sm" className="rounded-2xl" onClick={enableNotifications}>
+        <BellRing className="mr-2 h-4 w-4 text-primary" />
         Alerts On
       </Button>
     );
