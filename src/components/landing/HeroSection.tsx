@@ -54,13 +54,15 @@ export function HeroSection() {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 mb-10">
+              <Button asChild size="lg" className="bg-navy-900 hover:bg-navy-800 text-white rounded-full h-14 px-8 shadow-lg shadow-navy-900/20 text-lg font-semibold">
+                <Link href="#contact">
+                  Request Demo Class
+                </Link>
+              </Button>
               <Button asChild size="lg" className="bg-gold-500 hover:bg-gold-600 text-navy-900 font-bold rounded-full h-14 px-8 shadow-lg shadow-gold-500/30 text-lg flex items-center gap-2">
                 <Link href="/login">
                   Open Dashboard <ArrowRight className="w-5 h-5 ml-1" />
                 </Link>
-              </Button>
-              <Button size="lg" variant="outline" className="border-2 border-navy-200 hover:bg-navy-50 hover:border-navy-900 text-navy-900 rounded-full h-14 px-8 text-lg font-semibold transition-colors">
-                Request Demo Class
               </Button>
             </div>
 

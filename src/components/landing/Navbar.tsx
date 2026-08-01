@@ -32,12 +32,12 @@ export function Navbar() {
 
           {/* CTA Button */}
           <div className="hidden md:flex items-center gap-4">
-            <Button asChild variant="outline" className="border-navy-200 hover:bg-navy-50 text-navy-900 rounded-full px-6 shadow-sm">
+            <Button asChild className="bg-navy-900 hover:bg-navy-800 text-white rounded-full px-6 shadow-md font-semibold">
               <Link href="#contact">
                 Request Demo
               </Link>
             </Button>
-            <Button asChild className="bg-navy-900 hover:bg-navy-800 text-white rounded-full px-8 shadow-lg shadow-navy-900/20 font-bold">
+            <Button asChild className="bg-gold-500 hover:bg-gold-600 text-navy-900 rounded-full px-8 shadow-lg shadow-gold-500/20 font-bold">
               <Link href="/login">
                 Login
               </Link>
