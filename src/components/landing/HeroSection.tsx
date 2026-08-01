@@ -87,12 +87,18 @@ export function HeroSection() {
             initial={{ opacity: 0, x: 50 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative lg:ml-auto"
+            className="hidden lg:block relative lg:ml-auto"
           >
             <div className="relative w-full max-w-lg mx-auto aspect-square">
               {/* Main Image Container */}
-              <div className="absolute inset-0 rounded-3xl overflow-hidden flex items-end justify-center">
-                 {/* Image will go here */}
+              <div className="absolute inset-0 rounded-3xl overflow-hidden flex items-center justify-center">
+                 <Image 
+                   src="/hero-dashboard.png" 
+                   alt="EduNest Dashboard Preview" 
+                   fill
+                   className="object-contain scale-110 drop-shadow-2xl"
+                   priority
+                 />
               </div>
 
               {/* Floating Elements */}
