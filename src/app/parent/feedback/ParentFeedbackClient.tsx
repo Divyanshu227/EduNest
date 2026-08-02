@@ -53,7 +53,7 @@ export function ParentFeedbackClient({ admins }: { admins: AdminUser[] }) {
       if (!res.ok) throw new Error(data.error || 'Failed to submit feedback');
 
       setIsSuccess(true);
-      setFormData({ topic: 'PTM Request', subject: '', message: '' });
+      setFormData({ topic: 'PTM Request', teacherId: admins.length > 0 ? admins[0].id : '', subject: '', message: '' });
       setTimeout(() => setIsSuccess(false), 4000);
     } catch (err: any) {
       setError(err.message);
