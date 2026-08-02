@@ -6,10 +6,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Send, CheckCircle2, MessageSquare } from 'lucide-react';
-import { useParent } from '../ParentContext';
+import { useParentContext } from '../ParentContext';
 
 export function ParentFeedbackClient() {
-  const { currentStudent } = useParent();
+  const { linkedStudents, selectedStudentId } = useParentContext();
+  const currentStudent = linkedStudents.find(s => s.id === selectedStudentId) || linkedStudents[0];
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
