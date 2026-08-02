@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { BellRing, BellOff, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
@@ -57,6 +58,7 @@ function waitForActive(
 
 export function PushNotificationButton() {
   const [status, setStatus] = useState<'unsupported' | 'idle' | 'enabled' | 'denied' | 'loading'>('idle');
+  const [showPrompt, setShowPrompt] = useState(false);
 
   useEffect(() => {
     if (
@@ -86,14 +88,13 @@ export function PushNotificationButton() {
         setStatus('enabled');
       } else {
         setStatus('idle');
-        // Auto-prompt if permission is default or granted
-        const hasPrompted = sessionStorage.getItem('hasPromptedPush');
-        if (!hasPrompted && (Notification.permission === 'default' || Notification.permission === 'granted')) {
-          sessionStorage.setItem('hasPromptedPush', 'true');
-          // Wrap in timeout to give the browser a chance to render first
+        // Show prompt if permission is not denied and hasn't been dismissed
+        const hasDismissed = localStorage.getItem('hasDismissedPush');
+        if (!hasDismissed && Notification.permission !== 'denied') {
+          // Wrap in a short timeout so the UI can settle first
           setTimeout(() => {
-            enableNotifications();
-          }, 2000);
+            setShowPrompt(true);
+          }, 1500);
         }
       }
     });
@@ -157,10 +158,17 @@ export function PushNotificationButton() {
       if (!res.ok) throw new Error(`Server error ${res.status}`);
 
       setStatus('enabled');
+      setShowPrompt(false);
     } catch (error) {
       console.error('[Push] Failed:', error);
       setStatus('idle');
+      setShowPrompt(false);
     }
+  };
+
+  const handleDismissPrompt = () => {
+    localStorage.setItem('hasDismissedPush', 'true');
+    setShowPrompt(false);
   };
 
   const disableNotifications = async () => {
@@ -208,18 +216,44 @@ export function PushNotificationButton() {
   }
 
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      className="rounded-2xl"
-      onClick={enableNotifications}
-      disabled={status === 'loading'}
-    >
-      {status === 'loading'
-        ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-        : <BellRing className="mr-2 h-4 w-4" />
-      }
-      {status === 'loading' ? 'Setting up...' : 'Enable Alerts'}
-    </Button>
+    <>
+      <Button
+        variant="outline"
+        size="sm"
+        className="rounded-2xl"
+        onClick={enableNotifications}
+        disabled={status === 'loading'}
+      >
+        {status === 'loading'
+          ? <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+          : <BellRing className="mr-2 h-4 w-4" />
+        }
+        {status === 'loading' ? 'Setting up...' : 'Enable Alerts'}
+      </Button>
+
+      <Dialog open={showPrompt} onOpenChange={(open) => {
+        if (!open) handleDismissPrompt();
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <BellRing className="h-5 w-5 text-primary" />
+              Stay Updated
+            </DialogTitle>
+            <DialogDescription>
+              Enable push notifications so you don't miss any important class announcements, homework assignments, or upcoming tests!
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex gap-2 sm:justify-start">
+            <Button onClick={enableNotifications} disabled={status === 'loading'}>
+              {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Turn On Notifications'}
+            </Button>
+            <Button variant="secondary" onClick={handleDismissPrompt}>
+              Not Now
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
