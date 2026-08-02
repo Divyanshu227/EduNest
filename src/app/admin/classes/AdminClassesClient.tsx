@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash, Video, Calendar, Clock, ExternalLink } from 'lucide-react';
+import { Loader2, Plus, Trash, Video, Calendar, Clock, ExternalLink, Edit } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -39,6 +39,15 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Edit state
+  const [editOpen, setEditOpen] = useState(false);
+  const [editingClass, setEditingClass] = useState<LiveClassType | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editFormData, setEditFormData] = useState({
+    startTime: '',
+    durationMin: 60
+  });
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
   const upcomingClasses = classes.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) >= new Date());
@@ -116,6 +125,44 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
       setClasses(prev => prev.filter(c => c.id !== id));
     } catch (err: any) {
       alert(err.message);
+    }
+  };
+
+  const openEdit = (c: LiveClassType) => {
+    setEditingClass(c);
+    const dateObj = new Date(c.startTime);
+    // Format to YYYY-MM-DDThh:mm for datetime-local input
+    const localIso = new Date(dateObj.getTime() - (dateObj.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+    setEditFormData({
+      startTime: localIso,
+      durationMin: c.durationMin
+    });
+    setEditOpen(true);
+  };
+
+  const handleEditSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingClass) return;
+    setIsEditing(true);
+    try {
+      const startTimeIso = new Date(editFormData.startTime).toISOString();
+      const res = await fetch(`/api/classes/${editingClass.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          startTime: startTimeIso,
+          durationMin: editFormData.durationMin
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update class');
+      
+      setClasses(prev => prev.map(c => c.id === editingClass.id ? { ...c, startTime: data.data.startTime, durationMin: data.data.durationMin } : c).sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()));
+      setEditOpen(false);
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsEditing(false);
     }
   };
 
@@ -262,9 +309,16 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                     <Badge variant={isPast ? "secondary" : "default"} className="text-[10px]">
                       {isPast ? 'Completed' : 'Upcoming'}
                     </Badge>
-                    <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={() => handleDelete(c.id)}>
-                      <Trash className="h-3 w-3 text-destructive" />
-                    </Button>
+                    <div className="flex items-center gap-1">
+                      {!isPast && (
+                        <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-muted rounded-md" onClick={() => openEdit(c)}>
+                          <Edit className="h-3 w-3 text-muted-foreground" />
+                        </Button>
+                      )}
+                      <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={() => handleDelete(c.id)}>
+                        <Trash className="h-3 w-3 text-destructive" />
+                      </Button>
+                    </div>
                   </div>
                   <CardTitle className="text-xl line-clamp-1">{c.title}</CardTitle>
                   <CardDescription className="text-sm font-medium mt-1">
@@ -296,6 +350,48 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
           })
         )}
       </div>
+
+      {/* Edit Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="glass">
+          <DialogHeader>
+            <DialogTitle>Edit Class Schedule</DialogTitle>
+            <DialogDescription>
+              Update the date, time, and duration of the class.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleEditSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="editStartTime">Date & Time</Label>
+              <Input 
+                id="editStartTime" 
+                name="startTime" 
+                type="datetime-local" 
+                required 
+                value={editFormData.startTime}
+                onChange={(e) => setEditFormData({ ...editFormData, startTime: e.target.value })}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDurationMin">Duration (Minutes)</Label>
+              <Input 
+                id="editDurationMin" 
+                name="durationMin" 
+                type="number"
+                min="15"
+                step="5"
+                required 
+                value={editFormData.durationMin}
+                onChange={(e) => setEditFormData({ ...editFormData, durationMin: parseInt(e.target.value) })}
+              />
+            </div>
+            <Button type="submit" className="w-full" disabled={isEditing}>
+              {isEditing ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
+              Save Changes
+            </Button>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
