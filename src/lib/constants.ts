@@ -30,7 +30,6 @@ export const NAVIGATION = {
     { label: 'Dashboard', href: '/parent' },
     { label: 'Schedule', href: '/parent/schedule' },
     { label: 'Homework', href: '/parent/homework' },
-    { label: 'Notes', href: '/parent/notes' },
     { label: 'Tests', href: '/parent/tests' },
     { label: 'Attendance', href: '/parent/attendance' },
     { label: 'Announcements', href: '/parent/announcements' },
