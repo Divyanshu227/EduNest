@@ -12,22 +12,23 @@ export default async function ParentProfilePage() {
     return <div className="p-6">Unauthorized</div>;
   }
 
-  const parentData = await prisma.user.findUnique({
-    where: { id: session.user.id },
-    include: {
-      parentOf: {
-        include: {
-          student: {
-            include: {
-              subjects: {
-                include: { teacher: true }
-              }
-            }
+  const [parentData, allSubjects] = await Promise.all([
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        parentOf: {
+          include: {
+            student: true
           }
         }
       }
-    }
-  });
+    }),
+    prisma.subject.findMany({
+      include: { teacher: true }
+    })
+  ]);
+
+  const uniqueTeachers = Array.from(new Map(allSubjects.map(s => [s.teacher.id, s.teacher])).values());
 
   if (!parentData) return <div className="p-6">Parent profile not found.</div>;
 
@@ -85,9 +86,6 @@ export default async function ParentProfilePage() {
           ) : (
             <div className="space-y-6">
               {parentData.parentOf.map(({ student }) => {
-                // Get unique teachers for this student
-                const uniqueTeachers = Array.from(new Map(student.subjects.map(s => [s.teacher.id, s.teacher])).values());
-                
                 return (
                   <div key={student.id} className="rounded-xl border border-border/50 bg-muted/20 p-4">
                     <div className="font-semibold text-lg">{student.name}</div>
