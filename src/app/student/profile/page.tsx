@@ -2,7 +2,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Mail, Shield, BookOpen, GraduationCap, Award, CheckCircle } from 'lucide-react';
+import { Mail, Shield, BookOpen, GraduationCap, Award, CheckCircle, Users, Phone } from 'lucide-react';
 import { AvatarUpload } from '@/components/profile/AvatarUpload';
 
 export default async function StudentProfilePage() {
@@ -12,11 +12,27 @@ export default async function StudentProfilePage() {
     return <div className="p-6">Unauthorized</div>;
   }
 
-  // Get aggregated stats for this student
-  const [attemptsCount, attendanceCount] = await Promise.all([
+  // Get aggregated stats and parents for this student
+  const [attemptsCount, attendanceCount, studentData] = await Promise.all([
     prisma.testAttempt.count({ where: { studentId: session.user.id } }),
-    prisma.attendance.count({ where: { studentId: session.user.id } })
+    prisma.attendance.count({ where: { studentId: session.user.id } }),
+    prisma.user.findUnique({
+      where: { id: session.user.id },
+      include: {
+        parents: {
+          include: {
+            parent: {
+              select: { name: true, email: true, phone: true }
+            }
+          }
+        }
+      }
+    })
   ]);
+
+  if (!studentData) {
+    return <div className="p-6">Student profile not found.</div>;
+  }
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -76,6 +92,41 @@ export default async function StudentProfilePage() {
               })}
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-border/60 bg-card/85 backdrop-blur">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Users className="h-5 w-5 text-primary" />
+            Linked Parents
+          </CardTitle>
+          <CardDescription>Parent accounts connected to your profile.</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {studentData.parents.length === 0 ? (
+            <p className="text-sm text-muted-foreground">No parents linked to this account.</p>
+          ) : (
+            <div className="grid gap-4 sm:grid-cols-2">
+              {studentData.parents.map(({ parent }) => (
+                <div key={parent.email} className="rounded-xl border border-border/50 bg-muted/20 p-4 space-y-3">
+                  <div className="font-semibold text-lg">{parent.name}</div>
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                      <Mail className="h-3.5 w-3.5" />
+                      {parent.email}
+                    </div>
+                    {parent.phone && (
+                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <Phone className="h-3.5 w-3.5" />
+                        {parent.phone}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
