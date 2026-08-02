@@ -70,6 +70,9 @@ model User {
   studentClasses LiveClass[]        @relation("StudentLiveClasses")
   parentOf       ParentStudent[]    @relation("ParentToStudent")
   parents        ParentStudent[]    @relation("StudentToParent")
+  parentFeedbacks  Feedback[]       @relation("ParentFeedback")
+  studentFeedbacks Feedback[]       @relation("StudentFeedback")
+  teacherFeedbacks Feedback[]       @relation("TeacherFeedback")
 
   @@index([role])
 }
@@ -318,4 +321,25 @@ model ParentStudent {
 
   @@unique([parentId, studentId])
   @@index([studentId])
-}
+}
+
+model Feedback {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  topic     String
+  subject   String
+  message   String
+  parentId  String   @db.ObjectId
+  studentId String   @db.ObjectId
+  teacherId String   @db.ObjectId
+  status    String   @default("PENDING") // PENDING, SCHEDULED, RESOLVED
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent  User @relation("ParentFeedback", fields: [parentId], references: [id], onDelete: Cascade)
+  student User @relation("StudentFeedback", fields: [studentId], references: [id], onDelete: Cascade)
+  teacher User @relation("TeacherFeedback", fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([teacherId, status])
+  @@index([parentId])
+}
+

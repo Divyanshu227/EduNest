@@ -13,6 +13,7 @@ export const NAVIGATION = {
     { label: 'Homework', href: '/admin/homework' },
     { label: 'Attendance', href: '/admin/attendance' },
     { label: 'Announcements', href: '/admin/announcements' },
+    { label: 'PTM & Feedback', href: '/admin/feedback' },
     { label: 'Profile', href: '/admin/profile' },
     { label: 'Settings', href: '/admin/settings' }
   ],

@@ -8,7 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Loader2, Send, CheckCircle2, MessageSquare } from 'lucide-react';
 import { useParentContext } from '../ParentContext';
 
-export function ParentFeedbackClient() {
+type AdminUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+export function ParentFeedbackClient({ admins }: { admins: AdminUser[] }) {
   const { linkedStudents, selectedStudentId } = useParentContext();
   const currentStudent = linkedStudents.find(s => s.id === selectedStudentId) || linkedStudents[0];
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -17,6 +23,7 @@ export function ParentFeedbackClient() {
 
   const [formData, setFormData] = useState({
     topic: 'PTM Request',
+    teacherId: admins.length > 0 ? admins[0].id : '',
     subject: '',
     message: ''
   });
@@ -100,6 +107,23 @@ export function ParentFeedbackClient() {
                   <option value="Academic Concern" className="text-black">Academic Concern</option>
                   <option value="General Feedback" className="text-black">General Feedback</option>
                   <option value="Other" className="text-black">Other</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="teacherId">Select Teacher</Label>
+                <select 
+                  id="teacherId" 
+                  name="teacherId" 
+                  className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  value={formData.teacherId}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="" disabled className="text-black">-- Select Teacher --</option>
+                  {admins.map(admin => (
+                    <option key={admin.id} value={admin.id} className="text-black">{admin.name}</option>
+                  ))}
                 </select>
               </div>
 

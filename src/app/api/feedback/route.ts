@@ -13,11 +13,23 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { topic, subject, message, studentId } = body;
+    const { topic, subject, message, studentId, teacherId } = body;
 
-    if (!topic || !subject || !message) {
+    if (!topic || !subject || !message || !teacherId) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
+
+    // Save to database
+    const feedback = await prisma.feedback.create({
+      data: {
+        topic,
+        subject,
+        message,
+        parentId: session.user.id,
+        studentId,
+        teacherId
+      }
+    });
 
     // Optional: Fetch the student name for better context
     let studentContext = '';
@@ -26,28 +38,18 @@ export async function POST(request: NextRequest) {
       if (student) studentContext = ` regarding student: ${student.name}`;
     }
 
-    // Get all Admins
-    const admins = await prisma.user.findMany({
-      where: { role: 'ADMIN' },
-      select: { id: true }
+    // Create a notification for the specific Admin
+    await prisma.notification.create({
+      data: {
+        userId: teacherId,
+        title: `[${topic}] from ${session.user.name}`,
+        body: `${subject}${studentContext}\n\n${message}`,
+        type: NotificationType.SYSTEM,
+        link: '/admin/feedback', // Link to admin feedback management page
+      }
     });
 
-    // Create a notification for each Admin
-    const notificationPromises = admins.map(admin => {
-      return prisma.notification.create({
-        data: {
-          userId: admin.id,
-          title: `[${topic}] from ${session.user.name}`,
-          body: `${subject}${studentContext}\n\n${message}`,
-          type: NotificationType.SYSTEM,
-          link: '/admin', // Link to admin dashboard or potentially a future feedback management page
-        }
-      });
-    });
-
-    await Promise.all(notificationPromises);
-
-    return NextResponse.json({ message: 'Feedback submitted successfully' });
+    return NextResponse.json({ message: 'Feedback submitted successfully', feedback });
   } catch (error) {
     console.error('Failed to submit feedback:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
