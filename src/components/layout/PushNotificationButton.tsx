@@ -76,11 +76,26 @@ export function PushNotificationButton() {
 
     // Check if already subscribed in ANY registered SW
     navigator.serviceWorker.getRegistrations().then(async (regs) => {
+      let isSubbed = false;
       for (const reg of regs) {
         const sub = await reg.pushManager.getSubscription();
-        if (sub) { setStatus('enabled'); return; }
+        if (sub) { isSubbed = true; break; }
       }
-      setStatus('idle');
+      
+      if (isSubbed) {
+        setStatus('enabled');
+      } else {
+        setStatus('idle');
+        // Auto-prompt if permission is default or granted
+        const hasPrompted = sessionStorage.getItem('hasPromptedPush');
+        if (!hasPrompted && (Notification.permission === 'default' || Notification.permission === 'granted')) {
+          sessionStorage.setItem('hasPromptedPush', 'true');
+          // Wrap in timeout to give the browser a chance to render first
+          setTimeout(() => {
+            enableNotifications();
+          }, 2000);
+        }
+      }
     });
   }, []);
 
@@ -148,13 +163,37 @@ export function PushNotificationButton() {
     }
   };
 
+  const disableNotifications = async () => {
+    try {
+      setStatus('loading');
+      const regs = await navigator.serviceWorker.getRegistrations();
+      for (const reg of regs) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          // Remove token from backend
+          await fetch('/api/push-tokens', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: JSON.stringify(sub) }),
+          });
+          // Unsubscribe locally
+          await sub.unsubscribe();
+        }
+      }
+      setStatus('idle');
+    } catch (error) {
+      console.error('[Push] Failed to disable:', error);
+      setStatus('enabled');
+    }
+  };
+
   if (status === 'unsupported') return null;
 
   if (status === 'enabled') {
     return (
-      <Button variant="outline" size="sm" className="rounded-2xl" onClick={enableNotifications} title="Click to re-sync">
-        <BellRing className="mr-2 h-4 w-4 text-primary" />
-        Alerts On
+      <Button variant="outline" size="sm" className="rounded-2xl border-destructive/50 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={disableNotifications}>
+        <BellOff className="mr-2 h-4 w-4" />
+        Disable Alerts
       </Button>
     );
   }
