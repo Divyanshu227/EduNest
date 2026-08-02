@@ -33,6 +33,7 @@ export const NAVIGATION = {
     { label: 'Tests', href: '/parent/tests' },
     { label: 'Attendance', href: '/parent/attendance' },
     { label: 'Announcements', href: '/parent/announcements' },
+    { label: 'Feedback', href: '/parent/feedback' },
     { label: 'Profile', href: '/parent/profile' }
   ]
 } as const;
