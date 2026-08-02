@@ -18,5 +18,18 @@ export default async function AdminFeedbackPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  return <AdminFeedbackClient initialFeedbacks={feedbacks} teacherId={session.user.id} />;
+  const students = await prisma.user.findMany({
+    where: { role: 'STUDENT' },
+    select: {
+      id: true,
+      name: true,
+      parents: {
+        include: {
+          parent: { select: { id: true, name: true } }
+        }
+      }
+    }
+  });
+
+  return <AdminFeedbackClient initialFeedbacks={feedbacks} teacherId={session.user.id} students={students} />;
 }

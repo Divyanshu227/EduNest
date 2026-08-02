@@ -22,7 +22,7 @@ type FeedbackWithRelations = {
   student: { name: string };
 };
 
-export function AdminFeedbackClient({ initialFeedbacks, teacherId }: { initialFeedbacks: any[], teacherId: string }) {
+export function AdminFeedbackClient({ initialFeedbacks, teacherId, students }: { initialFeedbacks: any[], teacherId: string, students?: any[] }) {
   const [feedbacks, setFeedbacks] = useState<FeedbackWithRelations[]>(initialFeedbacks);
   
   // Schedule Modal State
@@ -30,8 +30,11 @@ export function AdminFeedbackClient({ initialFeedbacks, teacherId }: { initialFe
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackWithRelations | null>(null);
   const [meetLink, setMeetLink] = useState('');
   const [startTime, setStartTime] = useState('');
-  const [duration, setDuration] = useState('60');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Proactive Schedule Modal State
+  const [isProactiveScheduleOpen, setIsProactiveScheduleOpen] = useState(false);
+  const [selectedStudentId, setSelectedStudentId] = useState('');
 
   const openScheduleModal = (fb: FeedbackWithRelations) => {
     setSelectedFeedback(fb);
@@ -85,6 +88,40 @@ export function AdminFeedbackClient({ initialFeedbacks, teacherId }: { initialFe
     }
   };
 
+  const handleProactiveScheduleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedStudentId) return;
+    setIsSubmitting(true);
+
+    const student = students?.find(s => s.id === selectedStudentId);
+    if (!student) return;
+
+    try {
+      const classRes = await fetch('/api/classes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: `PTM: ${student.name}`,
+          meetLink,
+          startTime: new Date(startTime).toISOString(),
+          durationMin: parseInt(duration, 10),
+          teacherId,
+          studentId: selectedStudentId
+        })
+      });
+
+      if (!classRes.ok) throw new Error('Failed to schedule proactive PTM class');
+      
+      setIsProactiveScheduleOpen(false);
+      alert('PTM scheduled successfully! The student and parent will be notified.');
+    } catch (error) {
+      console.error(error);
+      alert('Error scheduling PTM');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleMarkResolved = async (id: string) => {
     try {
       const res = await fetch(`/api/feedback/${id}`, {
@@ -102,10 +139,23 @@ export function AdminFeedbackClient({ initialFeedbacks, teacherId }: { initialFe
 
   return (
     <div className="space-y-6">
-      <div>
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Administration</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">PTMs & Feedback</h2>
-        <p className="text-muted-foreground mt-2">Manage meeting requests and feedback from parents.</p>
+      <div className="flex justify-between items-start">
+        <div>
+          <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Administration</p>
+          <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">PTMs & Feedback</h2>
+          <p className="text-muted-foreground mt-2">Manage meeting requests and feedback from parents.</p>
+        </div>
+        <Button onClick={() => {
+          const tomorrow = new Date();
+          tomorrow.setDate(tomorrow.getDate() + 1);
+          tomorrow.setHours(10, 0, 0, 0);
+          setStartTime(new Date(tomorrow.getTime() - tomorrow.getTimezoneOffset() * 60000).toISOString().slice(0, 16));
+          setMeetLink('https://meet.google.com/new');
+          setSelectedStudentId('');
+          setIsProactiveScheduleOpen(true);
+        }}>
+          <Calendar className="mr-2 h-4 w-4" /> Schedule New PTM
+        </Button>
       </div>
 
       <div className="grid gap-6">
@@ -202,6 +252,52 @@ export function AdminFeedbackClient({ initialFeedbacks, teacherId }: { initialFe
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setIsScheduleOpen(false)}>Cancel</Button>
+              <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Scheduling...' : 'Schedule PTM'}</Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Proactive Schedule Modal */}
+      <Dialog open={isProactiveScheduleOpen} onOpenChange={setIsProactiveScheduleOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Schedule a New Parent-Teacher Meeting</DialogTitle>
+            <DialogDescription>
+              Proactively schedule a PTM. The parent and student will be notified.
+            </DialogDescription>
+          </DialogHeader>
+          <form onSubmit={handleProactiveScheduleSubmit} className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label>Select Student</Label>
+              <select 
+                required 
+                className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={selectedStudentId}
+                onChange={e => setSelectedStudentId(e.target.value)}
+              >
+                <option value="" disabled className="text-black">-- Select a Student --</option>
+                {students?.map((s: any) => (
+                  <option key={s.id} value={s.id} className="text-black">{s.name}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label>Meeting Link (Google Meet / Zoom)</Label>
+              <Input required value={meetLink} onChange={e => setMeetLink(e.target.value)} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Start Date & Time</Label>
+                <Input type="datetime-local" required value={startTime} onChange={e => setStartTime(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label>Duration (Minutes)</Label>
+                <Input type="number" min="15" required value={duration} onChange={e => setDuration(e.target.value)} />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button type="button" variant="outline" onClick={() => setIsProactiveScheduleOpen(false)}>Cancel</Button>
               <Button type="submit" disabled={isSubmitting}>{isSubmitting ? 'Scheduling...' : 'Schedule PTM'}</Button>
             </DialogFooter>
           </form>
