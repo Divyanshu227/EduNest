@@ -12,7 +12,7 @@ export default async function ParentProfilePage() {
     return <div className="p-6">Unauthorized</div>;
   }
 
-  const [parentData, allSubjects] = await Promise.all([
+  const [parentData, allAdmins] = await Promise.all([
     prisma.user.findUnique({
       where: { id: session.user.id },
       include: {
@@ -23,12 +23,11 @@ export default async function ParentProfilePage() {
         }
       }
     }),
-    prisma.subject.findMany({
-      include: { teacher: true }
+    prisma.user.findMany({
+      where: { role: 'ADMIN' },
+      select: { id: true, name: true, email: true }
     })
   ]);
-
-  const uniqueTeachers = Array.from(new Map(allSubjects.map(s => [s.teacher.id, s.teacher])).values());
 
   if (!parentData) return <div className="p-6">Parent profile not found.</div>;
 
@@ -95,11 +94,11 @@ export default async function ParentProfilePage() {
                       <span className="text-xs font-bold uppercase text-muted-foreground flex items-center gap-1">
                         <BookOpen className="h-3 w-3" /> Assigned Teachers
                       </span>
-                      {uniqueTeachers.length === 0 ? (
+                      {allAdmins.length === 0 ? (
                         <p className="text-sm text-muted-foreground italic">No teachers assigned.</p>
                       ) : (
                         <div className="flex flex-wrap gap-2">
-                          {uniqueTeachers.map(teacher => (
+                          {allAdmins.map(teacher => (
                             <Badge key={teacher.id} variant="secondary" className="font-normal">
                               {teacher.name} ({teacher.email})
                             </Badge>
