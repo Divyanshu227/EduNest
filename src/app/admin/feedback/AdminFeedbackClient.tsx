@@ -30,6 +30,7 @@ export function AdminFeedbackClient({ initialFeedbacks, teacherId, students }: {
   const [selectedFeedback, setSelectedFeedback] = useState<FeedbackWithRelations | null>(null);
   const [meetLink, setMeetLink] = useState('');
   const [startTime, setStartTime] = useState('');
+  const [duration, setDuration] = useState('60');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Proactive Schedule Modal State
