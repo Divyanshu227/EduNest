@@ -88,9 +88,19 @@ export function PushNotificationButton() {
         setStatus('enabled');
       } else {
         setStatus('idle');
-        // Show prompt if permission is not denied and hasn't been dismissed
-        const hasDismissed = localStorage.getItem('hasDismissedPush');
-        if (!hasDismissed && Notification.permission !== 'denied') {
+        // Show prompt if permission is not denied and hasn't been banned for 10 days
+        const banUntilStr = localStorage.getItem('pushPromptBanUntil');
+        let isBanned = false;
+        if (banUntilStr) {
+          const banUntil = parseInt(banUntilStr, 10);
+          if (Date.now() < banUntil) {
+            isBanned = true;
+          } else {
+            localStorage.removeItem('pushPromptBanUntil');
+          }
+        }
+        
+        if (!isBanned && Notification.permission !== 'denied') {
           // Wrap in a short timeout so the UI can settle first
           setTimeout(() => {
             setShowPrompt(true);
@@ -167,7 +177,12 @@ export function PushNotificationButton() {
   };
 
   const handleDismissPrompt = () => {
-    localStorage.setItem('hasDismissedPush', 'true');
+    setShowPrompt(false);
+  };
+
+  const handleBanPrompt = () => {
+    const tenDaysFromNow = Date.now() + 10 * 24 * 60 * 60 * 1000;
+    localStorage.setItem('pushPromptBanUntil', tenDaysFromNow.toString());
     setShowPrompt(false);
   };
 
@@ -188,6 +203,10 @@ export function PushNotificationButton() {
           await sub.unsubscribe();
         }
       }
+      
+      // Lift the 10-day ban if they manually disable alerts, so they get prompted again on next visit
+      localStorage.removeItem('pushPromptBanUntil');
+      
       setStatus('idle');
     } catch (error) {
       console.error('[Push] Failed to disable:', error);
@@ -248,8 +267,11 @@ export function PushNotificationButton() {
             <Button onClick={enableNotifications} disabled={status === 'loading'}>
               {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Turn On Notifications'}
             </Button>
-            <Button variant="secondary" onClick={handleDismissPrompt}>
+            <Button variant="outline" onClick={handleDismissPrompt}>
               Not Now
+            </Button>
+            <Button variant="secondary" onClick={handleBanPrompt}>
+              Don't Show Again
             </Button>
           </DialogFooter>
         </DialogContent>
