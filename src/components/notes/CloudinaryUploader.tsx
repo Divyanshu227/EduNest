@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { Upload, X, ArrowUp, ArrowDown, FileText, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
-import { uploadAction } from '@/app/actions/upload';
+import { uploadAction, getCloudinarySignatureAction } from '@/app/actions/upload';
 
 interface UploadedFile {
   url: string;
@@ -31,17 +31,35 @@ export function CloudinaryUploader({
   const [dragActive, setDragActive] = useState(false);
 
   const uploadFile = async (file: File) => {
+    // Get signature from the server
+    const { timestamp, signature, cloudName, apiKey } = await getCloudinarySignatureAction(folder);
+
+    // Upload directly to Cloudinary
     const formData = new FormData();
     formData.append('file', file);
+    formData.append('api_key', apiKey);
+    formData.append('timestamp', timestamp.toString());
+    formData.append('signature', signature);
     formData.append('folder', folder);
 
-    const result = await uploadAction(formData);
-    
-    if (!result) {
-      throw new Error('Upload failed');
+    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+    const resourceType = 'auto';
+
+    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
+      method: 'POST',
+      body: formData,
+    });
+
+    if (!res.ok) {
+      throw new Error('Cloudinary upload failed');
     }
 
-    return result;
+    const data = await res.json();
+    return {
+      url: data.secure_url,
+      publicId: data.public_id,
+      name: file.name
+    };
   };
 
   const handleFiles = async (files: FileList) => {

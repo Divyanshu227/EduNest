@@ -1,7 +1,7 @@
 "use server";
 
 import { requireUser } from '@/lib/api';
-import { uploadToCloudinary } from '@/lib/cloudinary';
+import cloudinary, { uploadToCloudinary } from '@/lib/cloudinary';
 
 export async function uploadAction(formData: FormData) {
   const auth = await requireUser();
@@ -29,4 +29,30 @@ export async function uploadAction(formData: FormData) {
     console.error('Cloudinary upload failed:', error);
     throw new Error(error.message || 'Cloudinary upload failed');
   }
+}
+
+export async function getCloudinarySignatureAction(folder: string) {
+  const auth = await requireUser();
+
+  if ('error' in auth) {
+    throw new Error('Unauthorized');
+  }
+
+  const timestamp = Math.round(new Date().getTime() / 1000);
+  const paramsToSign = {
+    timestamp,
+    folder,
+  };
+
+  const signature = cloudinary.utils.api_sign_request(
+    paramsToSign,
+    process.env.CLOUDINARY_API_SECRET!
+  );
+
+  return {
+    timestamp,
+    signature,
+    cloudName: process.env.CLOUDINARY_CLOUD_NAME!,
+    apiKey: process.env.CLOUDINARY_API_KEY!,
+  };
 }
