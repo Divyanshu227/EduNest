@@ -29,8 +29,9 @@ export function CloudinaryUploader({
 }: CloudinaryUploaderProps) {
   const [uploading, setUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const uploadFile = async (file: File) => {
+  const uploadFile = async (file: File, onProgress: (pct: number) => void) => {
     // Get signature from the server
     const { timestamp, signature, cloudName, apiKey } = await getCloudinarySignatureAction(folder);
 
@@ -45,21 +46,33 @@ export function CloudinaryUploader({
     const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     const resourceType = 'auto';
 
-    const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`, {
-      method: 'POST',
-      body: formData,
+    return new Promise<{ url: string; publicId: string; name: string }>((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', `https://api.cloudinary.com/v1_1/${cloudName}/${resourceType}/upload`);
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable) {
+          const pct = Math.round((event.loaded / event.total) * 100);
+          onProgress(pct);
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const data = JSON.parse(xhr.responseText);
+          resolve({
+            url: data.secure_url,
+            publicId: data.public_id,
+            name: file.name
+          });
+        } else {
+          reject(new Error('Cloudinary upload failed'));
+        }
+      };
+
+      xhr.onerror = () => reject(new Error('Cloudinary upload failed'));
+      xhr.send(formData);
     });
-
-    if (!res.ok) {
-      throw new Error('Cloudinary upload failed');
-    }
-
-    const data = await res.json();
-    return {
-      url: data.secure_url,
-      publicId: data.public_id,
-      name: file.name
-    };
   };
 
   const handleFiles = async (files: FileList) => {
@@ -75,9 +88,21 @@ export function CloudinaryUploader({
     }
 
     setUploading(true);
+    setUploadProgress(0);
+    
+    // Array to track progress of each file
+    const progresses = new Array(files.length).fill(0);
+    const updateOverallProgress = () => {
+      const sum = progresses.reduce((a, b) => a + b, 0);
+      setUploadProgress(Math.round(sum / files.length));
+    };
+
     try {
-      const uploadPromises = Array.from(files).map(async (file) => {
-        const data = await uploadFile(file);
+      const uploadPromises = Array.from(files).map(async (file, index) => {
+        const data = await uploadFile(file, (pct) => {
+          progresses[index] = pct;
+          updateOverallProgress();
+        });
         return {
           url: data.url,
           publicId: data.publicId,
@@ -165,7 +190,7 @@ export function CloudinaryUploader({
           disabled={uploading}
         />
         
-        <div className="flex flex-col items-center justify-center space-y-2 text-center">
+        <div className="flex flex-col items-center justify-center space-y-2 text-center w-full max-w-sm">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-background border border-border/60 shadow-sm text-muted-foreground">
             {uploading ? (
               <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
@@ -174,11 +199,21 @@ export function CloudinaryUploader({
             )}
           </div>
           <div className="text-sm font-medium">
-            {uploading ? 'Uploading assets...' : 'Drag & drop files here, or click to browse'}
+            {uploading ? `Uploading assets... ${uploadProgress}%` : 'Drag & drop files here, or click to browse'}
           </div>
-          <p className="text-xs text-muted-foreground">
-            Supports Images/PDFs (Max 10MB) or Videos (Max 20MB)
-          </p>
+          
+          {uploading ? (
+            <div className="w-full h-2 bg-muted rounded-full overflow-hidden mt-2">
+              <div 
+                className="h-full bg-primary transition-all duration-300 ease-out"
+                style={{ width: `${uploadProgress}%` }}
+              />
+            </div>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Supports Images/PDFs (Max 10MB) or Videos (Max 20MB)
+            </p>
+          )}
         </div>
       </div>
 
