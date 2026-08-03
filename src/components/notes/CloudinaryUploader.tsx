@@ -64,8 +64,8 @@ export function CloudinaryUploader({
 
   const handleFiles = async (files: FileList) => {
     for (let i = 0; i < files.length; i++) {
-      if (files[i].size > 20 * 1024 * 1024) {
-        alert(`File "${files[i].name}" is too large. Maximum file size is 20MB.`);
+      if (files[i].size > 10 * 1024 * 1024) {
+        alert(`File "${files[i].name}" is too large. Maximum file size is 10MB.`);
         return;
       }
     }
@@ -173,7 +173,7 @@ export function CloudinaryUploader({
             {uploading ? 'Uploading assets...' : 'Drag & drop files here, or click to browse'}
           </div>
           <p className="text-xs text-muted-foreground">
-            Supports Images, PDFs, or Videos (Max 20MB)
+            Supports Images, PDFs, or Videos (Max 10MB)
           </p>
         </div>
       </div>
