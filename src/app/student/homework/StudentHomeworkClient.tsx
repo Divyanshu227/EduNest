@@ -359,7 +359,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                       />
                     </div>
 
-                    <div className="space-y-2">
+                    <div className="space-y-2 pb-2">
                       <Label>Scanned Answer Sheets / Images / PDFs</Label>
                       <CloudinaryUploader
                         value={uploadedAttachments}
@@ -368,9 +368,16 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                         folder="submissions_attachments"
                       />
                     </div>
+                    
+                    {uploadedAttachments.length > 0 && (
+                      <div className="rounded-xl bg-amber-500/10 border border-amber-500/20 p-3 flex gap-2 items-start text-amber-700 dark:text-amber-400">
+                        <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+                        <p className="text-sm"><strong>Almost done!</strong> Your files are attached, but you must click the <strong>Submit Homework</strong> button below to send it to your teacher.</p>
+                      </div>
+                    )}
 
-                    <Button type="submit" disabled={submitting} className="w-full rounded-2xl shadow-glow flex items-center justify-center gap-2">
-                      <Send className="h-4 w-4" /> {submitting ? 'Submitting...' : 'Upload Submission'}
+                    <Button type="submit" disabled={submitting} className="w-full rounded-2xl shadow-glow flex items-center justify-center gap-2 h-12 text-base font-bold bg-primary hover:bg-primary/90">
+                      <Send className="h-5 w-5" /> {submitting ? 'Turning In...' : 'Submit Homework to Teacher'}
                     </Button>
                   </form>
                 )}
