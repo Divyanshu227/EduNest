@@ -276,10 +276,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
           Completed ({completedHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (rejectedHomework[0]) attemptSelectHomework(rejectedHomework[0], 'rejected');
-            else { setFilter('rejected'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('rejected', rejectedHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'rejected'
               ? 'border-red-500 bg-red-500 text-white shadow-sm'
@@ -289,10 +286,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
           Rejected ({rejectedHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (reassignedHomework[0]) attemptSelectHomework(reassignedHomework[0], 'reassigned');
-            else { setFilter('reassigned'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('reassigned', reassignedHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'reassigned'
               ? 'border-purple-500 bg-purple-500 text-white shadow-sm'
