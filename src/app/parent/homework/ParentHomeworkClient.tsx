@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Calendar, FileText, CheckCircle2, AlertCircle, ExternalLink, HelpCircle, Download, Clock, Paperclip, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -31,6 +32,7 @@ interface ParentHomeworkClientProps {
 }
 
 export function ParentHomeworkClient({ homeworkList: initialList, studentId }: ParentHomeworkClientProps) {
+  const router = useRouter();
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialList);
   const [selectedHwId, setSelectedHwId] = useState<string>(homeworkList[0]?.id || '');
   const [filter, setFilter] = useState<'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned'>('active');
@@ -172,7 +174,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
     setShowDiscardDialog(false);
     
     if (pendingExternalNav) {
-      window.location.href = pendingExternalNav;
+      router.push(pendingExternalNav);
       return;
     }
 
@@ -482,11 +484,11 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           <div className="flex flex-col gap-3 pt-4">
             <Button 
               onClick={async () => {
-                setShowDiscardDialog(false);
                 await handleSubmissionSubmit(new Event('submit') as unknown as React.FormEvent);
+                setShowDiscardDialog(false);
                 
                 if (pendingExternalNav) {
-                  window.location.href = pendingExternalNav;
+                  router.push(pendingExternalNav);
                   return;
                 }
 

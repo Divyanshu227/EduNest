@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { Calendar, FileText, CheckCircle2, AlertCircle, Send, ExternalLink, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -31,6 +32,7 @@ interface StudentHomeworkClientProps {
 }
 
 export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectId, fixedChapterId }: StudentHomeworkClientProps) {
+  const router = useRouter();
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialList);
   const [selectedHwId, setSelectedHwId] = useState<string>(homeworkList[0]?.id || '');
   const [filter, setFilter] = useState<'todo' | 'overdue' | 'in_review' | 'completed' | 'rejected' | 'reassigned'>('todo');
@@ -179,7 +181,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
     setShowDiscardDialog(false);
 
     if (pendingExternalNav) {
-      window.location.href = pendingExternalNav;
+      router.push(pendingExternalNav);
       return;
     }
 
@@ -500,11 +502,11 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
           <div className="flex flex-col gap-3 pt-4">
             <Button 
               onClick={async () => {
-                setShowDiscardDialog(false);
                 await handleSubmissionSubmit(new Event('submit') as unknown as React.FormEvent);
+                setShowDiscardDialog(false);
                 
                 if (pendingExternalNav) {
-                  window.location.href = pendingExternalNav;
+                  router.push(pendingExternalNav);
                   return;
                 }
 
