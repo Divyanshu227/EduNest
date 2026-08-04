@@ -47,6 +47,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
   const [pendingExternalNav, setPendingExternalNav] = useState<string | null>(null);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   const selectedHw = homeworkList.find(h => h.id === selectedHwId);
   const userSubmission = selectedHw?.submissions[0] || null;
@@ -169,17 +170,13 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
       }
     }
     
-    setTextAnswer('');
-    setUploadedAttachments([]);
-    setShowDiscardDialog(false);
-    
     if (pendingExternalNav) {
-      startTransition(() => {
-        router.push(pendingExternalNav);
-      });
+      setIsNavigating(true);
+      window.location.href = pendingExternalNav;
       return;
     }
 
+    setShowDiscardDialog(false);
     if (pendingNavFilter) setFilter(pendingNavFilter);
     if (pendingNavHw) handleSelectHomework(pendingNavHw);
     setPendingNavHw(null);
@@ -467,7 +464,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
       </div>
 
       <Dialog open={showDiscardDialog} onOpenChange={(open) => {
-        if (!open && !isDiscarding) {
+        if (!open && !isDiscarding && !isNavigating) {
           setShowDiscardDialog(false);
           setPendingNavHw(null);
           setPendingNavFilter(null);
@@ -487,34 +484,33 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
             <Button 
               onClick={async () => {
                 await handleSubmissionSubmit(new Event('submit') as unknown as React.FormEvent);
-                setShowDiscardDialog(false);
                 
                 if (pendingExternalNav) {
-                  startTransition(() => {
-                    router.push(pendingExternalNav);
-                  });
+                  setIsNavigating(true);
+                  window.location.href = pendingExternalNav;
                   return;
                 }
 
+                setShowDiscardDialog(false);
                 if (pendingNavFilter) setFilter(pendingNavFilter);
                 if (pendingNavHw) handleSelectHomework(pendingNavHw);
                 setPendingNavHw(null);
                 setPendingNavFilter(null);
                 setPendingExternalNav(null);
               }}
-              disabled={submitting || isDiscarding} 
+              disabled={submitting || isDiscarding || isNavigating} 
               className="w-full bg-primary flex items-center justify-center gap-2"
             >
               <Send className="h-4 w-4" />
-              {submitting ? 'Submitting...' : 'Submit to Teacher'}
+              {isNavigating ? 'Redirecting...' : submitting ? 'Submitting...' : 'Submit to Teacher'}
             </Button>
             <Button 
               variant="destructive" 
               onClick={handleDiscard}
-              disabled={isDiscarding || submitting}
+              disabled={isDiscarding || submitting || isNavigating}
               className="w-full flex items-center justify-center gap-2"
             >
-              {isDiscarding ? 'Discarding...' : 'Discard Uploads'}
+              {isNavigating ? 'Redirecting...' : isDiscarding ? 'Discarding...' : 'Discard Uploads'}
             </Button>
             <Button 
               variant="outline" 
