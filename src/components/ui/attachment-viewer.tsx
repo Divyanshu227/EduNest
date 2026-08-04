@@ -30,7 +30,13 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
         
         let viewerUrl = urlStr;
         if (isPdf) {
-          viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(urlStr)}&embedded=true`;
+          // Cloudinary /raw/upload/ forces downloads, so we must use gview to preview them.
+          // Newer uploads use /image/upload/ which render perfectly in native iframes without gview.
+          if (urlStr.includes("/raw/upload/")) {
+            viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(urlStr)}&embedded=true`;
+          } else {
+            viewerUrl = urlStr;
+          }
         }
         return (
           <Dialog key={idx}>
