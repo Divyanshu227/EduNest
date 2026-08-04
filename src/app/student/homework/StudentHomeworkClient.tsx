@@ -123,17 +123,35 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
     };
   }, [uploadedAttachments, userSubmission]);
 
-  const attemptSelectHomework = (hw: Homework, newFilter?: 'todo' | 'overdue' | 'in_review' | 'completed' | 'rejected' | 'reassigned') => {
+  const attemptSelectHomework = (hw: Homework) => {
     const hasUnsavedAttachments = uploadedAttachments.length > 0 && !userSubmission;
     const hasUnsavedText = textAnswer.trim().length > 0 && !userSubmission;
     
     if (hasUnsavedAttachments || hasUnsavedText) {
       setPendingNavHw(hw);
-      if (newFilter) setPendingNavFilter(newFilter);
       setShowDiscardDialog(true);
     } else {
-      if (newFilter) setFilter(newFilter);
       handleSelectHomework(hw);
+    }
+  };
+
+  const attemptSwitchTab = (newFilter: 'todo' | 'overdue' | 'in_review' | 'completed' | 'rejected' | 'reassigned', hwList: Homework[]) => {
+    const hasUnsavedAttachments = uploadedAttachments.length > 0 && !userSubmission;
+    const hasUnsavedText = textAnswer.trim().length > 0 && !userSubmission;
+    
+    if (hasUnsavedAttachments || hasUnsavedText) {
+      setPendingNavFilter(newFilter);
+      setPendingNavHw(hwList[0] || null);
+      setShowDiscardDialog(true);
+    } else {
+      setFilter(newFilter);
+      if (hwList[0]) {
+        handleSelectHomework(hwList[0]);
+      } else {
+        setSelectedHwId('');
+        setTextAnswer('');
+        setUploadedAttachments([]);
+      }
     }
   };
 
@@ -218,36 +236,27 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
         <button
-          onClick={() => {
-            if (todoHomework[0]) attemptSelectHomework(todoHomework[0], 'todo');
-            else { setFilter('todo'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('todo', todoHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'todo'
               ? 'border-primary bg-primary text-primary-foreground shadow-sm'
               : 'border-border/60 bg-card text-muted-foreground hover:bg-muted hover:text-foreground'
           }`}
         >
-          To-Do ({todoHomework.length})
+          To Do ({todoHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (overdueHomework[0]) attemptSelectHomework(overdueHomework[0], 'overdue');
-            else { setFilter('overdue'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('overdue', overdueHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'overdue'
-              ? 'border-destructive bg-destructive text-destructive-foreground shadow-sm'
+              ? 'border-destructive bg-destructive text-white shadow-sm'
               : 'border-border/60 bg-card text-muted-foreground hover:bg-destructive/10 hover:text-destructive'
           }`}
         >
           Overdue ({overdueHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (inReviewHomework[0]) attemptSelectHomework(inReviewHomework[0], 'in_review');
-            else { setFilter('in_review'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('in_review', inReviewHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'in_review'
               ? 'border-amber-500 bg-amber-500 text-white shadow-sm'
@@ -257,10 +266,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
           In Review ({inReviewHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (completedHomework[0]) attemptSelectHomework(completedHomework[0], 'completed');
-            else { setFilter('completed'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('completed', completedHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'completed'
               ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'

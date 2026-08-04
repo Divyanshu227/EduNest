@@ -116,17 +116,35 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
     };
   }, [uploadedAttachments, userSubmission]);
 
-  const attemptSelectHomework = (hw: Homework, newFilter?: 'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned') => {
+  const attemptSelectHomework = (hw: Homework) => {
     const hasUnsavedAttachments = uploadedAttachments.length > 0 && !userSubmission;
     const hasUnsavedText = textAnswer.trim().length > 0 && !userSubmission;
     
     if (hasUnsavedAttachments || hasUnsavedText) {
       setPendingNavHw(hw);
-      if (newFilter) setPendingNavFilter(newFilter);
       setShowDiscardDialog(true);
     } else {
-      if (newFilter) setFilter(newFilter);
       handleSelectHomework(hw);
+    }
+  };
+
+  const attemptSwitchTab = (newFilter: 'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned', hwList: Homework[]) => {
+    const hasUnsavedAttachments = uploadedAttachments.length > 0 && !userSubmission;
+    const hasUnsavedText = textAnswer.trim().length > 0 && !userSubmission;
+    
+    if (hasUnsavedAttachments || hasUnsavedText) {
+      setPendingNavFilter(newFilter);
+      setPendingNavHw(hwList[0] || null);
+      setShowDiscardDialog(true);
+    } else {
+      setFilter(newFilter);
+      if (hwList[0]) {
+        handleSelectHomework(hwList[0]);
+      } else {
+        setSelectedHwId('');
+        setTextAnswer('');
+        setUploadedAttachments([]);
+      }
     }
   };
 
@@ -210,10 +228,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
       {/* Filter Tabs */}
       <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
         <button
-          onClick={() => {
-            if (activeHomework[0]) attemptSelectHomework(activeHomework[0], 'active');
-            else { setFilter('active'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('active', activeHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'active'
               ? 'border-primary bg-primary text-primary-foreground shadow-sm'
@@ -223,10 +238,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           Active ({activeHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (inReviewHomework[0]) attemptSelectHomework(inReviewHomework[0], 'in_review');
-            else { setFilter('in_review'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('in_review', inReviewHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'in_review'
               ? 'border-amber-500 bg-amber-500 text-white shadow-sm'
@@ -236,10 +248,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           Under Review ({inReviewHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (completedHomework[0]) attemptSelectHomework(completedHomework[0], 'completed');
-            else { setFilter('completed'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('completed', completedHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'completed'
               ? 'border-emerald-500 bg-emerald-500 text-white shadow-sm'
@@ -249,10 +258,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           Completed ({completedHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (rejectedHomework[0]) attemptSelectHomework(rejectedHomework[0], 'rejected');
-            else { setFilter('rejected'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('rejected', rejectedHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'rejected'
               ? 'border-red-500 bg-red-500 text-white shadow-sm'
@@ -262,10 +268,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           Rejected ({rejectedHomework.length})
         </button>
         <button
-          onClick={() => {
-            if (reassignedHomework[0]) attemptSelectHomework(reassignedHomework[0], 'reassigned');
-            else { setFilter('reassigned'); setSelectedHwId(''); }
-          }}
+          onClick={() => attemptSwitchTab('reassigned', reassignedHomework)}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'reassigned'
               ? 'border-purple-500 bg-purple-500 text-white shadow-sm'
