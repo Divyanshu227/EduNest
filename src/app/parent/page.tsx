@@ -7,7 +7,12 @@ import { Badge } from '@/components/ui/badge';
 async function getParentDashboardData(studentId: string) {
   const [notes, homework, attendance, recentNotes, student, allAnnouncements] = await Promise.all([
     prisma.note.count({ where: { OR: [{ assignedStudentIds: { has: studentId } }, { assignedStudentIds: { isEmpty: true } }] } }),
-    prisma.homework.count({ where: { OR: [{ assignedStudentIds: { has: studentId } }, { assignedStudentIds: { isEmpty: true } }] } }),
+    prisma.homework.count({ 
+      where: { 
+        OR: [{ assignedStudentIds: { has: studentId } }, { assignedStudentIds: { isEmpty: true } }],
+        submissions: { none: { studentId: studentId } }
+      } 
+    }),
     prisma.attendance.count({ where: { studentId: studentId } }),
     prisma.note.findMany({ 
       where: { OR: [{ assignedStudentIds: { has: studentId } }, { assignedStudentIds: { isEmpty: true } }] },
