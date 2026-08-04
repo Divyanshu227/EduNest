@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Calendar, FileText, CheckCircle2, AlertCircle, ExternalLink, HelpCircle, Download, Clock, Paperclip, Send } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,6 +42,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
   // Unsaved changes dialog state
   const [pendingNavHw, setPendingNavHw] = useState<Homework | null>(null);
   const [pendingNavFilter, setPendingNavFilter] = useState<'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned' | null>(null);
+  const [pendingExternalNav, setPendingExternalNav] = useState<string | null>(null);
   const [showDiscardDialog, setShowDiscardDialog] = useState(false);
   const [isDiscarding, setIsDiscarding] = useState(false);
 
@@ -84,6 +85,37 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
     setUploadedAttachments(Array.isArray(sub?.attachments) ? sub.attachments : []);
   };
 
+  useEffect(() => {
+    const hasUnsavedChanges = uploadedAttachments.length > 0 && !userSubmission;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = ''; // Shows generic browser warning
+      }
+    };
+
+    const handleClick = (e: MouseEvent) => {
+      if (!hasUnsavedChanges) return;
+      
+      const target = (e.target as Element).closest('a');
+      if (target && target.href && target.origin === window.location.origin) {
+        e.preventDefault();
+        e.stopPropagation();
+        setPendingExternalNav(target.href);
+        setShowDiscardDialog(true);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('click', handleClick, { capture: true });
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleClick, { capture: true });
+    };
+  }, [uploadedAttachments, userSubmission]);
+
   const attemptSelectHomework = (hw: Homework, newFilter?: 'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned') => {
     const hasUnsavedAttachments = uploadedAttachments.length > 0 && !userSubmission;
     const hasUnsavedText = textAnswer.trim().length > 0 && !userSubmission;
@@ -120,10 +152,17 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
     setTextAnswer('');
     setUploadedAttachments([]);
     setShowDiscardDialog(false);
+    
+    if (pendingExternalNav) {
+      window.location.href = pendingExternalNav;
+      return;
+    }
+
     if (pendingNavFilter) setFilter(pendingNavFilter);
     if (pendingNavHw) handleSelectHomework(pendingNavHw);
     setPendingNavHw(null);
     setPendingNavFilter(null);
+    setPendingExternalNav(null);
   };
 
   const handleSubmissionSubmit = async (e: React.FormEvent) => {
@@ -425,6 +464,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           setShowDiscardDialog(false);
           setPendingNavHw(null);
           setPendingNavFilter(null);
+          setPendingExternalNav(null);
         }
       }}>
         <DialogContent className="sm:max-w-md">
@@ -438,13 +478,20 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           
           <div className="flex flex-col gap-3 pt-4">
             <Button 
-              onClick={() => {
+              onClick={async () => {
                 setShowDiscardDialog(false);
-                handleSubmissionSubmit(new Event('submit') as unknown as React.FormEvent);
+                await handleSubmissionSubmit(new Event('submit') as unknown as React.FormEvent);
+                
+                if (pendingExternalNav) {
+                  window.location.href = pendingExternalNav;
+                  return;
+                }
+
                 if (pendingNavFilter) setFilter(pendingNavFilter);
                 if (pendingNavHw) handleSelectHomework(pendingNavHw);
                 setPendingNavHw(null);
                 setPendingNavFilter(null);
+                setPendingExternalNav(null);
               }}
               disabled={submitting || isDiscarding} 
               className="w-full bg-primary flex items-center justify-center gap-2"
@@ -466,6 +513,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
                 setShowDiscardDialog(false);
                 setPendingNavHw(null);
                 setPendingNavFilter(null);
+                setPendingExternalNav(null);
               }}
               disabled={isDiscarding || submitting}
               className="w-full"
