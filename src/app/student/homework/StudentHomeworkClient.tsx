@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { Calendar, FileText, CheckCircle2, AlertCircle, Send, ExternalLink, HelpCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -181,7 +181,9 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
     setShowDiscardDialog(false);
 
     if (pendingExternalNav) {
-      router.push(pendingExternalNav);
+      startTransition(() => {
+        router.push(pendingExternalNav);
+      });
       return;
     }
 
@@ -506,7 +508,9 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                 setShowDiscardDialog(false);
                 
                 if (pendingExternalNav) {
-                  router.push(pendingExternalNav);
+                  startTransition(() => {
+                    router.push(pendingExternalNav);
+                  });
                   return;
                 }
 
