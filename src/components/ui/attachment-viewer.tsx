@@ -19,7 +19,7 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
         const isPdf = Boolean(att.url.match(/\.pdf$/i) || att.name?.toLowerCase().endsWith('.pdf'));
         const isImage = !isPdf && Boolean(att.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || att.url.includes("image"));
         
-        let viewerUrl = att.url;
+        const viewerUrl = att.url;
         return (
           <Dialog key={idx}>
             <DialogTrigger asChild>
