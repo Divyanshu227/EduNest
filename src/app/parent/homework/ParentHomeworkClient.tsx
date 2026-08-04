@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 import { DownloadLink } from '@/components/ui/download-link';
 import { AttachmentViewer } from '@/components/ui/attachment-viewer';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface Homework {
   id: string;
@@ -37,6 +38,12 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
   const [textAnswer, setTextAnswer] = useState('');
   const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  // Unsaved changes dialog state
+  const [pendingNavHw, setPendingNavHw] = useState<Homework | null>(null);
+  const [pendingNavFilter, setPendingNavFilter] = useState<'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned' | null>(null);
+  const [showDiscardDialog, setShowDiscardDialog] = useState(false);
+  const [isDiscarding, setIsDiscarding] = useState(false);
 
   const selectedHw = homeworkList.find(h => h.id === selectedHwId);
   const userSubmission = selectedHw?.submissions[0] || null;
@@ -75,6 +82,48 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
     const sub = hw.submissions[0] || null;
     setTextAnswer(sub?.textAnswer || '');
     setUploadedAttachments(Array.isArray(sub?.attachments) ? sub.attachments : []);
+  };
+
+  const attemptSelectHomework = (hw: Homework, newFilter?: 'active' | 'in_review' | 'completed' | 'rejected' | 'reassigned') => {
+    const hasUnsavedAttachments = uploadedAttachments.length > 0 && !userSubmission;
+    const hasUnsavedText = textAnswer.trim().length > 0 && !userSubmission;
+    
+    if (hasUnsavedAttachments || hasUnsavedText) {
+      setPendingNavHw(hw);
+      if (newFilter) setPendingNavFilter(newFilter);
+      setShowDiscardDialog(true);
+    } else {
+      if (newFilter) setFilter(newFilter);
+      handleSelectHomework(hw);
+    }
+  };
+
+  const handleDiscard = async () => {
+    if (uploadedAttachments.length > 0) {
+      setIsDiscarding(true);
+      try {
+        const publicIds = uploadedAttachments.map(att => att.publicId).filter(Boolean);
+        if (publicIds.length > 0) {
+          await fetch('/api/upload', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ publicIds })
+          });
+        }
+      } catch (err) {
+        console.error('Failed to discard attachments:', err);
+      } finally {
+        setIsDiscarding(false);
+      }
+    }
+    
+    setTextAnswer('');
+    setUploadedAttachments([]);
+    setShowDiscardDialog(false);
+    if (pendingNavFilter) setFilter(pendingNavFilter);
+    if (pendingNavHw) handleSelectHomework(pendingNavHw);
+    setPendingNavHw(null);
+    setPendingNavFilter(null);
   };
 
   const handleSubmissionSubmit = async (e: React.FormEvent) => {
@@ -123,8 +172,8 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
       <div className="flex flex-wrap gap-2 border-b border-border/40 pb-3">
         <button
           onClick={() => {
-            setFilter('active');
-            if (activeHomework[0]) handleSelectHomework(activeHomework[0]);
+            if (activeHomework[0]) attemptSelectHomework(activeHomework[0], 'active');
+            else { setFilter('active'); setSelectedHwId(''); }
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'active'
@@ -136,8 +185,8 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
         </button>
         <button
           onClick={() => {
-            setFilter('in_review');
-            if (inReviewHomework[0]) handleSelectHomework(inReviewHomework[0]);
+            if (inReviewHomework[0]) attemptSelectHomework(inReviewHomework[0], 'in_review');
+            else { setFilter('in_review'); setSelectedHwId(''); }
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'in_review'
@@ -149,8 +198,8 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
         </button>
         <button
           onClick={() => {
-            setFilter('completed');
-            if (completedHomework[0]) handleSelectHomework(completedHomework[0]);
+            if (completedHomework[0]) attemptSelectHomework(completedHomework[0], 'completed');
+            else { setFilter('completed'); setSelectedHwId(''); }
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'completed'
@@ -162,8 +211,8 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
         </button>
         <button
           onClick={() => {
-            setFilter('rejected');
-            if (rejectedHomework[0]) handleSelectHomework(rejectedHomework[0]);
+            if (rejectedHomework[0]) attemptSelectHomework(rejectedHomework[0], 'rejected');
+            else { setFilter('rejected'); setSelectedHwId(''); }
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'rejected'
@@ -175,8 +224,8 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
         </button>
         <button
           onClick={() => {
-            setFilter('reassigned');
-            if (reassignedHomework[0]) handleSelectHomework(reassignedHomework[0]);
+            if (reassignedHomework[0]) attemptSelectHomework(reassignedHomework[0], 'reassigned');
+            else { setFilter('reassigned'); setSelectedHwId(''); }
           }}
           className={`rounded-2xl border px-4 py-2 text-sm font-semibold transition-all sm:px-5 ${
             filter === 'reassigned'
@@ -199,7 +248,7 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
             return (
               <button
                 key={hw.id}
-                onClick={() => handleSelectHomework(hw)}
+                onClick={() => attemptSelectHomework(hw)}
                 className={`w-full text-left rounded-3xl border p-5 transition-all ${
                   isActive
                     ? 'border-primary bg-primary/5 shadow-glow ring-2 ring-primary/20'
@@ -370,6 +419,62 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
           )}
         </div>
       </div>
+
+      <Dialog open={showDiscardDialog} onOpenChange={(open) => {
+        if (!open && !isDiscarding) {
+          setShowDiscardDialog(false);
+          setPendingNavHw(null);
+          setPendingNavFilter(null);
+        }
+      }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Unsubmitted Homework</DialogTitle>
+            <DialogDescription>
+              You have attached files or written notes that haven't been submitted to the teacher yet. 
+              Would you like to submit them now or discard them?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-3 pt-4">
+            <Button 
+              onClick={() => {
+                setShowDiscardDialog(false);
+                handleSubmissionSubmit(new Event('submit') as unknown as React.FormEvent);
+                if (pendingNavFilter) setFilter(pendingNavFilter);
+                if (pendingNavHw) handleSelectHomework(pendingNavHw);
+                setPendingNavHw(null);
+                setPendingNavFilter(null);
+              }}
+              disabled={submitting || isDiscarding} 
+              className="w-full bg-primary flex items-center justify-center gap-2"
+            >
+              <Send className="h-4 w-4" />
+              {submitting ? 'Submitting...' : 'Submit to Teacher'}
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDiscard}
+              disabled={isDiscarding || submitting}
+              className="w-full flex items-center justify-center gap-2"
+            >
+              {isDiscarding ? 'Discarding...' : 'Discard Uploads'}
+            </Button>
+            <Button 
+              variant="outline" 
+              onClick={() => {
+                setShowDiscardDialog(false);
+                setPendingNavHw(null);
+                setPendingNavFilter(null);
+              }}
+              disabled={isDiscarding || submitting}
+              className="w-full"
+            >
+              Cancel & Continue Editing
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

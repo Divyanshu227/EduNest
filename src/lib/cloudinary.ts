@@ -29,5 +29,18 @@ export async function uploadToCloudinary(file: File, folder: string) {
     uploadStream.end(buffer);
   });
 }
+export async function deleteFromCloudinary(publicId: string) {
+  return new Promise((resolve, reject) => {
+    // We try both image and video resource types if we're not sure, 
+    // but the default is usually 'image' even for PDFs
+    cloudinary.uploader.destroy(publicId, { resource_type: 'image' }, (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
+    });
+  });
+}
 
 export default cloudinary;

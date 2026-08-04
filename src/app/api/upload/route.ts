@@ -47,3 +47,32 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 }
+
+export async function DELETE(request: Request) {
+  const auth = await requireUser();
+
+  if ('error' in auth) {
+    return auth.error;
+  }
+
+  try {
+    const { publicIds } = await request.json();
+
+    if (!publicIds || !Array.isArray(publicIds)) {
+      return NextResponse.json({ error: 'No publicIds provided' }, { status: 400 });
+    }
+
+    const deletionPromises = publicIds.map(async (publicId: string) => {
+      // Import dynamicly to avoid top-level issues, or use the already imported module
+      // Actually we need to import deleteFromCloudinary at the top
+      const { deleteFromCloudinary } = await import('@/lib/cloudinary');
+      return deleteFromCloudinary(publicId);
+    });
+
+    await Promise.allSettled(deletionPromises);
+    
+    return NextResponse.json({ success: true });
+  } catch (error: any) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+}
