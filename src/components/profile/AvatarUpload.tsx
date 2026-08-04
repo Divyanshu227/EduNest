@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useRef } from 'react';
-import { Camera, Loader2 } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { Camera, Loader2, Check, X } from 'lucide-react';
+import Cropper from 'react-easy-crop';
+import getCroppedImg from '@/lib/cropImage';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -13,6 +17,14 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
   const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl || null);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Cropper states
+  const [imageSrc, setImageSrc] = useState<string | null>(null);
+  const [crop, setCrop] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<any>(null);
+  const [isCropDialogOpen, setIsCropDialogOpen] = useState(false);
+  const [processingCrop, setProcessingCrop] = useState(false);
 
   const readErrorMessage = async (response: Response, fallback: string) => {
     const raw = await response.text();
@@ -45,9 +57,35 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
       return;
     }
 
-    setUploading(true);
+    const reader = new FileReader();
+    reader.addEventListener('load', () => {
+      setImageSrc(reader.result?.toString() || null);
+      setIsCropDialogOpen(true);
+      // Reset input
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    });
+    reader.readAsDataURL(file);
+  };
+
+  const onCropComplete = useCallback((croppedArea: any, croppedAreaPixels: any) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    if (!imageSrc || !croppedAreaPixels) return;
 
     try {
+      setProcessingCrop(true);
+      const croppedBlob = await getCroppedImg(imageSrc, croppedAreaPixels);
+      
+      if (!croppedBlob) throw new Error('Failed to crop image');
+
+      // Convert Blob back to File
+      const file = new File([croppedBlob], 'avatar.jpg', { type: 'image/jpeg' });
+      
+      setUploading(true);
+      setIsCropDialogOpen(false);
+
       // Upload to Cloudinary
       const formData = new FormData();
       formData.append('file', file);
@@ -79,9 +117,14 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
       const message = err instanceof Error ? err.message : 'Unknown error';
       alert(`Failed to update avatar: ${message}`);
     } finally {
+      setProcessingCrop(false);
       setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
+  };
+
+  const handleCancelCrop = () => {
+    setIsCropDialogOpen(false);
+    setImageSrc(null);
   };
 
   return (
@@ -114,6 +157,58 @@ export function AvatarUpload({ currentAvatarUrl, userName, fallbackLetter }: Ava
         className="hidden"
         onChange={handleFileChange}
       />
+
+      {/* Cropper Dialog */}
+      <Dialog open={isCropDialogOpen} onOpenChange={setIsCropDialogOpen}>
+        <DialogContent className="sm:max-w-[500px] w-full p-0 overflow-hidden flex flex-col h-[500px] sm:h-[600px]">
+          <DialogHeader className="p-4 border-b bg-card">
+            <DialogTitle>Crop Your Avatar</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex-1 relative bg-black/90">
+            {imageSrc && (
+              <Cropper
+                image={imageSrc}
+                crop={crop}
+                zoom={zoom}
+                aspect={1}
+                cropShape="round"
+                showGrid={false}
+                onCropChange={setCrop}
+                onCropComplete={onCropComplete}
+                onZoomChange={setZoom}
+              />
+            )}
+          </div>
+          
+          <div className="p-4 bg-card border-t border-border/40">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center gap-4">
+                <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground w-12">Zoom</span>
+                <input
+                  type="range"
+                  value={zoom}
+                  min={1}
+                  max={3}
+                  step={0.1}
+                  aria-labelledby="Zoom"
+                  onChange={(e) => setZoom(Number(e.target.value))}
+                  className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                />
+              </div>
+              <div className="flex justify-end gap-2 mt-2">
+                <Button variant="outline" onClick={handleCancelCrop} disabled={processingCrop} className="rounded-xl">
+                  <X className="h-4 w-4 mr-1.5" /> Cancel
+                </Button>
+                <Button onClick={handleCropSave} disabled={processingCrop} className="rounded-xl shadow-glow">
+                  {processingCrop ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : <Check className="h-4 w-4 mr-1.5" />}
+                  Save Avatar
+                </Button>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
