@@ -20,9 +20,6 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
         const isImage = !isPdf && Boolean(att.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || att.url.includes("image"));
         
         let viewerUrl = att.url;
-        if (isPdf) {
-          viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(att.url)}&embedded=true`;
-        }
         return (
           <Dialog key={idx}>
             <DialogTrigger asChild>
