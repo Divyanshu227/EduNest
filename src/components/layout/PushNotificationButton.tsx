@@ -263,17 +263,19 @@ export function PushNotificationButton() {
               Enable push notifications so you don't miss any important class announcements, homework assignments, or upcoming tests!
             </DialogDescription>
           </DialogHeader>
-          <DialogFooter className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-2 sm:space-x-0 mt-2">
-            <Button onClick={enableNotifications} disabled={status === 'loading'} className="rounded-2xl flex-1 sm:flex-none">
+          <div className="flex flex-col gap-2 mt-4">
+            <Button onClick={enableNotifications} disabled={status === 'loading'} className="rounded-2xl w-full">
               {status === 'loading' ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : 'Turn On Notifications'}
             </Button>
-            <Button variant="outline" onClick={handleDismissPrompt} className="rounded-2xl flex-1 sm:flex-none">
-              Not Now
-            </Button>
-            <Button variant="secondary" onClick={handleBanPrompt} className="rounded-2xl flex-1 sm:flex-none">
-              Don't Show Again
-            </Button>
-          </DialogFooter>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" onClick={handleDismissPrompt} className="rounded-2xl w-full">
+                Not Now
+              </Button>
+              <Button variant="secondary" onClick={handleBanPrompt} className="rounded-2xl w-full">
+                Don't Show Again
+              </Button>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>
