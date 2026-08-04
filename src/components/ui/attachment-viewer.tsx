@@ -16,7 +16,7 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {attachments.map((att, idx) => {
-        const isPdf = Boolean(att.url.match(/\.pdf$/i) || att.name?.toLowerCase().endsWith('.pdf'));
+        const isPdf = Boolean(att.url.match(/\.pdf(\?.*)?$/i) || att.name?.toLowerCase().endsWith('.pdf') || att.url.toLowerCase().includes('.pdf'));
         const isImage = !isPdf && Boolean(att.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || att.url.includes("image"));
         
         const viewerUrl = att.url;
