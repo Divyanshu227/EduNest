@@ -16,9 +16,14 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {attachments.map((att, idx) => {
-        if (!att || !att.url) return null;
-        const urlStr = att.url || "";
-        const nameStr = att.name || "";
+        if (!att) return null;
+        
+        // Handle legacy data where attachments might just be an array of string URLs
+        const isString = typeof att === 'string';
+        const urlStr = isString ? att : (att.url || "");
+        const nameStr = isString ? "Attachment" : (att.name || "");
+        
+        if (!urlStr) return null;
         const isPdf = Boolean(urlStr.match(/\.pdf(\?.*)?$/i) || nameStr.toLowerCase().endsWith('.pdf') || urlStr.toLowerCase().includes('.pdf'));
         const isVideo = !isPdf && Boolean(urlStr.match(/\.(mp4|webm|ogg|mov)$/i) || urlStr.includes("/video/upload/"));
         const isImage = !isPdf && !isVideo && Boolean(urlStr.match(/\.(jpeg|jpg|gif|png|webp)$/i) || urlStr.includes("image"));
@@ -32,17 +37,17 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs font-semibold rounded-xl px-4 py-2 hover:bg-muted bg-background/50 border-border/60">
                 {isVideo ? <Video className="h-4 w-4 text-primary" /> : isImage ? <ImageIcon className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-primary" />}
-                <span className="truncate max-w-[150px]">{att.name || 'Attachment'}</span>
+                <span className="truncate max-w-[150px]">{nameStr}</span>
                 <Eye className="h-3 w-3 ml-1 text-muted-foreground" />
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-4xl w-[95vw] h-[90vh] flex flex-col p-0 overflow-hidden sm:rounded-2xl">
               <DialogHeader className="p-4 border-b border-border/40 bg-card">
                 <div className="flex items-center justify-between mr-8">
-                  <DialogTitle className="truncate pr-4">{att.name || 'Attachment'}</DialogTitle>
+                  <DialogTitle className="truncate pr-4">{nameStr}</DialogTitle>
                   <DownloadLink 
-                    url={att.url} 
-                    filename={att.name || 'Attachment'} 
+                    url={urlStr} 
+                    filename={nameStr} 
                     className="flex items-center gap-1.5 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-xl hover:bg-primary/90 transition-colors shadow-sm"
                   >
                     <Download className="h-4 w-4" /> Download
@@ -52,15 +57,15 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
               <div className="flex-1 overflow-auto bg-muted/10 relative">
                 {isVideo ? (
                   <div className="w-full h-full flex items-center justify-center p-4 bg-black">
-                    <video src={att.url} controls className="max-w-full max-h-full rounded-lg shadow-sm" />
+                    <video src={urlStr} controls className="max-w-full max-h-full rounded-lg shadow-sm" />
                   </div>
                 ) : isImage ? (
                   <div className="w-full h-full flex items-center justify-center p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={att.url} alt={att.name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
+                    <img src={urlStr} alt={nameStr} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
                   </div>
                 ) : (
-                  <iframe src={viewerUrl} className="w-full h-full border-0 bg-white" title={att.name} />
+                  <iframe src={viewerUrl} className="w-full h-full border-0 bg-white" title={nameStr} />
                 )}
               </div>
             </DialogContent>
