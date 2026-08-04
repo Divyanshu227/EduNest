@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 import { DownloadLink } from '@/components/ui/download-link';
+import { AttachmentViewer } from '@/components/ui/attachment-viewer';
 
 interface Homework {
   id: string;
@@ -287,18 +288,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                 {Array.isArray(selectedHw.attachments) && selectedHw.attachments.length > 0 && (
                   <div className="space-y-2">
                     <h4 className="font-semibold text-sm">Download Worksheets:</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedHw.attachments.map((att: any, idx: number) => (
-                        <DownloadLink 
-                          key={idx}
-                          url={att.url}
-                          filename={att.name || 'Attachment'}
-                          className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
-                        >
-                          <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />
-                        </DownloadLink>
-                      ))}
-                    </div>
+                    <AttachmentViewer attachments={selectedHw.attachments} />
                   </div>
                 )}
 
@@ -348,18 +338,7 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                       {Array.isArray(userSubmission.attachments) && userSubmission.attachments.length > 0 && (
                         <div className="mt-4">
                           <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Attached Files</span>
-                          <div className="flex flex-wrap gap-2">
-                            {userSubmission.attachments.map((att: any, idx: number) => (
-                              <DownloadLink 
-                                key={idx}
-                                url={att.url}
-                                filename={att.name || 'Attachment'}
-                                className="flex items-center gap-1.5 text-xs font-semibold border border-border/60 rounded-xl px-4 py-2 hover:bg-muted bg-background/50"
-                              >
-                                <FileText className="h-4 w-4 text-primary" /> {att.name || 'Attachment'} <ExternalLink className="h-3 w-3 ml-1" />
-                              </DownloadLink>
-                            ))}
-                          </div>
+                          <AttachmentViewer attachments={userSubmission.attachments} />
                         </div>
                       )}
                     </div>

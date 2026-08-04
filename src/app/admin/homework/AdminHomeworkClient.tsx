@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 import { DownloadLink } from '@/components/ui/download-link';
+import { AttachmentViewer } from '@/components/ui/attachment-viewer';
 
 interface Student {
   id: string;
@@ -476,18 +477,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     
                     {/* Attachments preview */}
                     {Array.isArray(hw.attachments) && hw.attachments.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {hw.attachments.map((att: any, idx: number) => (
-                          <DownloadLink 
-                            key={idx}
-                            url={att.url}
-                            filename={att.name || 'Attachment'}
-                            className="flex items-center gap-1 text-[10px] font-medium border border-border/60 rounded-xl px-3 py-1.5 hover:bg-muted bg-background/50"
-                          >
-                            <FileText className="h-3 w-3 text-primary" /> {att.name || 'Attachment'}
-                          </DownloadLink>
-                        ))}
-                      </div>
+                      <AttachmentViewer attachments={hw.attachments} />
                     )}
 
                     <div className="border-t border-border/40 pt-3 mb-3">
@@ -590,18 +580,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     {Array.isArray(sub.attachments) && sub.attachments.length > 0 && (
                       <div className="space-y-1.5">
                         <p className="text-[10px] font-semibold text-muted-foreground">Uploaded Work:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {sub.attachments.map((att: any, idx: number) => (
-                            <DownloadLink 
-                              key={idx}
-                              url={att.url}
-                              filename={att.name || 'Worksheet'}
-                              className="flex items-center gap-1 text-[10px] font-medium border border-border/60 rounded-xl px-3 py-1.5 hover:bg-muted bg-background/50"
-                            >
-                              <FileText className="h-3.5 w-3.5 text-primary" /> {att.name || 'Worksheet'} <ExternalLink className="h-2.5 w-2.5 ml-1" />
-                            </DownloadLink>
-                          ))}
-                        </div>
+                        <AttachmentViewer attachments={sub.attachments} />
                       </div>
                     )}
 
