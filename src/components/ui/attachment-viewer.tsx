@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { FileText, Eye, Download, Image as ImageIcon } from "lucide-react";
+import { FileText, Eye, Download, Image as ImageIcon, Video } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { DownloadLink } from "@/components/ui/download-link";
@@ -17,7 +17,8 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
     <div className="flex flex-wrap gap-2">
       {attachments.map((att, idx) => {
         const isPdf = Boolean(att.url.match(/\.pdf(\?.*)?$/i) || att.name?.toLowerCase().endsWith('.pdf') || att.url.toLowerCase().includes('.pdf'));
-        const isImage = !isPdf && Boolean(att.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || att.url.includes("image"));
+        const isVideo = !isPdf && Boolean(att.url.match(/\.(mp4|webm|ogg|mov)$/i) || att.url.includes("/video/upload/"));
+        const isImage = !isPdf && !isVideo && Boolean(att.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || att.url.includes("image"));
         
         let viewerUrl = att.url;
         if (isPdf) {
@@ -27,7 +28,7 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
           <Dialog key={idx}>
             <DialogTrigger asChild>
               <Button variant="outline" size="sm" className="flex items-center gap-1.5 text-xs font-semibold rounded-xl px-4 py-2 hover:bg-muted bg-background/50 border-border/60">
-                {isImage ? <ImageIcon className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-primary" />}
+                {isVideo ? <Video className="h-4 w-4 text-primary" /> : isImage ? <ImageIcon className="h-4 w-4 text-primary" /> : <FileText className="h-4 w-4 text-primary" />}
                 <span className="truncate max-w-[150px]">{att.name || 'Attachment'}</span>
                 <Eye className="h-3 w-3 ml-1 text-muted-foreground" />
               </Button>
@@ -46,7 +47,11 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
                 </div>
               </DialogHeader>
               <div className="flex-1 overflow-auto bg-muted/10 relative">
-                {isImage ? (
+                {isVideo ? (
+                  <div className="w-full h-full flex items-center justify-center p-4 bg-black">
+                    <video src={att.url} controls className="max-w-full max-h-full rounded-lg shadow-sm" />
+                  </div>
+                ) : isImage ? (
                   <div className="w-full h-full flex items-center justify-center p-4">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img src={att.url} alt={att.name} className="max-w-full max-h-full object-contain rounded-lg shadow-sm" />
