@@ -3,14 +3,24 @@ import { auth } from '@/lib/auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 
-async function getDashboardData() {
+async function getDashboardData(teacherId: string) {
+  const subjects = await prisma.subject.findMany({
+    where: { teacherId },
+    select: { id: true }
+  });
+  const subjectIds = subjects.map(s => s.id);
+
   const [notes, homework, tests, attendance, announcementsCount, recentAnnouncements] = await Promise.all([
-    prisma.note.count(),
-    prisma.homework.count(),
-    prisma.test.count(),
-    prisma.attendance.count(),
-    prisma.announcement.count(),
-    prisma.announcement.findMany({ orderBy: { createdAt: 'desc' }, take: 3 })
+    prisma.note.count({ where: { subjectId: { in: subjectIds } } }),
+    prisma.homework.count({ where: { authorId: teacherId } }),
+    prisma.test.count({ where: { authorId: teacherId } }),
+    prisma.attendance.count({ where: { markedById: teacherId } }),
+    prisma.announcement.count({ where: { authorId: teacherId } }),
+    prisma.announcement.findMany({ 
+      where: { authorId: teacherId },
+      orderBy: { createdAt: 'desc' }, 
+      take: 3 
+    })
   ]);
 
   return { notes, homework, tests, attendance, announcementsCount, recentAnnouncements };
@@ -18,7 +28,12 @@ async function getDashboardData() {
 
 export default async function AdminDashboardPage() {
   const session = await auth();
-  const data = await getDashboardData();
+  
+  if (!session?.user?.id) {
+    return <div>Unauthorized</div>;
+  }
+
+  const data = await getDashboardData(session.user.id);
 
   return (
     <div className="space-y-6">
