@@ -16,13 +16,16 @@ export function AttachmentViewer({ attachments }: AttachmentViewerProps) {
   return (
     <div className="flex flex-wrap gap-2">
       {attachments.map((att, idx) => {
-        const isPdf = Boolean(att.url.match(/\.pdf(\?.*)?$/i) || att.name?.toLowerCase().endsWith('.pdf') || att.url.toLowerCase().includes('.pdf'));
-        const isVideo = !isPdf && Boolean(att.url.match(/\.(mp4|webm|ogg|mov)$/i) || att.url.includes("/video/upload/"));
-        const isImage = !isPdf && !isVideo && Boolean(att.url.match(/\.(jpeg|jpg|gif|png|webp)$/i) || att.url.includes("image"));
+        if (!att || !att.url) return null;
+        const urlStr = att.url || "";
+        const nameStr = att.name || "";
+        const isPdf = Boolean(urlStr.match(/\.pdf(\?.*)?$/i) || nameStr.toLowerCase().endsWith('.pdf') || urlStr.toLowerCase().includes('.pdf'));
+        const isVideo = !isPdf && Boolean(urlStr.match(/\.(mp4|webm|ogg|mov)$/i) || urlStr.includes("/video/upload/"));
+        const isImage = !isPdf && !isVideo && Boolean(urlStr.match(/\.(jpeg|jpg|gif|png|webp)$/i) || urlStr.includes("image"));
         
-        let viewerUrl = att.url;
+        let viewerUrl = urlStr;
         if (isPdf) {
-          viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(att.url)}&embedded=true`;
+          viewerUrl = `https://docs.google.com/gview?url=${encodeURIComponent(urlStr)}&embedded=true`;
         }
         return (
           <Dialog key={idx}>
