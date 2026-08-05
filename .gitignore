@@ -16,6 +16,7 @@ jspm_packages/
 
 # Database storage folders
 mongodb_data/
+backups/
 
 # Log files and debug scripts
 *.log
