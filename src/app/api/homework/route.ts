@@ -55,14 +55,12 @@ export async function POST(request: Request) {
     }
   });
 
-  /* Temporarily disabled for HW regeneration
   await notifyUsers(recipients, {
     title: `New homework: ${parsed.data.title}`,
     body: 'A new homework assignment has been posted.',
     type: 'HOMEWORK',
     link: '/student/homework'
   });
-  */
 
   return NextResponse.json({ data: homework }, { status: 201 });
 }

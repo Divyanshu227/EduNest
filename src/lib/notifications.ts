@@ -13,8 +13,6 @@ export async function notifyUsers(
   users: Pick<User, 'id' | 'deviceTokens'>[],
   payload: NotificationPayload
 ) {
-  return; // Notifications temporarily disabled system-wide
-
   if (!users.length) {
     return;
   }
