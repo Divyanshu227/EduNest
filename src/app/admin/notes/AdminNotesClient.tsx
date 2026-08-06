@@ -294,19 +294,31 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
               
               <div className="flex items-center gap-2 border-t border-border/40 pt-3">
                 {note.youtubeUrl && (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-500">
+                  <a href={note.youtubeUrl} target="_blank" rel="noopener noreferrer" className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors" title="Watch Video">
                     <Youtube className="h-4 w-4" />
-                  </div>
+                  </a>
                 )}
                 {note.type !== 'PDF' && (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500">
+                  <a 
+                    href={Array.isArray(note.images) && note.images.length > 0 ? note.images[0].url : '#'} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
+                    title="View Image"
+                  >
                     <ImageIcon className="h-4 w-4" />
-                  </div>
+                  </a>
                 )}
                 {note.type !== 'IMAGE' && (
-                  <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500">
+                  <a 
+                    href={Array.isArray(note.pdfs) && note.pdfs.length > 0 ? note.pdfs[0].url : '#'} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
+                    title="View PDF"
+                  >
                     <FileText className="h-4 w-4" />
-                  </div>
+                  </a>
                 )}
               </div>
 
