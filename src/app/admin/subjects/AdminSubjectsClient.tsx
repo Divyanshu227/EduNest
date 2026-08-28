@@ -26,12 +26,20 @@ interface Test {
   id: string;
 }
 
+interface Student {
+  id: string;
+  name: string;
+  email: string;
+}
+
 interface Subject {
   id: string;
   name: string;
   color: string;
   icon: string;
   sortOrder: number;
+  studentId?: string | null;
+  student?: { id: string; name: string; email: string } | null;
   chapters: Chapter[];
   notes: Note[];
   homeworks: Homework[];
@@ -40,6 +48,7 @@ interface Subject {
 
 interface AdminSubjectsClientProps {
   initialSubjects: Subject[];
+  students: Student[];
 }
 
 const COLOR_PRESETS = [
@@ -51,13 +60,21 @@ const COLOR_PRESETS = [
   { name: 'Pink Rose', hex: '#ec4899' }
 ];
 
-export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProps) {
+export function AdminSubjectsClient({ initialSubjects, students }: AdminSubjectsClientProps) {
   const [subjects, setSubjects] = useState<Subject[]>(initialSubjects);
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [name, setName] = useState('');
+  const [targetStudentId, setTargetStudentId] = useState<string>('');
   const [color, setColor] = useState(COLOR_PRESETS[0].hex);
   const [sortOrder, setSortOrder] = useState('1');
   const [submitting, setSubmitting] = useState(false);
+
+  const filteredSubjects = subjects.filter(s => {
+    if (selectedStudentFilter === 'ALL') return true;
+    if (selectedStudentFilter === 'SHARED') return !s.studentId;
+    return s.studentId === selectedStudentFilter;
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -71,7 +88,8 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
       name,
       color,
       icon: 'BookOpen', // default icon
-      sortOrder: parseInt(sortOrder) || 1
+      sortOrder: parseInt(sortOrder) || 1,
+      studentId: targetStudentId || (selectedStudentFilter !== 'ALL' && selectedStudentFilter !== 'SHARED' ? selectedStudentFilter : null)
     };
 
     try {
@@ -87,8 +105,11 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
         throw new Error(data.error || 'Create subject failed');
       }
 
+      const assignedStudent = students.find(s => s.id === payload.studentId);
+
       const createdSubject: Subject = {
         ...data.data,
+        student: assignedStudent ? { id: assignedStudent.id, name: assignedStudent.name, email: assignedStudent.email } : null,
         chapters: [],
         notes: [],
         homeworks: [],
@@ -98,6 +119,7 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
       setSubjects(prev => [...prev, createdSubject].sort((a, b) => a.sortOrder - b.sortOrder));
       setIsFormOpen(false);
       setName('');
+      setTargetStudentId('');
       setSortOrder('1');
       alert('Subject created successfully!');
     } catch (err: any) {
@@ -130,14 +152,64 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
           <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Academic Scope</p>
           <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Managed Subjects</h2>
         </div>
-        <Button onClick={() => setIsFormOpen(true)} className="flex items-center gap-2 rounded-2xl shadow-glow">
+        <Button onClick={() => {
+          setTargetStudentId(selectedStudentFilter !== 'ALL' && selectedStudentFilter !== 'SHARED' ? selectedStudentFilter : '');
+          setIsFormOpen(true);
+        }} className="flex items-center gap-2 rounded-2xl shadow-glow">
           <Plus className="h-4 w-4" /> Create Subject
         </Button>
       </div>
 
+      {/* Student Selector Filter Bar */}
+      <div className="flex flex-wrap items-center gap-2 border-b border-border/40 pb-4">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+          Active Student:
+        </span>
+        <button
+          type="button"
+          onClick={() => setSelectedStudentFilter('ALL')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            selectedStudentFilter === 'ALL'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-muted/40 hover:bg-muted text-muted-foreground'
+          }`}
+        >
+          All Subjects ({subjects.length})
+        </button>
+        {students.map(student => {
+          const count = subjects.filter(s => s.studentId === student.id).length;
+          return (
+            <button
+              key={student.id}
+              type="button"
+              onClick={() => setSelectedStudentFilter(student.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                selectedStudentFilter === student.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/40 hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              <span>👤 {student.name}</span>
+              <span className="opacity-75 text-[10px]">({count})</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => setSelectedStudentFilter('SHARED')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            selectedStudentFilter === 'SHARED'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-muted/40 hover:bg-muted text-muted-foreground'
+          }`}
+        >
+          Shared / Global ({subjects.filter(s => !s.studentId).length})
+        </button>
+      </div>
+
       {/* Grid */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {subjects.map((sub) => (
+        {filteredSubjects.map((sub) => (
           <Link key={sub.id} href={`/admin/subjects/${sub.id}`}>
             <Card className="relative h-full overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between hover:border-primary/50 transition-colors">
             {/* Color Accent bar */}
@@ -145,16 +217,27 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
             
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between gap-2 mb-1.5">
-                <Badge variant="outline" style={{ borderColor: `${sub.color}30`, backgroundColor: `${sub.color}10`, color: sub.color }} className="text-[10px]">
-                  Sort order: {sub.sortOrder}
-                </Badge>
+                <div className="flex items-center gap-1.5">
+                  <Badge variant="outline" style={{ borderColor: `${sub.color}30`, backgroundColor: `${sub.color}10`, color: sub.color }} className="text-[10px]">
+                    Order: {sub.sortOrder}
+                  </Badge>
+                  {sub.student ? (
+                    <Badge variant="secondary" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                      👤 {sub.student.name}
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+                      🌐 Shared
+                    </Badge>
+                  )}
+                </div>
                 <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-destructive/10 rounded-md" onClick={(e) => { e.preventDefault(); handleDelete(sub.id); }}>
                   <Trash2 className="h-3 w-3 text-destructive" />
                 </Button>
               </div>
               <CardTitle className="text-2xl font-bold">{sub.name}</CardTitle>
               <CardDescription className="text-xs line-clamp-2 mt-1">
-                Managed Curriculum Scope
+                {sub.student ? `Custom curriculum for ${sub.student.name}` : 'Shared curriculum scope'}
               </CardDescription>
             </CardHeader>
             <CardContent className="pt-0 space-y-4">
@@ -174,10 +257,13 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
           </Link>
         ))}
 
-        {!subjects.length && (
+        {!filteredSubjects.length && (
           <div className="col-span-full flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6">
             <BookOpen className="h-10 w-10 text-muted-foreground mb-3" />
-            <p className="text-muted-foreground font-semibold">No subjects assigned to your account.</p>
+            <p className="text-muted-foreground font-semibold">No subjects found for this selection.</p>
+            <Button onClick={() => setIsFormOpen(true)} variant="outline" className="mt-3 rounded-xl text-xs">
+              + Create Subject for this Student
+            </Button>
           </div>
         )}
       </div>
@@ -206,6 +292,23 @@ export function AdminSubjectsClient({ initialSubjects }: AdminSubjectsClientProp
               </h3>
 
               <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label htmlFor="studentSelect">Assign to Student</Label>
+                  <select
+                    id="studentSelect"
+                    value={targetStudentId}
+                    onChange={(e) => setTargetStudentId(e.target.value)}
+                    className="w-full h-10 px-3 rounded-xl border border-border/60 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                  >
+                    <option value="">🌐 Shared / All Students</option>
+                    {students.map(s => (
+                      <option key={s.id} value={s.id}>
+                        👤 {s.name} ({s.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <div className="space-y-1.5">
                   <Label htmlFor="name">Subject Name *</Label>
                   <Input

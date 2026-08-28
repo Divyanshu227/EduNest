@@ -56,6 +56,7 @@ interface AdminHomeworkClientProps {
 
 export function AdminHomeworkClient({ initialHomework, subjects, students, fixedSubjectId, fixedChapterId }: AdminHomeworkClientProps) {
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialHomework);
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
   const [selectedHomeworkForGrading, setSelectedHomeworkForGrading] = useState<Homework | null>(null);
@@ -111,7 +112,11 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
       setSelectedChapterId(fixedChapterId);
     }
     setUploadedAttachments([]);
-    setSelectedStudentIds(students.map(s => s.id)); // Default to all students
+    if (selectedStudentFilter !== 'ALL') {
+      setSelectedStudentIds([selectedStudentFilter]);
+    } else {
+      setSelectedStudentIds(students.map(s => s.id)); // Default to all students
+    }
     setIsFormOpen(true);
   };
 
@@ -431,14 +436,49 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
-                All
+            {/* Student Filter Selector */}
+            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
+              <span className="text-xs font-semibold text-muted-foreground mr-1">Filter Student:</span>
+              <button
+                type="button"
+                onClick={() => setSelectedStudentFilter('ALL')}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedStudentFilter === 'ALL'
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                All ({homeworkList.length})
               </button>
+              {students.map(s => {
+                const count = homeworkList.filter(h => !h.assignedStudentIds?.length || h.assignedStudentIds.includes(s.id)).length;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => setSelectedStudentFilter(s.id)}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      selectedStudentFilter === s.id
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+                    }`}
+                  >
+                    👤 {s.name} ({count})
+                  </button>
+                );
+              })}
             </div>
           </div>
           
           <div className="space-y-4">
             {homeworkList
               .filter(hw => {
+                // Student filter
+                if (selectedStudentFilter !== 'ALL') {
+                  if (hw.assignedStudentIds && hw.assignedStudentIds.length > 0 && !hw.assignedStudentIds.includes(selectedStudentFilter)) {
+                    return false;
+                  }
+                }
                 if (filter === 'all') return true;
                 const isPastDue = new Date() > new Date(hw.dueDate);
                 if (filter === 'active') return !isPastDue;

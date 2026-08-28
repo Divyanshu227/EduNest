@@ -46,42 +46,116 @@ export function AdminAttendanceClient({ subjects, students, initialLogs }: Admin
   const [attendanceStates, setAttendanceStates] = useState<Record<string, 'PRESENT' | 'ABSENT'>>({});
   // Notes mapping: studentId -> noteText
   const [attendanceNotes, setAttendanceNotes] = useState<Record<string, string>>({});
-  const [submitting, setSubmitting] = useState(false);
+  // Submitting per student state: studentId -> boolean
+  const [savingStudentId, setSavingStudentId] = useState<string | null>(null);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [saveSuccessMap, setSaveSuccessMap] = useState<Record<string, boolean>>({});
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
 
+  // Sync states when date or subject changes
+  const getExistingLog = (studentId: string) => {
+    return logs.find(log => {
+      const logDate = new Date(log.date).toISOString().split('T')[0];
+      return logDate === selectedDate && log.subjectId === selectedSubjectId && log.studentId === studentId;
+    });
+  };
+
   const handleStatusChange = (studentId: string, status: 'PRESENT' | 'ABSENT') => {
     setAttendanceStates(prev => ({ ...prev, [studentId]: status }));
+    setSaveSuccessMap(prev => ({ ...prev, [studentId]: false }));
   };
 
   const handleNoteChange = (studentId: string, note: string) => {
     setAttendanceNotes(prev => ({ ...prev, [studentId]: note }));
+    setSaveSuccessMap(prev => ({ ...prev, [studentId]: false }));
   };
 
-  const handleSaveAttendance = async () => {
+  // Save attendance for a single student independently
+  const handleSaveSingleStudent = async (studentId: string) => {
     if (!selectedSubjectId || !selectedDate) {
       alert('Please select both a subject and date.');
       return;
     }
 
-    // Check if we've filled out status for everyone
-    const uncompleted = students.filter(s => !attendanceStates[s.id]);
-    if (uncompleted.length > 0) {
-      alert(`Please mark attendance for all students. Left to mark: ${uncompleted.map(s => s.name).join(', ')}`);
+    const status = attendanceStates[studentId] || getExistingLog(studentId)?.status;
+    if (!status) {
+      alert('Please select Present or Absent before saving.');
       return;
     }
 
-    setSubmitting(true);
+    const student = students.find(s => s.id === studentId);
+    setSavingStudentId(studentId);
 
     try {
-      const promises = students.map(async (student) => {
+      const payload = {
+        studentId,
+        subjectId: selectedSubjectId,
+        date: new Date(`${selectedDate}T12:00:00`).toISOString(),
+        status,
+        note: attendanceNotes[studentId] !== undefined ? attendanceNotes[studentId] : (getExistingLog(studentId)?.note || undefined)
+      };
+
+      const res = await fetch('/api/attendance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save attendance');
+
+      // Update local logs
+      const savedRecord = {
+        ...data.data,
+        student: student ? { name: student.name, email: student.email } : { name: 'Student', email: '' },
+        subject: selectedSubject || { name: 'Subject', color: '#6366f1' }
+      };
+
+      setLogs(prev => {
+        const filtered = prev.filter(log => {
+          const formattedLogDate = new Date(log.date).toISOString().split('T')[0];
+          return !(formattedLogDate === selectedDate && log.subjectId === selectedSubjectId && log.studentId === studentId);
+        });
+        return [savedRecord, ...filtered];
+      });
+
+      setSaveSuccessMap(prev => ({ ...prev, [studentId]: true }));
+      setTimeout(() => {
+        setSaveSuccessMap(prev => ({ ...prev, [studentId]: false }));
+      }, 3000);
+
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setSavingStudentId(null);
+    }
+  };
+
+  // Save all marked students (non-blocking)
+  const handleSaveAllMarked = async () => {
+    if (!selectedSubjectId || !selectedDate) {
+      alert('Please select both a subject and date.');
+      return;
+    }
+
+    const markedStudents = students.filter(s => attendanceStates[s.id] || getExistingLog(s.id));
+    if (markedStudents.length === 0) {
+      alert('Please mark at least one student before saving.');
+      return;
+    }
+
+    setBulkSubmitting(true);
+
+    try {
+      const promises = markedStudents.map(async (student) => {
+        const status = attendanceStates[student.id] || getExistingLog(student.id)?.status;
         const payload = {
           studentId: student.id,
           subjectId: selectedSubjectId,
-          // Format date as standard ISO string with time set to noon to avoid local timezone shifts
           date: new Date(`${selectedDate}T12:00:00`).toISOString(),
-          status: attendanceStates[student.id],
-          note: attendanceNotes[student.id] || undefined
+          status,
+          note: attendanceNotes[student.id] !== undefined ? attendanceNotes[student.id] : (getExistingLog(student.id)?.note || undefined)
         };
 
         const res = await fetch('/api/attendance', {
@@ -96,29 +170,26 @@ export function AdminAttendanceClient({ subjects, students, initialLogs }: Admin
 
       const results = await Promise.all(promises);
 
-      // Re-fetch recent logs
-      alert('Attendance saved successfully!');
-      
-      // Update local logs state with saved records
       const newLogs = results.map(res => ({
         ...res.data,
         student: students.find(s => s.id === res.data.studentId),
         subject: selectedSubject
       }));
 
-      // Merge and remove duplicates in logs display
       setLogs(prev => {
+        const savedIds = new Set(newLogs.map(n => n.studentId));
         const filtered = prev.filter(log => {
           const formattedLogDate = new Date(log.date).toISOString().split('T')[0];
-          return !(formattedLogDate === selectedDate && log.subjectId === selectedSubjectId);
+          return !(formattedLogDate === selectedDate && log.subjectId === selectedSubjectId && savedIds.has(log.studentId));
         });
         return [...newLogs, ...filtered];
       });
 
+      alert(`Successfully saved attendance for ${markedStudents.length} student(s)!`);
     } catch (err: any) {
       alert(err.message);
     } finally {
-      setSubmitting(false);
+      setBulkSubmitting(false);
     }
   };
 
@@ -128,6 +199,9 @@ export function AdminAttendanceClient({ subjects, students, initialLogs }: Admin
       <div>
         <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Attendance Center</p>
         <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Class Attendance Register</h2>
+        <p className="text-sm text-muted-foreground mt-1">
+          Mark and submit attendance individually per student as their sessions finish, or mark all at once.
+        </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-3">
@@ -162,72 +236,117 @@ export function AdminAttendanceClient({ subjects, students, initialLogs }: Admin
               </div>
             </CardHeader>
             <CardContent className="pt-6 space-y-6">
-              <h3 className="font-semibold text-base flex items-center gap-1.5">
-                <ClipboardCheck className="h-5 w-5 text-primary" /> Marking Register ({students.length} Student)
-              </h3>
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-base flex items-center gap-1.5">
+                  <ClipboardCheck className="h-5 w-5 text-primary" /> Marking Register ({students.length} Students)
+                </h3>
+                <span className="text-xs text-muted-foreground">
+                  Individual instant save enabled
+                </span>
+              </div>
 
               <div className="space-y-4">
                 {students.map((student) => {
-                  const currentStatus = attendanceStates[student.id];
-                  
+                  const existingLog = getExistingLog(student.id);
+                  const currentStatus = attendanceStates[student.id] || existingLog?.status;
+                  const currentNote = attendanceNotes[student.id] !== undefined ? attendanceNotes[student.id] : (existingLog?.note || '');
+                  const isSavingThis = savingStudentId === student.id;
+                  const justSaved = saveSuccessMap[student.id];
+
                   return (
                     <div 
                       key={student.id} 
-                      className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 border border-border/60 rounded-3xl bg-muted/20"
+                      className={`flex flex-col gap-3 p-4 border rounded-3xl transition-all ${
+                        existingLog 
+                          ? 'border-emerald-500/30 bg-emerald-500/5' 
+                          : 'border-border/60 bg-muted/20'
+                      }`}
                     >
-                      <div className="min-w-0">
-                        <p className="font-bold text-sm">{student.name}</p>
-                        <p className="text-[10px] text-muted-foreground">{student.email}</p>
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div className="min-w-0 flex items-center gap-2">
+                          <div>
+                            <p className="font-bold text-sm">{student.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{student.email}</p>
+                          </div>
+                          {existingLog && (
+                            <Badge variant="outline" className={`text-[10px] ml-2 ${
+                              existingLog.status === 'PRESENT' ? 'border-emerald-500/40 text-emerald-600 bg-emerald-500/10' : 'border-red-500/40 text-red-600 bg-red-500/10'
+                            }`}>
+                              Saved: {existingLog.status}
+                            </Badge>
+                          )}
+                        </div>
+
+                        {justSaved && (
+                          <span className="text-xs text-emerald-600 font-semibold flex items-center gap-1">
+                            <Check className="h-3.5 w-3.5" /> Saved!
+                          </span>
+                        )}
                       </div>
 
-                      {/* Notes Input */}
-                      <div className="flex-1 sm:max-w-xs">
-                        <Input
-                          placeholder="Note (e.g. Medical leave)"
-                          value={attendanceNotes[student.id] || ''}
-                          onChange={(e) => handleNoteChange(student.id, e.target.value)}
-                          className="h-8 text-xs rounded-xl"
-                        />
-                      </div>
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3 pt-1 border-t border-border/30">
+                        {/* Notes Input */}
+                        <div className="flex-1">
+                          <Input
+                            placeholder="Note (e.g. Completed Chapter 1, on-time)"
+                            value={currentNote}
+                            onChange={(e) => handleNoteChange(student.id, e.target.value)}
+                            className="h-8 text-xs rounded-xl"
+                          />
+                        </div>
 
-                      {/* Status selectors */}
-                      <div className="flex gap-2">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={currentStatus === 'PRESENT' ? 'default' : 'outline'}
-                          onClick={() => handleStatusChange(student.id, 'PRESENT')}
-                          className={`rounded-xl flex items-center gap-1 text-xs px-3 h-8 ${
-                            currentStatus === 'PRESENT' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''
-                          }`}
-                        >
-                          <Check className="h-3.5 w-3.5" /> Present
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant={currentStatus === 'ABSENT' ? 'destructive' : 'outline'}
-                          onClick={() => handleStatusChange(student.id, 'ABSENT')}
-                          className={`rounded-xl flex items-center gap-1 text-xs px-3 h-8 ${
-                            currentStatus === 'ABSENT' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
-                          }`}
-                        >
-                          <X className="h-3.5 w-3.5" /> Absent
-                        </Button>
+                        {/* Status selectors */}
+                        <div className="flex items-center gap-2 shrink-0">
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={currentStatus === 'PRESENT' ? 'default' : 'outline'}
+                            onClick={() => handleStatusChange(student.id, 'PRESENT')}
+                            className={`rounded-xl flex items-center gap-1 text-xs px-3 h-8 ${
+                              currentStatus === 'PRESENT' ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : ''
+                            }`}
+                          >
+                            <Check className="h-3.5 w-3.5" /> Present
+                          </Button>
+                          <Button
+                            type="button"
+                            size="sm"
+                            variant={currentStatus === 'ABSENT' ? 'destructive' : 'outline'}
+                            onClick={() => handleStatusChange(student.id, 'ABSENT')}
+                            className={`rounded-xl flex items-center gap-1 text-xs px-3 h-8 ${
+                              currentStatus === 'ABSENT' ? 'bg-red-600 hover:bg-red-700 text-white' : ''
+                            }`}
+                          >
+                            <X className="h-3.5 w-3.5" /> Absent
+                          </Button>
+
+                          {/* Single Student Save Button */}
+                          <Button
+                            type="button"
+                            size="sm"
+                            disabled={!currentStatus || isSavingThis}
+                            onClick={() => handleSaveSingleStudent(student.id)}
+                            className="rounded-xl text-xs h-8 px-3 font-semibold bg-primary text-primary-foreground hover:bg-primary/90 shadow-sm"
+                          >
+                            {isSavingThis ? 'Saving...' : 'Save'}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <Button
-                onClick={handleSaveAttendance}
-                disabled={submitting}
-                className="w-full rounded-2xl py-6 shadow-glow font-bold"
-                style={{ backgroundColor: selectedSubject?.color }}
-              >
-                {submitting ? 'Saving Register...' : 'Save & Submit Attendance'}
-              </Button>
+              {students.length > 1 && (
+                <Button
+                  onClick={handleSaveAllMarked}
+                  disabled={bulkSubmitting}
+                  variant="outline"
+                  className="w-full rounded-2xl py-5 font-bold border-primary/40 hover:bg-primary/5 text-primary"
+                >
+                  {bulkSubmitting ? 'Saving All Marked...' : 'Save All Marked Students'}
+                </Button>
+              )}
             </CardContent>
           </Card>
         </div>

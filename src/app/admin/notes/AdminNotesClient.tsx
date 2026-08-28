@@ -68,6 +68,7 @@ interface AdminNotesClientProps {
 
 export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjectId, fixedChapterId }: AdminNotesClientProps) {
   const [notes, setNotes] = useState<Note[]>(initialNotes);
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingNote, setEditingNote] = useState<Note | null>(null);
 
@@ -85,6 +86,12 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
   const [pageCountInput, setPageCountInput] = useState<string>('');
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
+
+  const filteredNotes = notes.filter(note => {
+    if (selectedStudentFilter === 'ALL') return true;
+    if (!note.assignedStudentIds || note.assignedStudentIds.length === 0) return true;
+    return note.assignedStudentIds.includes(selectedStudentFilter);
+  });
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
@@ -248,12 +255,45 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
       )}
 
       {/* Header and Grid of Notes */}
-      <div className="flex items-center justify-between border-b border-border/40 pb-3 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/40 pb-3 mb-6">
         <h3 className="font-semibold text-lg">Study Notes</h3>
+        
+        {/* Student Selector Bar */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-xs font-semibold text-muted-foreground mr-1">Filter Student:</span>
+          <button
+            type="button"
+            onClick={() => setSelectedStudentFilter('ALL')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+              selectedStudentFilter === 'ALL'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+            }`}
+          >
+            All ({notes.length})
+          </button>
+          {students.map(s => {
+            const count = notes.filter(n => !n.assignedStudentIds?.length || n.assignedStudentIds.includes(s.id)).length;
+            return (
+              <button
+                key={s.id}
+                type="button"
+                onClick={() => setSelectedStudentFilter(s.id)}
+                className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-all ${
+                  selectedStudentFilter === s.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-muted/50 hover:bg-muted text-muted-foreground'
+                }`}
+              >
+                👤 {s.name} ({count})
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {notes
+        {filteredNotes
           .sort((a, b) => new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime())
           .map((note) => (
           <Card key={note.id} className="relative overflow-hidden border-border/60 bg-card/80 backdrop-blur group flex flex-col justify-between">

@@ -10,16 +10,24 @@ export default async function AdminSubjectsPage() {
   }
 
   // Get subjects managed by this teacher
-  const subjects = await prisma.subject.findMany({
-    where: { teacherId: session.user.id },
-    include: {
-      chapters: true,
-      notes: true,
-      homework: true,
-      tests: true
-    },
-    orderBy: { sortOrder: 'asc' }
-  });
+  const [subjects, students] = await Promise.all([
+    prisma.subject.findMany({
+      where: { teacherId: session.user.id },
+      include: {
+        chapters: true,
+        notes: true,
+        homework: true,
+        tests: true,
+        student: { select: { id: true, name: true, email: true } }
+      },
+      orderBy: { sortOrder: 'asc' }
+    }),
+    prisma.user.findMany({
+      where: { role: 'STUDENT' },
+      select: { id: true, name: true, email: true },
+      orderBy: { name: 'asc' }
+    })
+  ]);
 
   // Map homework relation to match interface naming
   const formattedSubjects = subjects.map(s => ({
@@ -29,7 +37,8 @@ export default async function AdminSubjectsPage() {
 
   return (
     <AdminSubjectsClient 
-      initialSubjects={formattedSubjects} 
+      initialSubjects={formattedSubjects as any} 
+      students={students}
     />
   );
 }
