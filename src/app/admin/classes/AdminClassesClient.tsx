@@ -308,6 +308,7 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
             </form>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       {/* Student Filter Selector Bar */}
