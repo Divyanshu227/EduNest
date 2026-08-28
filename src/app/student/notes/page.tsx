@@ -14,7 +14,13 @@ export default async function StudentNotesPage() {
     where: {
       OR: [
         { studentId: session.user.id },
-        { studentId: null }
+        { assignedStudentIds: { has: session.user.id } },
+        {
+          AND: [
+            { studentId: null },
+            { assignedStudentIds: { isEmpty: true } }
+          ]
+        }
       ]
     },
     orderBy: { sortOrder: 'asc' },
