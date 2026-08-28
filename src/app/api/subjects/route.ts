@@ -4,10 +4,26 @@ import { requireRole, jsonError } from '@/lib/api';
 import { subjectSchema } from '@/lib/validators';
 import { slugify } from '@/lib/utils';
 
-export async function GET() {
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const studentId = searchParams.get('studentId');
+
+  const where: any = {};
+  if (studentId) {
+    where.OR = [
+      { studentId: studentId },
+      { studentId: null }
+    ];
+  }
+
   const subjects = await prisma.subject.findMany({
+    where,
     orderBy: { sortOrder: 'asc' },
-    include: { chapters: true, teacher: { select: { name: true, email: true } } }
+    include: {
+      chapters: true,
+      teacher: { select: { name: true, email: true } },
+      student: { select: { id: true, name: true, email: true } }
+    }
   });
 
   return NextResponse.json({ data: subjects });
@@ -33,11 +49,17 @@ export async function POST(request: Request) {
   }
 
   try {
+    const { studentId, ...rest } = body.data;
     const subject = await prisma.subject.create({
       data: {
-        ...body.data,
-        slug: slugify(body.data.name),
+        ...rest,
+        studentId: studentId && studentId.trim() !== '' ? studentId : null,
+        slug: slugify(rest.name) + (studentId ? `-${studentId.slice(-4)}` : ''),
         teacherId: teacher.id
+      },
+      include: {
+        chapters: true,
+        student: { select: { id: true, name: true, email: true } }
       }
     });
 
