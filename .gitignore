@@ -39,3 +39,4 @@ public/worker-*.js
 public/workbox-*.js
 public/fallback-*.js
 tsconfig.tsbuildinfo
+scripts/schedule-backup.ts

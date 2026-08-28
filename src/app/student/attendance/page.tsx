@@ -25,6 +25,12 @@ export default async function StudentAttendancePage() {
 
   // Get subjects metadata
   const subjects = await prisma.subject.findMany({
+    where: {
+      OR: [
+        { studentId: session.user.id },
+        { studentId: null }
+      ]
+    },
     orderBy: { sortOrder: 'asc' }
   });
 

@@ -11,6 +11,12 @@ export default async function StudentSubjectsPage() {
 
   // Get all subjects
   const subjects = await prisma.subject.findMany({
+    where: {
+      OR: [
+        { studentId: session.user.id },
+        { studentId: null }
+      ]
+    },
     include: {
       chapters: { select: { id: true } },
       notes: { 

@@ -11,6 +11,12 @@ export default async function StudentNotesPage() {
 
   // Get subjects, chapters, notes, and the student's reading progress
   const subjects = await prisma.subject.findMany({
+    where: {
+      OR: [
+        { studentId: session.user.id },
+        { studentId: null }
+      ]
+    },
     orderBy: { sortOrder: 'asc' },
     include: {
       chapters: { orderBy: { order: 'asc' } }
