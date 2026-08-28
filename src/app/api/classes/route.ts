@@ -14,11 +14,17 @@ export async function GET(request: NextRequest) {
     let classes;
 
     if (role === 'ADMIN') {
-      // Admin sees classes they scheduled
+      // Admin sees classes they scheduled (optionally filtered by student)
+      const studentId = request.nextUrl.searchParams.get('studentId');
+      const where: any = { teacherId: session.user.id };
+      if (studentId) {
+        where.studentId = studentId;
+      }
+
       classes = await prisma.liveClass.findMany({
-        where: { teacherId: session.user.id },
+        where,
         include: {
-          student: { select: { name: true, email: true } },
+          student: { select: { id: true, name: true, email: true } },
         },
         orderBy: { startTime: 'asc' },
       });

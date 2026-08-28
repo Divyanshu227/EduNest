@@ -28,7 +28,9 @@ type LiveClassType = {
   meetLink: string;
   startTime: Date;
   durationMin: number;
+  studentId?: string;
   student: {
+    id?: string;
     name: string;
     email: string;
   }
@@ -36,6 +38,7 @@ type LiveClassType = {
 
 export function AdminClassesClient({ initialClasses, students }: { initialClasses: any[], students: StudentType[] }) {
   const [classes, setClasses] = useState<LiveClassType[]>(initialClasses);
+  const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -50,8 +53,13 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
   });
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
-  const upcomingClasses = classes.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) >= new Date());
-  const pastClasses = classes.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) < new Date());
+  const filteredByStudent = classes.filter(c => {
+    if (selectedStudentFilter === 'ALL') return true;
+    return c.studentId === selectedStudentFilter || (c.student as any)?.id === selectedStudentFilter;
+  });
+
+  const upcomingClasses = filteredByStudent.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) >= new Date());
+  const pastClasses = filteredByStudent.filter(c => new Date(new Date(c.startTime).getTime() + c.durationMin * 60000) < new Date());
   const displayedClasses = activeTab === 'upcoming' ? upcomingClasses : pastClasses;
 
   const [formData, setFormData] = useState({
@@ -61,6 +69,17 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
     durationMin: 60,
     studentId: students[0]?.id || ''
   });
+
+  const openScheduleModal = () => {
+    setFormData({
+      title: '',
+      meetLink: '',
+      startTime: '',
+      durationMin: 60,
+      studentId: selectedStudentFilter !== 'ALL' ? selectedStudentFilter : (students[0]?.id || '')
+    });
+    setIsOpen(true);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
@@ -100,7 +119,7 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
         meetLink: '',
         startTime: '',
         durationMin: 60,
-        studentId: students[0]?.id || ''
+        studentId: selectedStudentFilter !== 'ALL' ? selectedStudentFilter : (students[0]?.id || '')
       });
       
     } catch (err: any) {
@@ -171,7 +190,7 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <h2 className="font-[var(--font-heading)] text-3xl">Live Classes</h2>
-          <p className="text-sm text-muted-foreground">Schedule and manage 1-on-1 live sessions with your students.</p>
+          <p className="text-sm text-muted-foreground">Schedule and manage 1-on-1 live sessions student-wise.</p>
         </div>
         
         <div className="flex items-center gap-4 flex-wrap">
@@ -181,31 +200,30 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
               className="rounded-lg text-sm"
               onClick={() => setActiveTab('upcoming')}
             >
-              Upcoming
+              Upcoming ({upcomingClasses.length})
             </Button>
             <Button 
               variant={activeTab === 'past' ? 'default' : 'ghost'} 
               className="rounded-lg text-sm"
               onClick={() => setActiveTab('past')}
             >
-              Past
+              Past ({pastClasses.length})
             </Button>
           </div>
 
+          <Button onClick={openScheduleModal} className="rounded-xl shadow-glow">
+            <Plus className="mr-2 h-4 w-4" />
+            Schedule Class
+          </Button>
+
           <Dialog open={isOpen} onOpenChange={setIsOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="mr-2 h-4 w-4" />
-                Schedule Class
-              </Button>
-            </DialogTrigger>
             <DialogContent className="glass max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>Schedule a New Class</DialogTitle>
                 <DialogDescription>
                   Provide the details of the session below. An invite will be available for the student.
-              </DialogDescription>
-            </DialogHeader>
+                </DialogDescription>
+              </DialogHeader>
             
             <form onSubmit={handleSubmit} className="space-y-4 pt-4">
               <div className="space-y-2">
@@ -292,23 +310,68 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
         </Dialog>
       </div>
 
+      {/* Student Filter Selector Bar */}
+      <div className="flex flex-wrap items-center gap-1.5 border-b border-border/40 pb-4">
+        <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mr-1">
+          Filter Student:
+        </span>
+        <button
+          type="button"
+          onClick={() => setSelectedStudentFilter('ALL')}
+          className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+            selectedStudentFilter === 'ALL'
+              ? 'bg-primary text-primary-foreground shadow-sm'
+              : 'bg-muted/40 hover:bg-muted text-muted-foreground'
+          }`}
+        >
+          All Students ({classes.length})
+        </button>
+        {students.map(student => {
+          const count = classes.filter(c => c.studentId === student.id || (c.student as any)?.id === student.id).length;
+          return (
+            <button
+              key={student.id}
+              type="button"
+              onClick={() => setSelectedStudentFilter(student.id)}
+              className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                selectedStudentFilter === student.id
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted/40 hover:bg-muted text-muted-foreground'
+              }`}
+            >
+              <span>👤 {student.name}</span>
+              <span className="opacity-75 text-[10px]">({count})</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {displayedClasses.length === 0 ? (
-          <div className="col-span-full flex h-48 items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center">
-            <p className="text-muted-foreground">No {activeTab} classes scheduled. {activeTab === 'upcoming' && 'Click "Schedule Class" to add one.'}</p>
+          <div className="col-span-full flex h-48 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6">
+            <Video className="h-8 w-8 text-muted-foreground mb-2" />
+            <p className="text-muted-foreground font-medium">No {activeTab} classes found for this student.</p>
+            {activeTab === 'upcoming' && (
+              <Button onClick={openScheduleModal} variant="outline" className="mt-3 text-xs rounded-xl">
+                + Schedule Class for this Student
+              </Button>
+            )}
           </div>
         ) : (
           displayedClasses.map((c) => {
             const isPast = activeTab === 'past';
             return (
-              <Card key={c.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between">
+              <Card key={c.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between hover:border-primary/40 transition-colors">
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between gap-2 mb-2">
-                    <Badge variant={isPast ? "secondary" : "default"} className="text-[10px]">
-                      {isPast ? 'Completed' : 'Upcoming'}
-                    </Badge>
+                    <div className="flex items-center gap-1.5">
+                      <Badge variant={isPast ? "secondary" : "default"} className="text-[10px]">
+                        {isPast ? 'Completed' : 'Upcoming'}
+                      </Badge>
+                      <Badge variant="outline" className="text-[10px] bg-primary/10 text-primary border-primary/20">
+                        👤 {c.student.name}
+                      </Badge>
+                    </div>
                     <div className="flex items-center gap-1">
                       {!isPast && (
                         <Button size="icon" variant="ghost" className="h-6 w-6 hover:bg-muted rounded-md" onClick={() => openEdit(c)}>
@@ -321,8 +384,8 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                     </div>
                   </div>
                   <CardTitle className="text-xl line-clamp-1">{c.title}</CardTitle>
-                  <CardDescription className="text-sm font-medium mt-1">
-                    Student: {c.student.name}
+                  <CardDescription className="text-xs text-muted-foreground mt-1">
+                    Student: {c.student.name} ({c.student.email})
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="pt-0 space-y-4">
