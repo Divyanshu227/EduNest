@@ -26,9 +26,12 @@ export async function POST(request: Request) {
     return jsonError(parsed.error.message, 422);
   }
 
+  const { pinUntil, ...rest } = parsed.data;
+
   const announcement = await prisma.announcement.create({
     data: {
-      ...parsed.data,
+      ...rest,
+      pinUntil: rest.pinned && pinUntil ? new Date(pinUntil) : null,
       authorId: auth.session.user.id
     }
   });
