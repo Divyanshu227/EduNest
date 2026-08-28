@@ -12,7 +12,13 @@ export async function GET(request: Request) {
   if (studentId) {
     where.OR = [
       { studentId: studentId },
-      { studentId: null }
+      { assignedStudentIds: { has: studentId } },
+      {
+        AND: [
+          { studentId: null },
+          { assignedStudentIds: { isEmpty: true } }
+        ]
+      }
     ];
   }
 
@@ -49,12 +55,20 @@ export async function POST(request: Request) {
   }
 
   try {
-    const { studentId, ...rest } = body.data;
+    const { studentId, assignedStudentIds, ...rest } = body.data;
+    
+    // Resolve final student assignment
+    const finalStudentIds = assignedStudentIds && assignedStudentIds.length > 0 
+      ? assignedStudentIds 
+      : (studentId && studentId.trim() !== '' ? [studentId] : []);
+    
+    const primaryStudentId = finalStudentIds.length === 1 ? finalStudentIds[0] : (finalStudentIds.length > 0 ? finalStudentIds[0] : null);
+
     const subject = await prisma.subject.create({
       data: {
         ...rest,
-        studentId: studentId && studentId.trim() !== '' ? studentId : null,
-        slug: slugify(rest.name) + (studentId ? `-${studentId.slice(-4)}` : ''),
+        studentId: primaryStudentId,
+        slug: slugify(rest.name) + (primaryStudentId ? `-${primaryStudentId.slice(-4)}` : `-${Date.now().toString().slice(-4)}`),
         teacherId: teacher.id
       },
       include: {
