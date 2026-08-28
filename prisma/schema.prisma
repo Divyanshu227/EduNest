@@ -249,15 +249,16 @@ model Attendance {
 }
 
 model Announcement {
-  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
   title       String
   message     String
-  audience    String   @default("all")
-  authorId    String   @db.ObjectId
-  pinned      Boolean  @default(false)
+  audience    String    @default("all")
+  authorId    String    @db.ObjectId
+  pinned      Boolean   @default(false)
+  pinUntil    DateTime?
   attachments Json?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   author User @relation("AnnouncementAuthor", fields: [authorId], references: [id])
 
