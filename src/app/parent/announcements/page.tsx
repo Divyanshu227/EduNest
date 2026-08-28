@@ -34,13 +34,22 @@ export default async function ParentAnnouncementsPage({
     }
   });
 
-  const announcements = allAnnouncements.filter(ann => {
-    const aud = ann.audience;
-    if (aud === 'all') return true;
-    if (aud === 'all_students') return true;
-    if (aud === `student:${studentId}`) return true;
-    return false;
-  });
+  const now = Date.now();
+  const announcements = allAnnouncements
+    .filter(ann => {
+      const aud = ann.audience;
+      if (aud === 'all') return true;
+      if (aud === 'all_students') return true;
+      if (aud === `student:${studentId}`) return true;
+      return false;
+    })
+    .sort((a, b) => {
+      const aPinned = a.pinned && (!a.pinUntil || new Date(a.pinUntil).getTime() > now);
+      const bPinned = b.pinned && (!b.pinUntil || new Date(b.pinUntil).getTime() > now);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   return (
     <div className="space-y-6">
@@ -59,19 +68,21 @@ export default async function ParentAnnouncementsPage({
             </CardContent>
           </Card>
         ) : (
-          announcements.map((announcement) => (
-            <Card key={announcement.id} className={`glass border-border/60 ${announcement.pinned ? 'border-primary/50 shadow-glow' : ''}`}>
+          announcements.map((announcement) => {
+            const isPinned = announcement.pinned && (!announcement.pinUntil || new Date(announcement.pinUntil).getTime() > now);
+            return (
+            <Card key={announcement.id} className={`glass border-border/60 ${isPinned ? 'border-primary/50 shadow-glow' : ''}`}>
               <CardHeader className="pb-3">
                 <div className="flex justify-between items-start">
                   <div className="space-y-1">
                     <CardTitle className="text-xl flex items-center gap-2">
                       {announcement.title}
-                      {announcement.pinned && <Pin className="h-4 w-4 text-primary fill-primary rotate-45" />}
+                      {isPinned && <Pin className="h-4 w-4 text-primary fill-primary rotate-45" />}
                     </CardTitle>
                     <CardDescription>Posted by {announcement.author.name} on {new Date(announcement.createdAt).toLocaleDateString()}</CardDescription>
                   </div>
                   <Badge 
-                    variant={announcement.pinned ? "default" : "secondary"}
+                    variant={isPinned ? "default" : "secondary"}
                     className={announcement.audience.startsWith('student:') ? 'bg-green-500/10 text-green-500 border-green-500/20 hover:bg-green-500/20' : ''}
                   >
                     {getAudienceLabel(announcement.audience)}

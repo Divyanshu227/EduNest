@@ -35,18 +35,25 @@ export default async function StudentAnnouncementsPage() {
         }
       }
     }
-  });
-
-  // Filter to only show announcements visible to this student
-  const announcements = allAnnouncements.filter(ann => {
-    const aud = ann.audience;
-    if (aud === 'all') return true;
-    if (aud === 'all_students') return true;
-    if (aud === `student:${studentId}`) return true;
-    // Legacy support for old audience values
-    if (aud === 'Mathematics' || aud === 'Languages') return true;
-    return false;
-  });
+  // Filter to only show announcements visible to this student and sort pinned first
+  const now = Date.now();
+  const announcements = allAnnouncements
+    .filter(ann => {
+      const aud = ann.audience;
+      if (aud === 'all') return true;
+      if (aud === 'all_students') return true;
+      if (aud === `student:${studentId}`) return true;
+      // Legacy support for old audience values
+      if (aud === 'Mathematics' || aud === 'Languages') return true;
+      return false;
+    })
+    .sort((a, b) => {
+      const aPinned = a.pinned && (!a.pinUntil || new Date(a.pinUntil).getTime() > now);
+      const bPinned = b.pinned && (!b.pinUntil || new Date(b.pinUntil).getTime() > now);
+      if (aPinned && !bPinned) return -1;
+      if (!aPinned && bPinned) return 1;
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
 
   // Map audience labels
   function audienceLabel(audience: string): string {
@@ -58,23 +65,24 @@ export default async function StudentAnnouncementsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
       <div>
-        <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Student Console</p>
-        <h2 className="mt-2 font-[var(--font-heading)] text-4xl">Broadcasting & Updates</h2>
+        <p className="text-sm font-medium uppercase tracking-[0.25em] text-primary">Notice Board</p>
+        <h2 className="mt-2 font-[var(--font-heading)] text-3xl sm:text-4xl">Class Announcements</h2>
       </div>
 
       {/* Feed list */}
       <div className="space-y-4">
         {announcements.map((ann) => {
           const annAttachments: AttachmentType[] = (ann.attachments as AttachmentType[] | null) || [];
+          const isPinned = ann.pinned && (!ann.pinUntil || new Date(ann.pinUntil).getTime() > now);
 
           return (
             <Card 
               key={ann.id} 
               className={`overflow-hidden border-border/60 bg-card/85 backdrop-blur transition-all ${
-                ann.pinned ? 'border-primary/30 ring-1 ring-primary/10 shadow-glow' : ''
+                isPinned ? 'border-primary/30 ring-1 ring-primary/10 shadow-glow' : ''
               }`}
             >
               <CardHeader className="pb-3 flex flex-row items-start justify-between gap-3">
@@ -86,8 +94,8 @@ export default async function StudentAnnouncementsPage() {
                     {ann.audience === `student:${studentId}` && (
                       <Badge variant="default" className="text-[10px]">Personal</Badge>
                     )}
-                    {ann.pinned && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-primary">
+                    {isPinned && (
+                      <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-primary" title="Pinned Announcement">
                         <Pin className="h-3 w-3 fill-current animate-bounce" />
                       </span>
                     )}
