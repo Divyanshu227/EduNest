@@ -54,13 +54,232 @@ interface AdminHomeworkClientProps {
   fixedChapterId?: string;
 }
 
+export type HomeworkStatusFilter = 'all' | 'needs_grading' | 'in_progress' | 'overdue' | 'completed';
+
+export interface HomeworkComputedStatus {
+  totalAssigned: number;
+  assignedStudentsList: Student[];
+  submissions: Submission[];
+  submittedStudents: Student[];
+  missingStudents: Student[];
+  isPastDue: boolean;
+  isFullySubmitted: boolean;
+  unreviewedCount: number;
+  isFullyGraded: boolean;
+  allSubmittedOnTime: boolean;
+  statusBadge: {
+    label: string;
+    variant: 'default' | 'secondary' | 'destructive' | 'outline';
+    className?: string;
+  };
+}
+
+export function computeHomeworkStatus(hw: Homework, allStudents: Student[], selectedStudentId?: string): HomeworkComputedStatus {
+  const assignedIds = hw.assignedStudentIds && hw.assignedStudentIds.length > 0
+    ? hw.assignedStudentIds
+    : allStudents.map(s => s.id);
+  
+  const assignedStudentsList = allStudents.filter(s => assignedIds.includes(s.id));
+  const totalAssigned = assignedStudentsList.length || 1;
+  const submissions = hw.submissions || [];
+  
+  const submittedStudentIds = submissions.map(s => s.studentId);
+  const submittedStudents = assignedStudentsList.filter(s => submittedStudentIds.includes(s.id));
+  const missingStudents = assignedStudentsList.filter(s => !submittedStudentIds.includes(s.id));
+  
+  const isPastDue = new Date() > new Date(hw.dueDate);
+  const isFullySubmitted = totalAssigned > 0 && submissions.length >= totalAssigned;
+  const unreviewedCount = submissions.filter(s => s.score === null).length;
+  const isFullyGraded = isFullySubmitted && unreviewedCount === 0;
+
+  const allSubmittedOnTime = submissions.length > 0 && submissions.every(s => {
+    return s.submittedAt && new Date(s.submittedAt) <= new Date(hw.dueDate);
+  });
+
+  // If filtered to a specific student:
+  if (selectedStudentId && selectedStudentId !== 'ALL') {
+    const studentSub = submissions.find(s => s.studentId === selectedStudentId);
+    if (studentSub) {
+      const isOnTime = studentSub.submittedAt && new Date(studentSub.submittedAt) <= new Date(hw.dueDate);
+      if (studentSub.score !== null) {
+        return {
+          totalAssigned,
+          assignedStudentsList,
+          submissions,
+          submittedStudents,
+          missingStudents,
+          isPastDue,
+          isFullySubmitted,
+          unreviewedCount,
+          isFullyGraded,
+          allSubmittedOnTime,
+          statusBadge: {
+            label: `✓ Graded (${studentSub.score}) • ${isOnTime ? 'On Time' : 'Late'}`,
+            variant: 'outline',
+            className: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+          }
+        };
+      }
+      return {
+        totalAssigned,
+        assignedStudentsList,
+        submissions,
+        submittedStudents,
+        missingStudents,
+        isPastDue,
+        isFullySubmitted,
+        unreviewedCount,
+        isFullyGraded,
+        allSubmittedOnTime,
+        statusBadge: {
+          label: isOnTime ? '✓ Submitted On Time' : '⚠ Submitted Late',
+          variant: 'outline',
+          className: isOnTime ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+        }
+      };
+    } else {
+      if (isPastDue) {
+        return {
+          totalAssigned,
+          assignedStudentsList,
+          submissions,
+          submittedStudents,
+          missingStudents,
+          isPastDue,
+          isFullySubmitted,
+          unreviewedCount,
+          isFullyGraded,
+          allSubmittedOnTime,
+          statusBadge: {
+            label: '🔴 Overdue (Missing)',
+            variant: 'destructive'
+          }
+        };
+      }
+      return {
+        totalAssigned,
+        assignedStudentsList,
+        submissions,
+        submittedStudents,
+        missingStudents,
+        isPastDue,
+        isFullySubmitted,
+        unreviewedCount,
+        isFullyGraded,
+        allSubmittedOnTime,
+        statusBadge: {
+          label: `⏳ In Progress • Due ${new Date(hw.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}`,
+          variant: 'secondary'
+        }
+      };
+    }
+  }
+
+  // General (All students view):
+  if (unreviewedCount > 0) {
+    return {
+      totalAssigned,
+      assignedStudentsList,
+      submissions,
+      submittedStudents,
+      missingStudents,
+      isPastDue,
+      isFullySubmitted,
+      unreviewedCount,
+      isFullyGraded,
+      allSubmittedOnTime,
+      statusBadge: {
+        label: `📝 ${unreviewedCount} Needs Review`,
+        variant: 'outline',
+        className: 'bg-amber-500/15 text-amber-600 border-amber-500/30 font-semibold'
+      }
+    };
+  }
+
+  if (isFullyGraded) {
+    return {
+      totalAssigned,
+      assignedStudentsList,
+      submissions,
+      submittedStudents,
+      missingStudents,
+      isPastDue,
+      isFullySubmitted,
+      unreviewedCount,
+      isFullyGraded,
+      allSubmittedOnTime,
+      statusBadge: {
+        label: `✓ Graded & Complete (${submissions.length}/${totalAssigned})`,
+        variant: 'outline',
+        className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 font-semibold'
+      }
+    };
+  }
+
+  if (isFullySubmitted) {
+    return {
+      totalAssigned,
+      assignedStudentsList,
+      submissions,
+      submittedStudents,
+      missingStudents,
+      isPastDue,
+      isFullySubmitted,
+      unreviewedCount,
+      isFullyGraded,
+      allSubmittedOnTime,
+      statusBadge: {
+        label: allSubmittedOnTime ? `✓ Submitted On Time (${submissions.length}/${totalAssigned})` : `✓ All Submitted (${submissions.length}/${totalAssigned})`,
+        variant: 'outline',
+        className: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30 font-semibold'
+      }
+    };
+  }
+
+  if (isPastDue) {
+    return {
+      totalAssigned,
+      assignedStudentsList,
+      submissions,
+      submittedStudents,
+      missingStudents,
+      isPastDue,
+      isFullySubmitted,
+      unreviewedCount,
+      isFullyGraded,
+      allSubmittedOnTime,
+      statusBadge: {
+        label: `⚠ ${missingStudents.length} Overdue (Missing)`,
+        variant: 'destructive'
+      }
+    };
+  }
+
+  return {
+    totalAssigned,
+    assignedStudentsList,
+    submissions,
+    submittedStudents,
+    missingStudents,
+    isPastDue,
+    isFullySubmitted,
+    unreviewedCount,
+    isFullyGraded,
+    allSubmittedOnTime,
+    statusBadge: {
+      label: `In Progress (${submissions.length}/${totalAssigned}) • Due ${new Date(hw.dueDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}`,
+      variant: 'secondary'
+    }
+  };
+}
+
 export function AdminHomeworkClient({ initialHomework, subjects, students, fixedSubjectId, fixedChapterId }: AdminHomeworkClientProps) {
   const [homeworkList, setHomeworkList] = useState<Homework[]>(initialHomework);
   const [selectedStudentFilter, setSelectedStudentFilter] = useState<string>('ALL');
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingHomework, setEditingHomework] = useState<Homework | null>(null);
   const [selectedHomeworkForGrading, setSelectedHomeworkForGrading] = useState<Homework | null>(null);
-  const [filter, setFilter] = useState<'active' | 'past' | 'all'>('active');
+  const [filter, setFilter] = useState<HomeworkStatusFilter>('all');
 
   // Form states
   const [title, setTitle] = useState('');
@@ -405,43 +624,53 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Homework List Panel */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between border-b border-border/40 pb-3">
-            <h3 className="font-semibold text-lg">Homework Assignments</h3>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setFilter('active')}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                  filter === 'active'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                Active
-              </button>
-              <button
-                onClick={() => setFilter('past')}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                  filter === 'past'
-                    ? 'bg-destructive text-destructive-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                Past Due
-              </button>
-              <button
-                onClick={() => setFilter('all')}
-                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-                  filter === 'all'
-                    ? 'bg-primary text-primary-foreground shadow-sm'
-                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
-                }`}
-              >
-                All
-              </button>
+          <div className="space-y-3 border-b border-border/40 pb-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-semibold text-lg">Homework Assignments</h3>
+              
+              {/* Filter Tabs */}
+              <div className="flex flex-wrap gap-1.5 bg-muted/40 p-1 rounded-2xl">
+                {[
+                  { id: 'all', label: 'All', count: homeworkList.length },
+                  { id: 'needs_grading', label: 'Needs Review', count: homeworkList.filter(h => h.submissions.some(s => s.score === null)).length },
+                  { id: 'in_progress', label: 'In Progress', count: homeworkList.filter(h => {
+                    const st = computeHomeworkStatus(h, students, selectedStudentFilter);
+                    return !st.isPastDue && !st.isFullySubmitted;
+                  }).length },
+                  { id: 'overdue', label: 'Overdue', count: homeworkList.filter(h => {
+                    const st = computeHomeworkStatus(h, students, selectedStudentFilter);
+                    return st.isPastDue && !st.isFullySubmitted;
+                  }).length },
+                  { id: 'completed', label: 'Completed', count: homeworkList.filter(h => {
+                    const st = computeHomeworkStatus(h, students, selectedStudentFilter);
+                    return st.isFullySubmitted && st.unreviewedCount === 0;
+                  }).length },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setFilter(tab.id as HomeworkStatusFilter)}
+                    className={`rounded-xl px-2.5 py-1 text-xs font-semibold transition-all flex items-center gap-1.5 ${
+                      filter === tab.id
+                        ? 'bg-primary text-primary-foreground shadow-sm'
+                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
+                    }`}
+                  >
+                    <span>{tab.label}</span>
+                    <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${
+                      filter === tab.id
+                        ? 'bg-primary-foreground/20 text-primary-foreground'
+                        : 'bg-muted-foreground/10 text-muted-foreground'
+                    }`}>
+                      {tab.count}
+                    </span>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Student Filter Selector */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
+            <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/30">
               <span className="text-xs font-semibold text-muted-foreground mr-1">Filter Student:</span>
               <button
                 type="button"
@@ -483,14 +712,16 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     return false;
                   }
                 }
+                const status = computeHomeworkStatus(hw, students, selectedStudentFilter);
                 if (filter === 'all') return true;
-                const isPastDue = new Date() > new Date(hw.dueDate);
-                if (filter === 'active') return !isPastDue;
-                if (filter === 'past') return isPastDue;
+                if (filter === 'needs_grading') return status.unreviewedCount > 0;
+                if (filter === 'in_progress') return !status.isPastDue && !status.isFullySubmitted;
+                if (filter === 'overdue') return status.isPastDue && !status.isFullySubmitted;
+                if (filter === 'completed') return status.isFullySubmitted && status.unreviewedCount === 0;
                 return true;
               })
               .map((hw) => {
-              const isPastDue = new Date() > new Date(hw.dueDate);
+              const status = computeHomeworkStatus(hw, students, selectedStudentFilter);
               const submissionCount = hw.submissions.length;
               
               return (
@@ -498,7 +729,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                   selectedHomeworkForGrading?.id === hw.id ? 'ring-2 ring-primary/20' : ''
                 }`}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between gap-2 mb-2">
+                    <div className="flex items-center justify-between gap-2 mb-2 flex-wrap">
                       <div className="flex items-center gap-2">
                         {!fixedSubjectId && (
                           <Badge style={{ backgroundColor: `${hw.subject.color}15`, color: hw.subject.color, borderColor: `${hw.subject.color}30` }} variant="outline">
@@ -509,9 +740,14 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                           <span className="text-xs text-muted-foreground">{hw.chapter.name}</span>
                         )}
                       </div>
-                      <Badge variant={isPastDue ? "destructive" : "secondary"} className="text-[10px] flex items-center gap-1">
+
+                      {/* Accurate Status Badge */}
+                      <Badge 
+                        variant={status.statusBadge.variant} 
+                        className={`text-[10px] flex items-center gap-1 ${status.statusBadge.className || ''}`}
+                      >
                         <Calendar className="h-3 w-3" />
-                        Due {new Date(hw.dueDate).toLocaleDateString()} {new Date(hw.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                        {status.statusBadge.label}
                       </Badge>
                     </div>
                     <CardTitle className="text-xl">{hw.title}</CardTitle>
@@ -535,7 +771,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
 
                     <div className="flex items-center justify-between border-t border-border/40 pt-3">
                       <span className="text-xs text-foreground/80">
-                        {submissionCount} / {hw.assignedStudentIds?.length || students.length} Submissions
+                        {submissionCount} / {status.totalAssigned} Submissions {status.allSubmittedOnTime && submissionCount > 0 ? '(All on time)' : ''}
                       </span>
 
                       <div className="flex items-center gap-2">
@@ -572,12 +808,21 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
             })}
 
             {!homeworkList.filter(hw => {
+                if (selectedStudentFilter !== 'ALL') {
+                  if (hw.assignedStudentIds && hw.assignedStudentIds.length > 0 && !hw.assignedStudentIds.includes(selectedStudentFilter)) {
+                    return false;
+                  }
+                }
+                const status = computeHomeworkStatus(hw, students, selectedStudentFilter);
                 if (filter === 'all') return true;
-                const isPastDue = new Date() > new Date(hw.dueDate);
-                return filter === 'active' ? !isPastDue : isPastDue;
+                if (filter === 'needs_grading') return status.unreviewedCount > 0;
+                if (filter === 'in_progress') return !status.isPastDue && !status.isFullySubmitted;
+                if (filter === 'overdue') return status.isPastDue && !status.isFullySubmitted;
+                if (filter === 'completed') return status.isFullySubmitted && status.unreviewedCount === 0;
+                return true;
               }).length && (
               <div className="flex h-64 flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6">
-                <p className="text-muted-foreground">No homework tasks created yet. Click "Create Homework" to get started.</p>
+                <p className="text-muted-foreground">No homework tasks found for this filter.</p>
               </div>
             )}
           </div>
@@ -596,128 +841,187 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     <X className="h-4 w-4" />
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">Grade and provide feedback to students below.</p>
+                <p className="text-xs text-muted-foreground">Due: {new Date(selectedHomeworkForGrading.dueDate).toLocaleDateString()} {new Date(selectedHomeworkForGrading.dueDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
               </div>
 
-              {selectedHomeworkForGrading.submissions.length ? selectedHomeworkForGrading.submissions.map((sub) => (
-                <Card key={sub.id} className="border-border/60 bg-card/85 backdrop-blur overflow-hidden">
-                  <CardHeader className="pb-3 border-b border-border/40">
-                    <div className="flex justify-between items-center gap-2">
-                      <div>
-                        <h4 className="font-semibold text-sm">{sub.student.name}</h4>
-                        <p className="text-[10px] text-muted-foreground">{sub.student.email}</p>
-                      </div>
-                      <Badge variant={sub.score !== null ? 'default' : sub.status === 'LATE' ? 'destructive' : 'secondary'} className="text-[9px]">
-                        {sub.score !== null ? 'Graded' : sub.status === 'LATE' ? 'Submitted Late' : 'Submitted'}
-                      </Badge>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="pt-4 space-y-4">
-                    {sub.textAnswer && (
-                      <div className="rounded-2xl bg-muted p-4 space-y-1">
-                        <p className="text-xs font-semibold text-muted-foreground">Student Response:</p>
-                        <p className="text-sm whitespace-pre-wrap">{sub.textAnswer}</p>
-                      </div>
-                    )}
+              {/* Submissions list */}
+              {selectedHomeworkForGrading.submissions.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Submissions Received ({selectedHomeworkForGrading.submissions.length})
+                  </p>
+                  {selectedHomeworkForGrading.submissions.map((sub) => {
+                    const isOnTime = sub.submittedAt && new Date(sub.submittedAt) <= new Date(selectedHomeworkForGrading.dueDate);
 
-                    {/* Student Attachments */}
-                    {Array.isArray(sub.attachments) && sub.attachments.length > 0 && (
-                      <div className="space-y-1.5">
-                        <p className="text-[10px] font-semibold text-muted-foreground">Uploaded Work:</p>
-                        <AttachmentViewer attachments={sub.attachments} />
-                      </div>
-                    )}
-
-                    {/* Grading Form */}
-                    <div className="space-y-3 pt-3 border-t border-border/40">
-                      {sub.score !== null && !editingGrades[sub.id] ? (
-                        <div className={`rounded-2xl border ${Number(sub.score) < 5 ? 'border-red-500/20 bg-red-500/5' : 'border-emerald-500/20 bg-emerald-500/5'} p-4 space-y-3`}>
-                          <div className="flex items-center justify-between">
-                            <div className={`flex items-center gap-2 ${Number(sub.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} font-bold text-sm`}>
-                              <CheckCircle2 className="h-4 w-4" /> Graded & Reviewed
-                            </div>
-                            <div className="flex gap-2">
-                              <Button variant="outline" size="sm" onClick={() => {
-                                setReassigningSubmission(sub);
-                                const tomorrow = new Date();
-                                tomorrow.setDate(tomorrow.getDate() + 1);
-                                setReassignDueDate(tomorrow.toISOString().slice(0, 16));
-                              }} className="h-7 text-xs bg-background">
-                                Reassign
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: true}))} className="h-7 text-xs hover:bg-background/50">
-                                <Edit2 className="h-3 w-3 mr-1" /> Edit
-                              </Button>
-                              <Button variant="ghost" size="sm" onClick={() => handleUngradeSubmit(sub.id)} disabled={gradingSubmitting[sub.id]} className="h-7 text-xs hover:bg-destructive/10 hover:text-destructive">
-                                <Trash2 className="h-3 w-3 mr-1" /> Ungrade
-                              </Button>
-                            </div>
+                    return (
+                    <Card key={sub.id} className="border-border/60 bg-card/85 backdrop-blur overflow-hidden">
+                      <CardHeader className="pb-3 border-b border-border/40">
+                        <div className="flex justify-between items-center gap-2">
+                          <div>
+                            <h4 className="font-semibold text-sm">{sub.student.name}</h4>
+                            <p className="text-[10px] text-muted-foreground">{sub.student.email}</p>
                           </div>
-                          <div className="flex gap-4">
-                            <div>
-                              <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
-                              <span className={`text-xl font-black ${Number(sub.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-primary'}`}>{sub.score}</span>
-                            </div>
-                            {sub.feedback && (
-                              <div>
-                                <span className="text-[10px] text-muted-foreground uppercase font-bold block">Feedback</span>
-                                <span className={`text-sm ${Number(sub.score) < 5 ? 'text-red-700 dark:text-red-300' : 'text-foreground'}`}>{sub.feedback}</span>
-                              </div>
-                            )}
-                          </div>
+                          <Badge 
+                            variant="outline" 
+                            className={`text-[9px] font-semibold ${
+                              sub.score !== null 
+                                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30' 
+                                : isOnTime
+                                ? 'bg-emerald-500/10 text-emerald-600 border-emerald-500/30'
+                                : 'bg-amber-500/10 text-amber-600 border-amber-500/30'
+                            }`}
+                          >
+                            {sub.score !== null 
+                              ? `Graded (${sub.score})` 
+                              : isOnTime 
+                              ? `✓ Submitted On Time` 
+                              : `⚠ Submitted Late`}
+                          </Badge>
                         </div>
-                      ) : (
-                        <>
-                          <div className="flex gap-4 items-center">
-                            <div className="space-y-1 w-24">
-                              <Label htmlFor={`score-${sub.id}`} className="text-xs">Score</Label>
-                              <Input
-                                id={`score-${sub.id}`}
-                                type="number"
-                                step="0.5"
-                                placeholder="Score"
-                                value={gradingScore[sub.id] || ''}
-                                onChange={(e) => setGradingScore(prev => ({ ...prev, [sub.id]: e.target.value }))}
-                              />
-                            </div>
-                            <div className="flex-1 space-y-1">
-                              <Label htmlFor={`feedback-${sub.id}`} className="text-xs">Feedback / Comments</Label>
-                              <Input
-                                id={`feedback-${sub.id}`}
-                                placeholder="Great job! Keep it up."
-                                value={gradingFeedback[sub.id] || ''}
-                                onChange={(e) => setGradingFeedback(prev => ({ ...prev, [sub.id]: e.target.value }))}
-                              />
-                            </div>
+                        {sub.submittedAt && (
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            Submitted on {new Date(sub.submittedAt).toLocaleDateString()} at {new Date(sub.submittedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </p>
+                        )}
+                      </CardHeader>
+                      <CardContent className="pt-4 space-y-4">
+                        {sub.textAnswer && (
+                          <div className="rounded-2xl bg-muted p-4 space-y-1">
+                            <p className="text-xs font-semibold text-muted-foreground">Student Response:</p>
+                            <p className="text-sm whitespace-pre-wrap">{sub.textAnswer}</p>
                           </div>
+                        )}
 
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              onClick={() => handleGradeSubmit(sub.id)}
-                              disabled={gradingSubmitting[sub.id]}
-                              className="flex-1 rounded-xl flex items-center justify-center gap-1 text-xs"
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" /> 
-                              {gradingSubmitting[sub.id] ? 'Saving...' : (sub.score !== null ? 'Update Grade' : 'Submit Grade & Review')}
-                            </Button>
-                            {sub.score !== null && (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: false}))}
-                                className="rounded-xl text-xs"
-                              >
-                                Cancel
-                              </Button>
-                            )}
+                        {/* Student Attachments */}
+                        {Array.isArray(sub.attachments) && sub.attachments.length > 0 && (
+                          <div className="space-y-1.5">
+                            <p className="text-[10px] font-semibold text-muted-foreground">Uploaded Work:</p>
+                            <AttachmentViewer attachments={sub.attachments} />
                           </div>
-                        </>
-                      )}
+                        )}
+
+                        {/* Grading Form */}
+                        <div className="space-y-3 pt-3 border-t border-border/40">
+                          {sub.score !== null && !editingGrades[sub.id] ? (
+                            <div className={`rounded-2xl border ${Number(sub.score) < 5 ? 'border-red-500/20 bg-red-500/5' : 'border-emerald-500/20 bg-emerald-500/5'} p-4 space-y-3`}>
+                              <div className="flex items-center justify-between">
+                                <div className={`flex items-center gap-2 ${Number(sub.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} font-bold text-sm`}>
+                                  <CheckCircle2 className="h-4 w-4" /> Graded & Reviewed
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button variant="outline" size="sm" onClick={() => {
+                                    setReassigningSubmission(sub);
+                                    const tomorrow = new Date();
+                                    tomorrow.setDate(tomorrow.getDate() + 1);
+                                    setReassignDueDate(tomorrow.toISOString().slice(0, 16));
+                                  }} className="h-7 text-xs bg-background">
+                                    Reassign
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: true}))} className="h-7 text-xs hover:bg-background/50">
+                                    <Edit2 className="h-3 w-3 mr-1" /> Edit
+                                  </Button>
+                                  <Button variant="ghost" size="sm" onClick={() => handleUngradeSubmit(sub.id)} disabled={gradingSubmitting[sub.id]} className="h-7 text-xs hover:bg-destructive/10 hover:text-destructive">
+                                    <Trash2 className="h-3 w-3 mr-1" /> Ungrade
+                                  </Button>
+                                </div>
+                              </div>
+                              <div className="flex gap-4">
+                                <div>
+                                  <span className="text-[10px] text-muted-foreground uppercase font-bold block">Score</span>
+                                  <span className={`text-xl font-black ${Number(sub.score) < 5 ? 'text-red-600 dark:text-red-400' : 'text-primary'}`}>{sub.score}</span>
+                                </div>
+                                {sub.feedback && (
+                                  <div>
+                                    <span className="text-[10px] text-muted-foreground uppercase font-bold block">Feedback</span>
+                                    <span className={`text-sm ${Number(sub.score) < 5 ? 'text-red-700 dark:text-red-300' : 'text-foreground'}`}>{sub.feedback}</span>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          ) : (
+                            <>
+                              <div className="flex gap-4 items-center">
+                                <div className="space-y-1 w-24">
+                                  <Label htmlFor={`score-${sub.id}`} className="text-xs">Score</Label>
+                                  <Input
+                                    id={`score-${sub.id}`}
+                                    type="number"
+                                    step="0.5"
+                                    placeholder="Score"
+                                    value={gradingScore[sub.id] || ''}
+                                    onChange={(e) => setGradingScore(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                                  />
+                                </div>
+                                <div className="flex-1 space-y-1">
+                                  <Label htmlFor={`feedback-${sub.id}`} className="text-xs">Feedback / Comments</Label>
+                                  <Input
+                                    id={`feedback-${sub.id}`}
+                                    placeholder="Great job! Keep it up."
+                                    value={gradingFeedback[sub.id] || ''}
+                                    onChange={(e) => setGradingFeedback(prev => ({ ...prev, [sub.id]: e.target.value }))}
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="flex gap-2">
+                                <Button
+                                  size="sm"
+                                  onClick={() => handleGradeSubmit(sub.id)}
+                                  disabled={gradingSubmitting[sub.id]}
+                                  className="flex-1 rounded-xl flex items-center justify-center gap-1 text-xs"
+                                >
+                                  <CheckCircle2 className="h-3.5 w-3.5" /> 
+                                  {gradingSubmitting[sub.id] ? 'Saving...' : (sub.score !== null ? 'Update Grade' : 'Submit Grade & Review')}
+                                </Button>
+                                {sub.score !== null && (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={() => setEditingGrades(prev => ({...prev, [sub.id]: false}))}
+                                    className="rounded-xl text-xs"
+                                  >
+                                    Cancel
+                                  </Button>
+                                )}
+                              </div>
+                            </>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Missing / Awaiting students list */}
+              {(() => {
+                const gradingStatus = computeHomeworkStatus(selectedHomeworkForGrading, students, 'ALL');
+                if (!gradingStatus.missingStudents.length) return null;
+
+                return (
+                  <div className="space-y-2 pt-2 border-t border-border/40">
+                    <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                      Awaiting Submissions ({gradingStatus.missingStudents.length})
+                    </p>
+                    <div className="space-y-2">
+                      {gradingStatus.missingStudents.map((missingStudent) => (
+                        <div key={missingStudent.id} className="flex items-center justify-between p-3 rounded-2xl border border-border/40 bg-muted/20">
+                          <div>
+                            <p className="text-xs font-semibold">{missingStudent.name}</p>
+                            <p className="text-[10px] text-muted-foreground">{missingStudent.email}</p>
+                          </div>
+                          <Badge variant={gradingStatus.isPastDue ? "destructive" : "secondary"} className="text-[9px]">
+                            {gradingStatus.isPastDue ? "🔴 Overdue" : "⏳ Pending"}
+                          </Badge>
+                        </div>
+                      ))}
                     </div>
-                  </CardContent>
-                </Card>
-              )) : (
+                  </div>
+                );
+              })()}
+
+              {selectedHomeworkForGrading.submissions.length === 0 && computeHomeworkStatus(selectedHomeworkForGrading, students, 'ALL').missingStudents.length === 0 && (
                 <div className="flex flex-col items-center justify-center rounded-3xl border border-dashed border-border/60 bg-muted/20 text-center p-6 min-h-[200px]">
                   <AlertCircle className="h-8 w-8 text-muted-foreground mb-2" />
                   <p className="text-xs text-muted-foreground">No submissions have been uploaded for this homework yet.</p>
