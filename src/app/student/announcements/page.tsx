@@ -35,6 +35,8 @@ export default async function StudentAnnouncementsPage() {
         }
       }
     }
+  });
+
   // Filter to only show announcements visible to this student and sort pinned first
   const now = Date.now();
   const announcements = allAnnouncements

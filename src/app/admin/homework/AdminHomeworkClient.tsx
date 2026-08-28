@@ -436,6 +436,10 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     : 'bg-muted text-muted-foreground hover:bg-muted/80'
                 }`}
               >
+                All
+              </button>
+            </div>
+
             {/* Student Filter Selector */}
             <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-border/40">
               <span className="text-xs font-semibold text-muted-foreground mr-1">Filter Student:</span>

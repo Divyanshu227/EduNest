@@ -95,7 +95,8 @@ export default async function ParentAnnouncementsPage({
                 </div>
               </CardContent>
             </Card>
-          ))
+          );
+        })
         )}
       </div>
     </div>

@@ -15,14 +15,14 @@ const nextConfig = {
       }
     ]
   },
-  serverActions: {
-    bodySizeLimit: '20mb'
-  },
   experimental: {
-    turbo: {
-      resolveAlias: {
-        canvas: './empty-module.js'
-      }
+    serverActions: {
+      bodySizeLimit: '20mb'
+    }
+  },
+  turbopack: {
+    resolveAlias: {
+      canvas: './empty-module.js'
     }
   },
   webpack: (config, { dev }) => {
