@@ -23,6 +23,7 @@ interface Announcement {
   message: string;
   audience: string;
   pinned: boolean;
+  pinUntil?: string | Date | null;
   attachments?: AttachmentType[];
   createdAt: string | Date;
   author: { name: string; email: string };
@@ -37,6 +38,10 @@ interface UserType {
 interface AdminAnnouncementsClientProps {
   initialAnnouncements: Announcement[];
   users: UserType[];
+}
+
+export function isEffectivelyPinned(ann: Announcement): boolean {
+  return Boolean(ann.pinned && (!ann.pinUntil || new Date(ann.pinUntil).getTime() > Date.now()));
 }
 
 // Helper to format audience string to human-readable label
@@ -59,7 +64,10 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
   const [message, setMessage] = useState('');
   const [audience, setAudience] = useState('all');
   const [pinned, setPinned] = useState(false);
+  const [pinDuration, setPinDuration] = useState<'permanent' | '1day' | '3days' | '7days' | 'custom'>('permanent');
+  const [customPinUntil, setCustomPinUntil] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [togglingPinId, setTogglingPinId] = useState<string | null>(null);
   const [attachments, setAttachments] = useState<AttachmentType[]>([]);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -113,6 +121,41 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
     setAttachments(prev => prev.filter((_, i) => i !== index));
   };
 
+  const calculatePinUntil = (): string | null => {
+    if (!pinned) return null;
+    if (pinDuration === 'permanent') return null;
+    if (pinDuration === '1day') return new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+    if (pinDuration === '3days') return new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
+    if (pinDuration === '7days') return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+    if (pinDuration === 'custom' && customPinUntil) return new Date(customPinUntil).toISOString();
+    return null;
+  };
+
+  const handleTogglePin = async (ann: Announcement) => {
+    const willBePinned = !isEffectivelyPinned(ann);
+    setTogglingPinId(ann.id);
+
+    try {
+      const res = await fetch(`/api/announcements/${ann.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pinned: willBePinned,
+          pinUntil: willBePinned ? null : null // Reset or toggle pin
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to update pin status');
+      const data = await res.json();
+
+      setAnnouncements(prev => prev.map(a => a.id === ann.id ? { ...a, pinned: data.data.pinned, pinUntil: data.data.pinUntil } : a));
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setTogglingPinId(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !message) {
@@ -121,11 +164,13 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
     }
 
     setSubmitting(true);
+    const pinUntilDate = calculatePinUntil();
     const payload = {
       title,
       message,
       audience,
       pinned,
+      pinUntil: pinUntilDate,
       attachments
     };
 
@@ -151,6 +196,8 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
       setMessage('');
       setAudience('all');
       setPinned(false);
+      setPinDuration('permanent');
+      setCustomPinUntil('');
       setAttachments([]);
       alert('Announcement broadcasted successfully!');
     } catch (err: any) {
@@ -192,19 +239,49 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {announcements.map((ann) => {
           const annAttachments: AttachmentType[] = (ann.attachments as AttachmentType[] | undefined) || [];
+          const pinnedActive = isEffectivelyPinned(ann);
+          const isToggling = togglingPinId === ann.id;
+
           return (
-            <Card key={ann.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur flex flex-col justify-between">
+            <Card key={ann.id} className={`relative overflow-hidden border bg-card/85 backdrop-blur flex flex-col justify-between transition-all ${
+              pinnedActive ? 'border-primary/50 shadow-glow ring-1 ring-primary/20' : 'border-border/60'
+            }`}>
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
                   <Badge variant="secondary" className="text-[10px] flex items-center gap-1.5 uppercase">
                     <Users className="h-3 w-3" /> {audienceLabel(ann.audience, users)}
                   </Badge>
-                  <div className="flex items-center gap-1.5">
-                    {ann.pinned && (
-                      <span className="flex h-5 w-5 items-center justify-center rounded bg-primary/10 text-primary">
-                        <Pin className="h-3.5 w-3.5 fill-current" />
-                      </span>
+                  <div className="flex items-center gap-2">
+                    {/* Pin/Unpin Interactive Action */}
+                    {pinnedActive ? (
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePin(ann)}
+                        disabled={isToggling}
+                        title="Click to unpin this announcement"
+                        className="flex items-center gap-1.5 px-2 py-0.5 rounded-lg text-[11px] font-semibold bg-emerald-500/15 text-emerald-600 border border-emerald-500/30 hover:bg-red-500/15 hover:text-red-600 hover:border-red-500/30 transition-all cursor-pointer group"
+                      >
+                        <Pin className="h-3 w-3 fill-current rotate-45 text-emerald-600 group-hover:text-red-600" />
+                        <span>
+                          {ann.pinUntil
+                            ? `${new Date(ann.pinUntil).toLocaleDateString([], { month: 'numeric', day: 'numeric' })}`
+                            : 'Pinned'}
+                        </span>
+                        <span className="hidden group-hover:inline text-[9px] font-bold underline ml-0.5">Unpin</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => handleTogglePin(ann)}
+                        disabled={isToggling}
+                        title="Click to pin to top"
+                        className="flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] text-muted-foreground hover:text-primary hover:bg-primary/10 border border-border/40 hover:border-primary/30 transition-all cursor-pointer"
+                      >
+                        <Pin className="h-3 w-3" />
+                        <span>Pin</span>
+                      </button>
                     )}
+
                     <span className="text-[10px] text-muted-foreground">
                       {new Date(ann.createdAt).toLocaleDateString()}
                     </span>
@@ -389,17 +466,71 @@ export function AdminAnnouncementsClient({ initialAnnouncements, users }: AdminA
                   )}
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <input
-                    id="pinned"
-                    type="checkbox"
-                    checked={pinned}
-                    onChange={(e) => setPinned(e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                  />
-                  <Label htmlFor="pinned" className="cursor-pointer font-semibold text-sm">
-                    Pin to top of student feed
-                  </Label>
+                <div className="space-y-3 p-3.5 rounded-2xl bg-muted/20 border border-border/40">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="pinned"
+                      type="checkbox"
+                      checked={pinned}
+                      onChange={(e) => setPinned(e.target.checked)}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <Label htmlFor="pinned" className="cursor-pointer font-semibold text-sm flex items-center gap-1.5">
+                      <Pin className="h-3.5 w-3.5 text-primary" /> Pin to top of feed
+                    </Label>
+                  </div>
+
+                  {pinned && (
+                    <div className="space-y-2 pt-2 border-t border-border/30 animate-in fade-in-50 duration-200">
+                      <Label className="text-xs text-muted-foreground">Pin Duration / Time Limit</Label>
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                        {[
+                          { id: 'permanent', label: 'Permanent' },
+                          { id: '1day', label: '24 Hours' },
+                          { id: '3days', label: '3 Days' },
+                          { id: '7days', label: '1 Week' },
+                        ].map((opt) => (
+                          <button
+                            key={opt.id}
+                            type="button"
+                            onClick={() => setPinDuration(opt.id as any)}
+                            className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                              pinDuration === opt.id
+                                ? 'bg-primary text-primary-foreground border-primary shadow-sm'
+                                : 'bg-background hover:bg-muted/50 border-border/60 text-muted-foreground'
+                            }`}
+                          >
+                            {opt.label}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="pt-1">
+                        <button
+                          type="button"
+                          onClick={() => setPinDuration('custom')}
+                          className={`text-xs font-semibold transition-colors ${
+                            pinDuration === 'custom' ? 'text-primary underline' : 'text-muted-foreground hover:text-foreground'
+                          }`}
+                        >
+                          + Set Custom Expiry Date & Time
+                        </button>
+                      </div>
+
+                      {pinDuration === 'custom' && (
+                        <div className="space-y-1 pt-1">
+                          <Input
+                            type="datetime-local"
+                            value={customPinUntil}
+                            min={new Date().toISOString().slice(0, 16)}
+                            onChange={(e) => setCustomPinUntil(e.target.value)}
+                            className="h-9 text-xs rounded-xl"
+                            required={pinDuration === 'custom'}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-3 border-t border-border/40 pt-4 mt-6">
