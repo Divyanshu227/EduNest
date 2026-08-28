@@ -10,7 +10,8 @@ export const subjectSchema = z.object({
   color: z.string().min(3),
   icon: z.string().min(1),
   sortOrder: z.coerce.number().int().min(0).default(0),
-  studentId: z.string().optional().nullable()
+  studentId: z.string().optional().nullable(),
+  assignedStudentIds: z.array(z.string()).optional().default([])
 });
 
 export const chapterSchema = z.object({
