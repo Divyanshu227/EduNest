@@ -66,6 +66,7 @@ model User {
   attendance    Attendance[]        @relation("AttendanceStudent")
   markedAttend  Attendance[]        @relation("AttendanceMarker")
   testAttempts  TestAttempt[]       @relation("TestAttemptStudent")
+  studentSubjects Subject[]         @relation("StudentSubjects")
   teacherClasses LiveClass[]        @relation("TeacherLiveClasses")
   studentClasses LiveClass[]        @relation("StudentLiveClasses")
   parentOf       ParentStudent[]    @relation("ParentToStudent")
@@ -85,17 +86,20 @@ model Subject {
   icon        String
   sortOrder   Int         @default(0)
   teacherId   String      @db.ObjectId
+  studentId   String?     @db.ObjectId
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
 
   teacher    User        @relation("TeacherSubjects", fields: [teacherId], references: [id])
+  student    User?       @relation("StudentSubjects", fields: [studentId], references: [id])
   chapters   Chapter[]
   notes      Note[]
   homework   Homework[]
   tests      Test[]
   attendance Attendance[]
 
-  @@unique([teacherId, slug])
+  @@index([teacherId, studentId])
+  @@index([studentId])
   @@index([teacherId])
 }
 

@@ -9,7 +9,8 @@ export const subjectSchema = z.object({
   name: z.string().min(2),
   color: z.string().min(3),
   icon: z.string().min(1),
-  sortOrder: z.coerce.number().int().min(0).default(0)
+  sortOrder: z.coerce.number().int().min(0).default(0),
+  studentId: z.string().optional().nullable()
 });
 
 export const chapterSchema = z.object({
