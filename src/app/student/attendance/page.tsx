@@ -28,13 +28,7 @@ export default async function StudentAttendancePage() {
     where: {
       OR: [
         { studentId: session.user.id },
-        { assignedStudentIds: { has: session.user.id } },
-        {
-          AND: [
-            { studentId: null },
-            { assignedStudentIds: { isEmpty: true } }
-          ]
-        }
+        { studentId: null }
       ]
     },
     orderBy: { sortOrder: 'asc' }

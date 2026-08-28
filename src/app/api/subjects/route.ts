@@ -12,13 +12,7 @@ export async function GET(request: Request) {
   if (studentId) {
     where.OR = [
       { studentId: studentId },
-      { assignedStudentIds: { has: studentId } },
-      {
-        AND: [
-          { studentId: null },
-          { assignedStudentIds: { isEmpty: true } }
-        ]
-      }
+      { studentId: null }
     ];
   }
 
