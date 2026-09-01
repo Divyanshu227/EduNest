@@ -562,6 +562,12 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                         multiple={false}
                       />
                     </div>
+                    {noteType === 'ONENOTE' && (
+                      <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-xs text-purple-300 space-y-1">
+                        <p className="font-semibold text-purple-200">💡 Tip for handwritten notes & diagrams:</p>
+                        <p>Upload your <code>.one</code> notebook section directly, or export your OneNote notebook as a PDF to preserve 100% of handwritten ink, drawings, and highlighter strokes on all mobile devices.</p>
+                      </div>
+                    )}
                     {noteType === 'PDF' && (
                       <div className="space-y-1.5">
                         <Label htmlFor="pageCountInput">Total Pages in PDF</Label>
