@@ -23,7 +23,9 @@ import {
   Printer,
   FileText,
   HelpCircle,
-  Eye
+  Eye,
+  Share2,
+  FileCheck
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -51,6 +53,7 @@ export function OneNoteViewer({
   // Parsing & Content states
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [fileSize, setFileSize] = useState<string>('');
   const [parseError, setParseError] = useState<string | null>(null);
 
   // View & Customization states
@@ -75,7 +78,6 @@ export function OneNoteViewer({
   // Deep links & Online viewers
   const officeOnlineUrl = `https://view.officeapps.live.com/op/view.aspx?src=${encodeURIComponent(url)}`;
   const googleDocsViewerUrl = `https://docs.google.com/viewer?url=${encodeURIComponent(url)}&embedded=true`;
-  const msOneNoteProtocolUrl = `ms-onenote:ofe|u|${url}`;
 
   // Fetch and parse the .one file content natively on mount
   useEffect(() => {
@@ -100,11 +102,14 @@ export function OneNoteViewer({
         const data = await res.json();
 
         if (isMounted) {
-          if (data.success && data.markdown) {
+          if (data.bytesLength) {
+            const kb = Math.round(data.bytesLength / 1024);
+            setFileSize(kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`);
+          }
+
+          if (data.success && data.markdown && data.markdown.trim().length > 0) {
             setContent(data.markdown.trim());
           } else {
-            // If binary cannot be parsed directly to text (e.g. only scanned raster graphics),
-            // fallback gracefully to the preview tab
             setContent('');
             if (data.error) {
               setParseError(data.error);
@@ -157,11 +162,38 @@ export function OneNoteViewer({
     }
   };
 
-  const handleOpenMobileApp = () => {
-    window.location.href = msOneNoteProtocolUrl;
-    setTimeout(() => {
-      handleDownload();
-    }, 1200);
+  const handleOpenMobileApp = async () => {
+    setIsDownloading(true);
+    try {
+      const response = await fetch(url);
+      const originalBlob = await response.blob();
+      const file = new File([originalBlob], oneNoteFileName, { type: 'application/onenote' });
+
+      // Use native Web Share API on mobile phones (iOS & Android)
+      if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          files: [file],
+          title: title || 'OneNote Study Material',
+          text: `Open ${title || 'OneNote Note'} in Microsoft OneNote`
+        });
+        return;
+      }
+
+      // Fallback: direct download with .one MIME type to trigger mobile OneNote file association
+      const objectUrl = window.URL.createObjectURL(new Blob([originalBlob], { type: 'application/onenote' }));
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = oneNoteFileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => window.URL.revokeObjectURL(objectUrl), 2000);
+    } catch (error) {
+      console.error('Mobile open failed:', error);
+      window.open(url, '_blank');
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -234,7 +266,6 @@ export function OneNoteViewer({
     };
 
     const formatInline = (text: string) => {
-      // Highlight search query
       if (searchQuery.trim().length > 1) {
         const parts = text.split(new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
         return parts.map((part, i) => 
@@ -379,7 +410,7 @@ export function OneNoteViewer({
 
   return (
     <div ref={containerRef} className={`space-y-6 ${isFullscreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4 sm:p-8' : ''}`}>
-      {/* Header Info Bar */}
+      {/* Top Mobile Quick Actions Card */}
       <div className="relative overflow-hidden rounded-3xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-background to-purple-900/20 p-5 sm:p-6 shadow-xl backdrop-blur">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5">
@@ -390,6 +421,11 @@ export function OneNoteViewer({
               <Badge variant="outline" className="border-purple-500/40 text-purple-300">
                 Inbuilt Reader
               </Badge>
+              {fileSize && (
+                <Badge variant="secondary" className="text-[10px]">
+                  {fileSize}
+                </Badge>
+              )}
               {subjectName && chapterName && (
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   {subjectName} &middot; {chapterName}
@@ -401,31 +437,36 @@ export function OneNoteViewer({
             </h3>
           </div>
 
-          {/* Quick Actions */}
+          {/* Touch-Friendly Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Button
               onClick={handleOpenMobileApp}
-              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl shadow-md gap-1.5 h-10 px-4 text-xs sm:text-sm"
+              disabled={isDownloading}
+              className="bg-purple-600 hover:bg-purple-700 text-white font-semibold rounded-xl shadow-md gap-1.5 h-11 px-5 text-sm flex-1 sm:flex-initial"
             >
-              <Smartphone className="h-4 w-4" />
-              <span>Open in App</span>
+              {isDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Smartphone className="h-4 w-4" />
+              )}
+              <span>Open on Phone</span>
             </Button>
 
             <Button
               variant="outline"
               onClick={handleDownload}
               disabled={isDownloading}
-              className="rounded-xl border-purple-500/30 hover:bg-purple-500/10 h-10 px-3.5 text-xs gap-1.5"
+              className="rounded-xl border-purple-500/30 hover:bg-purple-500/10 h-11 px-4 text-xs sm:text-sm gap-1.5"
             >
-              {isDownloading ? <Loader2 className="h-4 w-4 animate-spin text-purple-400" /> : <Download className="h-4 w-4 text-purple-400" />}
-              <span>Download .one</span>
+              <Download className="h-4 w-4 text-purple-400" />
+              <span>Download</span>
             </Button>
 
             <Button
               variant="ghost"
               size="icon"
               onClick={toggleFullscreen}
-              className="h-10 w-10 rounded-xl hover:bg-purple-500/10 text-muted-foreground hover:text-foreground"
+              className="h-11 w-11 rounded-xl hover:bg-purple-500/10 text-muted-foreground hover:text-foreground hidden sm:inline-flex"
               title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Reader"}
             >
               {isFullscreen ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
@@ -435,11 +476,11 @@ export function OneNoteViewer({
 
         {/* View Mode Switcher Tabs */}
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-purple-500/20 pt-3">
-          <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl">
+          <div className="flex items-center gap-1 bg-muted/40 p-1 rounded-xl w-full sm:w-auto">
             <button
               type="button"
               onClick={() => setActiveTab('reader')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'reader'
                   ? 'bg-purple-600 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -450,7 +491,7 @@ export function OneNoteViewer({
             <button
               type="button"
               onClick={() => setActiveTab('preview')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'preview'
                   ? 'bg-purple-600 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
@@ -461,17 +502,26 @@ export function OneNoteViewer({
             <button
               type="button"
               onClick={() => setActiveTab('guide')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 activeTab === 'guide'
                   ? 'bg-purple-600 text-white shadow-sm'
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <HelpCircle className="h-3.5 w-3.5" /> Device Help
+              <HelpCircle className="h-3.5 w-3.5" /> Guide
             </button>
           </div>
 
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
+            <a
+              href={officeOnlineUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 hover:text-purple-400 transition-colors"
+            >
+              <ExternalLink className="h-3 w-3" />
+              <span>Office Web</span>
+            </a>
             <button
               type="button"
               onClick={handleCopyLink}
@@ -490,7 +540,7 @@ export function OneNoteViewer({
           {/* Reader Toolbar */}
           <div className="flex flex-wrap items-center justify-between border-b border-inherit bg-black/10 px-4 sm:px-6 py-2.5 gap-3 backdrop-blur">
             {/* Search in Note */}
-            <div className="relative flex-1 min-w-[160px] max-w-xs">
+            <div className="relative flex-1 min-w-[140px] max-w-xs">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-60" />
               <Input
                 value={searchQuery}
@@ -555,7 +605,7 @@ export function OneNoteViewer({
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="p-1.5 rounded-lg border border-inherit opacity-70 hover:opacity-100 hover:bg-black/10 transition-colors"
+                className="p-1.5 rounded-lg border border-inherit opacity-70 hover:opacity-100 hover:bg-black/10 transition-colors hidden sm:inline-flex"
                 title="Print Note"
               >
                 <Printer className="h-3.5 w-3.5" />
@@ -564,11 +614,11 @@ export function OneNoteViewer({
           </div>
 
           {/* Reader Content Area */}
-          <div className="p-6 sm:p-10 min-h-[500px] overflow-y-auto max-h-[75vh]">
+          <div className="p-5 sm:p-10 min-h-[450px] overflow-y-auto max-h-[75vh]">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-3 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
-                <p className="text-sm opacity-70 font-medium">Parsing OneNote section and rendering document...</p>
+                <p className="text-sm opacity-70 font-medium">Loading and rendering OneNote section...</p>
               </div>
             ) : content ? (
               <div 
@@ -578,22 +628,31 @@ export function OneNoteViewer({
                 {renderFormattedContent(content)}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-16 text-center space-y-4 max-w-md mx-auto">
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-purple-500/10 text-purple-400">
-                  <BookOpen className="h-7 w-7" />
+              <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 max-w-md mx-auto">
+                <div className="flex h-16 w-16 items-center justify-center rounded-3xl bg-purple-500/10 text-purple-400 border border-purple-500/20 shadow-inner">
+                  <BookOpen className="h-8 w-8" />
                 </div>
-                <div className="space-y-1">
-                  <h4 className="font-bold text-lg">OneNote Binary Section</h4>
+                <div className="space-y-1.5">
+                  <h4 className="font-bold text-lg">OneNote Notebook Section</h4>
                   <p className="text-xs opacity-75 leading-relaxed">
-                    This file contains handwriting or specialized ink drawings. You can view the cloud render or open it directly in the OneNote mobile app.
+                    This section contains visual handwriting, diagrams, or embedded pages. Tap below to view in cloud preview or open directly on your phone.
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2 pt-2">
-                  <Button onClick={() => setActiveTab('preview')} className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs">
-                    Open Cloud Preview
+                <div className="flex flex-col sm:flex-row gap-2.5 pt-2 w-full sm:w-auto">
+                  <Button 
+                    onClick={handleOpenMobileApp} 
+                    className="rounded-xl bg-purple-600 hover:bg-purple-700 text-white text-xs h-10 px-5 gap-2"
+                  >
+                    <Smartphone className="h-4 w-4" />
+                    <span>Open in Phone OneNote</span>
                   </Button>
-                  <Button variant="outline" onClick={handleOpenMobileApp} className="rounded-xl text-xs border-inherit">
-                    Open in Mobile App
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setActiveTab('preview')} 
+                    className="rounded-xl text-xs h-10 px-4 border-inherit"
+                  >
+                    <Eye className="h-4 w-4 mr-1.5" />
+                    <span>View Cloud Preview</span>
                   </Button>
                 </div>
               </div>
@@ -722,10 +781,10 @@ export function OneNoteViewer({
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">2</span>
-                  Tap Download or Open
+                  Tap Open on Phone
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Tap <strong>&ldquo;Open in App&rdquo;</strong> or <strong>&ldquo;Download .one&rdquo;</strong> above.
+                  Tap <strong>&ldquo;Open on Phone&rdquo;</strong> above to open via native share/chooser directly into OneNote.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
@@ -754,19 +813,19 @@ export function OneNoteViewer({
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">2</span>
-                  Download Section
+                  Tap Open on Phone
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Tap <strong>&ldquo;Download .one&rdquo;</strong> in Safari. Tap the Downloads icon in Safari toolbar.
+                  Tap <strong>&ldquo;Open on Phone&rdquo;</strong> in Safari to open the iOS share sheet.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">3</span>
-                  Share to OneNote
+                  Select OneNote
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Tap Share sheet &rarr; Select <strong>&ldquo;OneNote&rdquo;</strong> to import and open instantly.
+                  Select <strong>&ldquo;OneNote&rdquo;</strong> in the share dialog to import and open instantly.
                 </p>
               </div>
             </div>
