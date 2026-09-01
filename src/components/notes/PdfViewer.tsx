@@ -29,14 +29,16 @@ export function PdfViewer({ noteId, url, initialPage = 1 }: PdfViewerProps) {
       setIsDownloading(true);
       const response = await fetch(url);
       const originalBlob = await response.blob();
-      // Force application/pdf MIME type so the browser doesn't save it as raw
-      const blob = new Blob([originalBlob], { type: 'application/pdf' });
+      const isOne = url.toLowerCase().includes('.one');
+      const mimeType = isOne ? 'application/onenote' : 'application/pdf';
+      const extension = isOne ? 'one' : 'pdf';
+      const blob = new Blob([originalBlob], { type: mimeType });
       
-      // Create a local object URL to force the browser to download it with a .pdf extension
+      // Create a local object URL to force the browser to download it with correct extension
       const objectUrl = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = objectUrl;
-      link.download = `EduNest_Notes_${noteId}.pdf`;
+      link.download = `EduNest_Notes_${noteId}.${extension}`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);

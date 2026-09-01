@@ -47,7 +47,7 @@ interface Note {
   description: string | null;
   subjectId: string;
   chapterId: string;
-  type: 'IMAGE' | 'PDF' | 'MIXED';
+  type: 'IMAGE' | 'PDF' | 'MIXED' | 'ONENOTE';
   images: any; // NoteImage[]
   pdfs: any; // NotePdf[]
   pageCount: number;
@@ -77,7 +77,7 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
   const [description, setDescription] = useState('');
   const [selectedSubjectId, setSelectedSubjectId] = useState(fixedSubjectId || subjects[0]?.id || '');
   const [selectedChapterId, setSelectedChapterId] = useState(fixedChapterId || '');
-  const [noteType, setNoteType] = useState<'IMAGE' | 'PDF' | 'MIXED'>('IMAGE');
+  const [noteType, setNoteType] = useState<'IMAGE' | 'PDF' | 'MIXED' | 'ONENOTE'>('IMAGE');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   
   // Media files states
@@ -163,9 +163,9 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
       chapterId: selectedChapterId,
       noteType,
       youtubeUrl,
-      images: noteType === 'PDF' ? [] : uploadedImages,
+      images: (noteType === 'PDF' || noteType === 'ONENOTE') ? [] : uploadedImages,
       pdfs: noteType === 'IMAGE' ? [] : uploadedPdfs,
-      pageCount: noteType === 'PDF' ? (parseInt(pageCountInput) || uploadedPdfs.length) : uploadedImages.length,
+      pageCount: (noteType === 'PDF' || noteType === 'ONENOTE') ? (parseInt(pageCountInput) || uploadedPdfs.length) : uploadedImages.length,
       assignedStudentIds: selectedStudentIds
     };
 
@@ -304,9 +304,15 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                     {note.subject.name}
                   </Badge>
                 )}
-                <Badge variant="secondary" className="uppercase text-[10px]">
-                  {note.type}
-                </Badge>
+                {note.type === 'ONENOTE' ? (
+                  <Badge className="bg-purple-600/20 text-purple-400 border-purple-500/30 uppercase text-[10px] font-semibold">
+                    ONENOTE
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="uppercase text-[10px]">
+                    {note.type}
+                  </Badge>
+                )}
               </div>
               <CardTitle className="line-clamp-1">{note.title}</CardTitle>
               <CardDescription className="line-clamp-2 mt-1 min-h-[40px] text-foreground/80">{note.description || 'No description provided.'}</CardDescription>
@@ -338,7 +344,7 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                     <Youtube className="h-4 w-4" />
                   </a>
                 )}
-                {note.type !== 'PDF' && (
+                {note.type !== 'PDF' && note.type !== 'ONENOTE' && (
                   <a 
                     href={Array.isArray(note.images) && note.images.length > 0 ? note.images[0].url : '#'} 
                     target="_blank" 
@@ -349,17 +355,24 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                     <ImageIcon className="h-4 w-4" />
                   </a>
                 )}
-                {note.type !== 'IMAGE' && (
-                  <a 
-                    href={Array.isArray(note.pdfs) && note.pdfs.length > 0 ? note.pdfs[0].url : '#'} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 transition-colors"
-                    title="View PDF"
-                  >
-                    <FileText className="h-4 w-4" />
-                  </a>
-                )}
+                {note.type !== 'IMAGE' && (() => {
+                  const isOneNote = note.type === 'ONENOTE' || (Array.isArray(note.pdfs) && note.pdfs.some((p: any) => p?.url?.toLowerCase().endsWith('.one') || p?.name?.toLowerCase().endsWith('.one')));
+                  return (
+                    <a 
+                      href={Array.isArray(note.pdfs) && note.pdfs.length > 0 ? note.pdfs[0].url : '#'} 
+                      target="_blank" 
+                      rel="noopener noreferrer" 
+                      className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
+                        isOneNote 
+                          ? 'bg-purple-500/15 text-purple-400 hover:bg-purple-500/25 border border-purple-500/30' 
+                          : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
+                      }`}
+                      title={isOneNote ? "View/Download OneNote (.one)" : "View PDF"}
+                    >
+                      <FileText className="h-4 w-4" />
+                    </a>
+                  );
+                })()}
               </div>
 
               <div className="flex items-center justify-end gap-2 mt-2">
@@ -469,7 +482,8 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                     >
                       <option value="IMAGE">Handwritten Notebook Images</option>
                       <option value="PDF">PDF Textbook/Document</option>
-                      <option value="MIXED">Mixed Media (Images + PDF)</option>
+                      <option value="ONENOTE">Microsoft OneNote (.one)</option>
+                      <option value="MIXED">Mixed Media (Images + PDF/OneNote)</option>
                     </select>
                   </div>
 
@@ -522,7 +536,7 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                 </div>
 
                 {/* Upload Section depending on NoteType */}
-                {noteType !== 'PDF' && (
+                {noteType !== 'PDF' && noteType !== 'ONENOTE' && (
                   <div className="space-y-2 border-t border-border/40 pt-4">
                     <Label>Notebook Page Images</Label>
                     <CloudinaryUploader
@@ -537,27 +551,31 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                 {noteType !== 'IMAGE' && (
                   <div className="space-y-4 border-t border-border/40 pt-4">
                     <div className="space-y-2">
-                      <Label>PDF Document</Label>
+                      <Label>
+                        {noteType === 'ONENOTE' ? 'Microsoft OneNote (.one) File' : 'PDF Document or OneNote (.one)'}
+                      </Label>
                       <CloudinaryUploader
                         value={uploadedPdfs}
                         onChange={setUploadedPdfs}
-                        accept="application/pdf"
-                        folder="notes_pdfs"
+                        accept={noteType === 'ONENOTE' ? ".one,application/onenote,.onepkg,application/octet-stream" : "application/pdf,.pdf,.one,application/onenote,.onepkg"}
+                        folder="notes_documents"
                         multiple={false}
                       />
                     </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="pageCountInput">Total Pages in PDF</Label>
-                      <Input
-                        id="pageCountInput"
-                        type="number"
-                        min="1"
-                        value={pageCountInput}
-                        onChange={(e) => setPageCountInput(e.target.value)}
-                        placeholder="e.g. 15 (Optional: defaults to 1)"
-                      />
-                      <p className="text-[10px] text-muted-foreground">Enter the total number of pages in the PDF for student reading progress tracking.</p>
-                    </div>
+                    {noteType === 'PDF' && (
+                      <div className="space-y-1.5">
+                        <Label htmlFor="pageCountInput">Total Pages in PDF</Label>
+                        <Input
+                          id="pageCountInput"
+                          type="number"
+                          min="1"
+                          value={pageCountInput}
+                          onChange={(e) => setPageCountInput(e.target.value)}
+                          placeholder="e.g. 15 (Optional: defaults to 1)"
+                        />
+                        <p className="text-[10px] text-muted-foreground">Enter the total number of pages in the PDF for student reading progress tracking.</p>
+                      </div>
+                    )}
                   </div>
                 )}
 

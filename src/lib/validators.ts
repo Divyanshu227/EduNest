@@ -67,7 +67,7 @@ export const noteMetadataSchema = z.object({
   subjectId: z.string().min(1),
   chapterId: z.string().min(1),
   youtubeUrl: z.string().url().optional().or(z.literal('')),
-  noteType: z.enum(['IMAGE', 'PDF', 'MIXED']),
+  noteType: z.enum(['IMAGE', 'PDF', 'MIXED', 'ONENOTE']),
   images: z.array(z.any()).optional().default([]),
   pdfs: z.array(z.any()).optional().default([]),
   pageCount: z.coerce.number().int().optional().default(0),

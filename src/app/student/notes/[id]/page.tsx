@@ -6,6 +6,7 @@ import { ArrowLeft, Youtube, GraduationCap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NotebookViewer } from '@/components/notes/NotebookViewer';
 import { PdfViewer } from '@/components/notes/PdfViewer';
+import { OneNoteViewer } from '@/components/notes/OneNoteViewer';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -50,6 +51,12 @@ export default async function StudentNoteDetailPage({ params }: PageProps) {
   const pdfs = Array.isArray(note.pdfs) ? (note.pdfs as any[]) : [];
   const primaryPdf = pdfs[0];
 
+  const isOneNote = note.type === 'ONENOTE' || 
+    primaryPdf?.url?.toLowerCase().endsWith('.one') || 
+    primaryPdf?.name?.toLowerCase().endsWith('.one') ||
+    primaryPdf?.url?.toLowerCase().endsWith('.onepkg') || 
+    primaryPdf?.name?.toLowerCase().endsWith('.onepkg');
+
   return (
     <div className="space-y-6 max-w-5xl mx-auto">
       {/* Back navigation */}
@@ -74,7 +81,18 @@ export default async function StudentNoteDetailPage({ params }: PageProps) {
 
       {/* Primary Content Viewer */}
       <div className="space-y-6">
-        {note.type === 'PDF' && primaryPdf && (
+        {(note.type === 'ONENOTE' || (note.type === 'PDF' && isOneNote)) && primaryPdf && (
+          <OneNoteViewer
+            noteId={note.id}
+            url={primaryPdf.url}
+            fileName={primaryPdf.name}
+            title={note.title}
+            subjectName={note.subject.name}
+            chapterName={note.chapter.name}
+          />
+        )}
+
+        {note.type === 'PDF' && !isOneNote && primaryPdf && (
           <PdfViewer 
             noteId={note.id} 
             url={primaryPdf.url} 
@@ -93,13 +111,24 @@ export default async function StudentNoteDetailPage({ params }: PageProps) {
         {note.type === 'MIXED' && primaryPdf && (
           <div className="border-t border-border/40 pt-8 mt-6">
             <h3 className="text-lg font-bold flex items-center gap-2 mb-4">
-              <GraduationCap className="h-5 w-5 text-primary" /> Reference Textbook PDF
+              <GraduationCap className="h-5 w-5 text-primary" /> {isOneNote ? 'Reference OneNote Section' : 'Reference Textbook PDF'}
             </h3>
-            <PdfViewer 
-              noteId={note.id} 
-              url={primaryPdf.url} 
-              initialPage={1} 
-            />
+            {isOneNote ? (
+              <OneNoteViewer
+                noteId={note.id}
+                url={primaryPdf.url}
+                fileName={primaryPdf.name}
+                title={note.title}
+                subjectName={note.subject.name}
+                chapterName={note.chapter.name}
+              />
+            ) : (
+              <PdfViewer 
+                noteId={note.id} 
+                url={primaryPdf.url} 
+                initialPage={1} 
+              />
+            )}
           </div>
         )}
       </div>

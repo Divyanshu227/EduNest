@@ -27,7 +27,7 @@ interface Note {
   description: string | null;
   subjectId: string;
   chapterId: string;
-  type: 'IMAGE' | 'PDF' | 'MIXED';
+  type: 'IMAGE' | 'PDF' | 'MIXED' | 'ONENOTE';
   pageCount: number;
   lastUpdated: string | Date;
   subject: { name: string; color: string };
@@ -154,9 +154,15 @@ export function StudentNotesClient({ subjects, notes, fixedSubjectId, fixedChapt
             <Card key={note.id} className="relative overflow-hidden border-border/60 bg-card/85 backdrop-blur hover:shadow-lg transition-all flex flex-col justify-between">
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between gap-2 mb-2">
-                  <Badge variant="secondary" className="text-[10px] uppercase">
-                    {note.type}
-                  </Badge>
+                  {note.type === 'ONENOTE' ? (
+                    <Badge className="bg-purple-600/20 text-purple-400 border-purple-500/30 text-[10px] uppercase font-semibold">
+                      ONENOTE
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="text-[10px] uppercase">
+                      {note.type}
+                    </Badge>
+                  )}
                   {!fixedChapterId && <span className="text-xs text-muted-foreground">{note.chapter.name}</span>}
                 </div>
                 <CardTitle className="line-clamp-1">{note.title}</CardTitle>

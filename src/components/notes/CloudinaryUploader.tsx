@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Upload, X, ArrowUp, ArrowDown, FileText, Video } from 'lucide-react';
+import { Upload, X, ArrowUp, ArrowDown, FileText, Video, BookOpen } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 import { uploadAction, getCloudinarySignatureAction } from '@/app/actions/upload';
@@ -43,7 +43,6 @@ export function CloudinaryUploader({
     formData.append('signature', signature);
     formData.append('folder', folder);
 
-    const isPdf = file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
     const resourceType = 'auto';
 
     return new Promise<{ url: string; publicId: string; name: string }>((resolve, reject) => {
@@ -79,10 +78,11 @@ export function CloudinaryUploader({
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
       const isVideo = file.type.startsWith('video/') || file.name.match(/\.(mp4|webm|ogg|mov)$/i);
-      const maxSize = isVideo ? 20 * 1024 * 1024 : 10 * 1024 * 1024;
+      const isOneNote = file.name.match(/\.(one|onepkg)$/i);
+      const maxSize = isVideo ? 20 * 1024 * 1024 : isOneNote ? 25 * 1024 * 1024 : 15 * 1024 * 1024;
       
       if (file.size > maxSize) {
-        alert(`File "${file.name}" is too large. Maximum size for ${isVideo ? 'videos is 20MB' : 'images/PDFs is 10MB'}.`);
+        alert(`File "${file.name}" is too large. Maximum size for ${isVideo ? 'videos is 20MB' : isOneNote ? 'OneNote files is 25MB' : 'images/PDFs is 15MB'}.`);
         return;
       }
     }
@@ -211,7 +211,7 @@ export function CloudinaryUploader({
             </div>
           ) : (
             <p className="text-xs text-muted-foreground">
-              Supports Images/PDFs (Max 10MB) or Videos (Max 20MB)
+              Supports Images, PDFs, OneNote (.one), or Videos
             </p>
           )}
         </div>
@@ -220,7 +220,8 @@ export function CloudinaryUploader({
       {value.length > 0 && (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {value.map((file, index) => {
-            const isPdf = file.url.endsWith('.pdf') || file.name?.endsWith('.pdf');
+            const isPdf = file.url.toLowerCase().endsWith('.pdf') || file.name?.toLowerCase().endsWith('.pdf');
+            const isOneNote = file.url.toLowerCase().endsWith('.one') || file.name?.toLowerCase().endsWith('.one') || file.url.toLowerCase().endsWith('.onepkg') || file.name?.toLowerCase().endsWith('.onepkg');
             const isVideo = file.url.match(/\.(mp4|webm|ogg|mov)$/i) || file.name?.match(/\.(mp4|webm|ogg|mov)$/i) || file.url.includes('/video/upload/');
             
             return (
@@ -228,7 +229,11 @@ export function CloudinaryUploader({
                 key={file.publicId + index}
                 className="relative flex items-center gap-3 overflow-hidden rounded-2xl border border-border/60 bg-card p-3 shadow-sm"
               >
-                {isPdf ? (
+                {isOneNote ? (
+                  <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-purple-600/15 text-purple-600 dark:text-purple-400 border border-purple-500/20">
+                    <BookOpen className="h-6 w-6" />
+                  </div>
+                ) : isPdf ? (
                   <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-red-500/10 text-red-500">
                     <FileText className="h-6 w-6" />
                   </div>
@@ -245,7 +250,9 @@ export function CloudinaryUploader({
                 
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-xs font-semibold">{file.name || 'File'}</p>
-                  <p className="text-[10px] text-muted-foreground uppercase">{isPdf ? 'PDF document' : isVideo ? 'Video' : 'Image'}</p>
+                  <p className="text-[10px] text-muted-foreground uppercase font-medium">
+                    {isOneNote ? 'OneNote (.one)' : isPdf ? 'PDF document' : isVideo ? 'Video' : 'Image'}
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-1">

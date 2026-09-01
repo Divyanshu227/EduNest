@@ -17,6 +17,7 @@ enum NoteType {
   IMAGE
   PDF
   MIXED
+  ONENOTE
 }
 
 enum HomeworkStatus {
