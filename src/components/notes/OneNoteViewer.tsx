@@ -21,18 +21,17 @@ import {
   FileText,
   HelpCircle,
   Layers,
-  FolderOpen
+  ChevronLeft,
+  ChevronRight,
+  FolderOpen,
+  CheckSquare,
+  Square,
+  AlertCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-
-interface OneNoteSection {
-  name: string;
-  content: string;
-  fileName: string;
-  byteSize: number;
-}
+import { OneNoteDocument, OneNoteSection, OneNotePage, OneNoteBlock } from '@/lib/onenote/types';
 
 interface OneNoteViewerProps {
   noteId: string;
@@ -53,17 +52,17 @@ export function OneNoteViewer({
   subjectName,
   chapterName
 }: OneNoteViewerProps) {
-  // Data states
-  const [sections, setSections] = useState<OneNoteSection[]>([]);
-  const [activeSectionIndex, setActiveSectionIndex] = useState<number>(0);
-  const [isPackage, setIsPackage] = useState<boolean>(false);
+  // Document state
+  const [doc, setDoc] = useState<OneNoteDocument | null>(null);
+  const [activeSectionIdx, setActiveSectionIdx] = useState<number>(0);
+  const [activePageIdx, setActivePageIdx] = useState<number>(0);
   const [loading, setLoading] = useState<boolean>(true);
-  const [fileSize, setFileSize] = useState<string>('');
+  const [error, setError] = useState<string | null>(null);
 
-  // UI / Customization states
+  // UI state
   const [activeTab, setActiveTab] = useState<'reader' | 'guide'>('reader');
   const [theme, setTheme] = useState<ReaderTheme>('default');
-  const [fontSize, setFontSize] = useState<number>(16); // px
+  const [fontSize, setFontSize] = useState<number>(16);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
   const [isOpeningMobile, setIsOpeningMobile] = useState<boolean>(false);
@@ -80,18 +79,20 @@ export function OneNoteViewer({
     ? cleanFileName
     : `${cleanFileName.replace(/\.[^/.]+$/, '')}.${extension}`;
 
-  // Fetch and parse the .one / .onepkg file natively
+  // Fetch parsed document from backend
   useEffect(() => {
     let isMounted = true;
 
-    async function loadContent() {
+    async function loadDoc() {
       if (!url) return;
       try {
         setLoading(true);
+        setError(null);
+
         const res = await fetch('/api/notes/parse-onenote', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
+          body: JSON.stringify({ url, fileName: properFileName })
         });
 
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -99,39 +100,55 @@ export function OneNoteViewer({
         const data = await res.json();
 
         if (isMounted) {
-          if (data.bytesLength) {
-            const kb = Math.round(data.bytesLength / 1024);
-            setFileSize(kb > 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${kb} KB`);
-          }
-
-          setIsPackage(Boolean(data.isPackage));
-          if (data.sections && data.sections.length > 0) {
-            setSections(data.sections);
-            setActiveSectionIndex(0);
-          } else if (data.markdown) {
-            setSections([{
-              name: 'Notes Section',
-              content: data.markdown,
-              fileName: 'Section.one',
-              byteSize: data.bytesLength || 0
-            }]);
+          if (data.success && data.document) {
+            setDoc(data.document);
+            setActiveSectionIdx(0);
+            setActivePageIdx(0);
+          } else {
+            setError(data.error || 'Failed to parse OneNote document');
           }
         }
-      } catch (err) {
-        console.error('Failed to parse OneNote file:', err);
+      } catch (err: any) {
+        if (isMounted) {
+          console.error('Failed to parse OneNote file:', err);
+          setError(err.message || 'Failed to load content');
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
     }
 
-    loadContent();
+    loadDoc();
 
     return () => {
       isMounted = false;
     };
-  }, [url]);
+  }, [url, properFileName]);
 
-  const currentSection = sections[activeSectionIndex] || sections[0];
+  const currentSection: OneNoteSection | undefined = doc?.sections[activeSectionIdx] || doc?.sections[0];
+  const pages: OneNotePage[] = currentSection?.pages || [];
+  const currentPage: OneNotePage | undefined = pages[activePageIdx] || pages[0];
+
+  const handleNextPage = () => {
+    if (activePageIdx < pages.length - 1) {
+      setActivePageIdx(prev => prev + 1);
+    } else if (doc && activeSectionIdx < doc.sections.length - 1) {
+      // Go to next section's first page
+      setActiveSectionIdx(prev => prev + 1);
+      setActivePageIdx(0);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (activePageIdx > 0) {
+      setActivePageIdx(prev => prev - 1);
+    } else if (activeSectionIdx > 0 && doc) {
+      // Go to previous section's last page
+      const prevSection = doc.sections[activeSectionIdx - 1];
+      setActiveSectionIdx(prev => prev - 1);
+      setActivePageIdx(Math.max(0, prevSection.pages.length - 1));
+    }
+  };
 
   const handleOpenMobileApp = async () => {
     setIsOpeningMobile(true);
@@ -141,17 +158,15 @@ export function OneNoteViewer({
       const mimeType = isOnePkg ? 'application/zip' : 'application/onenote';
       const file = new File([originalBlob], properFileName, { type: mimeType });
 
-      // Native Web Share API on mobile devices (iOS & Android)
       if (typeof navigator !== 'undefined' && navigator.canShare && navigator.canShare({ files: [file] })) {
         await navigator.share({
           files: [file],
           title: title || 'OneNote Notebook',
-          text: `Open ${title || 'OneNote Material'} in Microsoft OneNote`
+          text: `Open ${title || 'OneNote Note'} in Microsoft OneNote`
         });
         return;
       }
 
-      // Direct download fallback
       const objectUrl = window.URL.createObjectURL(new Blob([originalBlob], { type: mimeType }));
       const link = document.createElement('a');
       link.href = objectUrl;
@@ -160,8 +175,8 @@ export function OneNoteViewer({
       link.click();
       document.body.removeChild(link);
       setTimeout(() => window.URL.revokeObjectURL(objectUrl), 2000);
-    } catch (error) {
-      console.error('Mobile open failed:', error);
+    } catch (err) {
+      console.error('Mobile open failed:', err);
       window.open(url, '_blank');
     } finally {
       setIsOpeningMobile(false);
@@ -188,8 +203,8 @@ export function OneNoteViewer({
       document.body.removeChild(link);
 
       setTimeout(() => window.URL.revokeObjectURL(objectUrl), 1500);
-    } catch (error) {
-      console.error('Download failed:', error);
+    } catch (err) {
+      console.error('Download failed:', err);
       window.open(url, '_blank');
     } finally {
       setIsDownloading(false);
@@ -230,164 +245,133 @@ export function OneNoteViewer({
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
 
-  // Formatter for markdown lines
-  const renderFormattedContent = (markdownText: string) => {
-    if (!markdownText) return null;
-
-    const lines = markdownText.split('\n');
-    const elements: React.ReactNode[] = [];
-    let inList = false;
-    let listItems: React.ReactNode[] = [];
-    let inCodeBlock = false;
-    let codeContent: string[] = [];
-
-    const flushList = () => {
-      if (inList && listItems.length > 0) {
-        elements.push(
-          <ul key={`list-${elements.length}`} className="my-3 space-y-1.5 list-disc list-inside pl-2">
-            {listItems}
-          </ul>
-        );
-        listItems = [];
-        inList = false;
-      }
-    };
-
-    const flushCode = () => {
-      if (inCodeBlock && codeContent.length > 0) {
-        elements.push(
-          <pre key={`code-${elements.length}`} className="my-4 overflow-x-auto rounded-2xl bg-zinc-950 p-4 text-xs font-mono text-zinc-100 border border-zinc-800">
-            <code>{codeContent.join('\n')}</code>
-          </pre>
-        );
-        codeContent = [];
-        inCodeBlock = false;
-      }
-    };
-
-    const formatInline = (text: string) => {
-      if (searchQuery.trim().length > 1) {
-        const parts = text.split(new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'));
-        return parts.map((part, i) => 
-          part.toLowerCase() === searchQuery.toLowerCase() ? (
-            <mark key={i} className="bg-yellow-300 text-black px-1 rounded font-semibold">
-              {part}
-            </mark>
-          ) : (
-            <span key={i}>{part}</span>
-          )
-        );
-      }
+  const formatInlineText = (text: string) => {
+    if (!searchQuery.trim() || searchQuery.trim().length < 2) {
       return text;
-    };
+    }
+    const regex = new RegExp(`(${searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    const parts = text.split(regex);
+    return parts.map((part, i) => 
+      part.toLowerCase() === searchQuery.toLowerCase() ? (
+        <mark key={i} className="bg-yellow-300 text-black px-1 rounded font-semibold">
+          {part}
+        </mark>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+  };
 
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-
-      if (line.startsWith('```')) {
-        if (inCodeBlock) flushCode();
-        else {
-          flushList();
-          inCodeBlock = true;
+  const renderBlock = (block: OneNoteBlock, index: number) => {
+    switch (block.type) {
+      case 'heading':
+        if (block.level === 1) {
+          return (
+            <h1 key={`h1-${index}`} className="mt-6 mb-3 text-2xl sm:text-3xl font-bold font-[var(--font-heading)] border-b pb-2 border-purple-500/20 text-purple-400">
+              {formatInlineText(block.content)}
+            </h1>
+          );
         }
-        continue;
-      }
-
-      if (inCodeBlock) {
-        codeContent.push(line);
-        continue;
-      }
-
-      if (!line.trim()) {
-        flushList();
-        continue;
-      }
-
-      if (line.startsWith('# ')) {
-        flushList();
-        elements.push(
-          <h1 key={`h1-${i}`} className="mt-6 mb-3 text-2xl sm:text-3xl font-bold font-[var(--font-heading)] border-b pb-2 border-purple-500/20 text-purple-400">
-            {formatInline(line.replace(/^#\s+/, ''))}
-          </h1>
-        );
-        continue;
-      }
-
-      if (line.startsWith('## ')) {
-        flushList();
-        elements.push(
-          <h2 key={`h2-${i}`} className="mt-5 mb-2.5 text-xl sm:text-2xl font-bold text-foreground">
-            {formatInline(line.replace(/^##\s+/, ''))}
-          </h2>
-        );
-        continue;
-      }
-
-      if (line.startsWith('### ')) {
-        flushList();
-        elements.push(
-          <h3 key={`h3-${i}`} className="mt-4 mb-2 text-lg sm:text-xl font-semibold text-foreground/90">
-            {formatInline(line.replace(/^###\s+/, ''))}
+        if (block.level === 2) {
+          return (
+            <h2 key={`h2-${index}`} className="mt-5 mb-2.5 text-xl sm:text-2xl font-bold text-foreground">
+              {formatInlineText(block.content)}
+            </h2>
+          );
+        }
+        return (
+          <h3 key={`h3-${index}`} className="mt-4 mb-2 text-lg sm:text-xl font-semibold text-foreground/90">
+            {formatInlineText(block.content)}
           </h3>
         );
-        continue;
-      }
 
-      if (line.startsWith('> ')) {
-        flushList();
-        elements.push(
-          <blockquote key={`quote-${i}`} className="my-3 border-l-4 border-purple-500 bg-purple-500/5 px-4 py-2.5 rounded-r-xl italic text-foreground/80">
-            {formatInline(line.replace(/^>\s+/, ''))}
+      case 'text':
+        return (
+          <p key={`p-${index}`} className="my-2.5 leading-relaxed">
+            {formatInlineText(block.content)}
+          </p>
+        );
+
+      case 'list':
+        if (block.ordered) {
+          return (
+            <ol key={`ol-${index}`} className="my-3 space-y-1.5 list-decimal list-inside pl-2">
+              {block.items.map((item, i) => (
+                <li key={i} className="leading-relaxed">
+                  {formatInlineText(item)}
+                </li>
+              ))}
+            </ol>
+          );
+        }
+        return (
+          <ul key={`ul-${index}`} className="my-3 space-y-1.5 list-disc list-inside pl-2">
+            {block.items.map((item, i) => (
+              <li key={i} className="leading-relaxed">
+                {formatInlineText(item)}
+              </li>
+            ))}
+          </ul>
+        );
+
+      case 'task':
+        return (
+          <div key={`task-${index}`} className="my-2 flex items-center gap-2.5 leading-relaxed">
+            {block.checked ? (
+              <CheckSquare className="h-4 w-4 text-purple-500 flex-shrink-0" />
+            ) : (
+              <Square className="h-4 w-4 opacity-50 flex-shrink-0" />
+            )}
+            <span className={block.checked ? 'line-through opacity-60' : ''}>
+              {formatInlineText(block.text)}
+            </span>
+          </div>
+        );
+
+      case 'quote':
+        return (
+          <blockquote key={`q-${index}`} className="my-3.5 border-l-4 border-purple-500 bg-purple-500/5 px-4 py-2.5 rounded-r-xl italic text-foreground/80">
+            {formatInlineText(block.content)}
           </blockquote>
         );
-        continue;
-      }
 
-      if (line.match(/^[-*]\s+/)) {
-        inList = true;
-        listItems.push(
-          <li key={`li-${i}`} className="leading-relaxed">
-            {formatInline(line.replace(/^[-*]\s+/, ''))}
-          </li>
+      case 'code':
+        return (
+          <pre key={`code-${index}`} className="my-4 overflow-x-auto rounded-2xl bg-zinc-950 p-4 text-xs font-mono text-zinc-100 border border-zinc-800">
+            <code>{block.code}</code>
+          </pre>
         );
-        continue;
-      }
 
-      if (line.match(/^\d+\.\s+/)) {
-        flushList();
-        elements.push(
-          <div key={`num-${i}`} className="my-1.5 flex items-start gap-2 leading-relaxed">
-            <span className="font-semibold text-purple-400">{line.match(/^\d+\./)?.[0]}</span>
-            <span>{formatInline(line.replace(/^\d+\.\s+/, ''))}</span>
+      case 'table':
+        return (
+          <div key={`tbl-${index}`} className="my-4 overflow-x-auto rounded-xl border border-border/60">
+            <table className="min-w-full divide-y divide-border/60 text-xs">
+              <tbody className="divide-y divide-border/40">
+                {block.rows.map((row, rIdx) => (
+                  <tr key={rIdx} className={rIdx === 0 ? 'bg-muted/40 font-semibold' : ''}>
+                    {row.map((cell, cIdx) => (
+                      <td key={cIdx} className="px-3.5 py-2 whitespace-pre-wrap">
+                        {formatInlineText(cell)}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
-        continue;
-      }
 
-      if (line.match(/^\[([ xX])\]\s+/)) {
-        flushList();
-        const checked = !line.startsWith('[ ]');
-        elements.push(
-          <div key={`task-${i}`} className="my-1.5 flex items-center gap-2 leading-relaxed">
-            <input type="checkbox" checked={checked} readOnly className="h-4 w-4 rounded text-purple-600 pointer-events-none" />
-            <span className={checked ? 'line-through text-muted-foreground' : ''}>{formatInline(line.replace(/^\[([ xX])\]\s+/, ''))}</span>
+      case 'unsupported':
+        return (
+          <div key={`unsupported-${index}`} className="my-3 rounded-xl border border-dashed border-purple-500/30 bg-purple-500/5 p-3 flex items-center gap-2 text-xs opacity-75">
+            <AlertCircle className="h-4 w-4 text-purple-400 flex-shrink-0" />
+            <span>{block.description || 'Unsupported OneNote ink/drawing block'}</span>
           </div>
         );
-        continue;
-      }
 
-      flushList();
-      elements.push(
-        <p key={`p-${i}`} className="my-2.5 leading-relaxed">
-          {formatInline(line)}
-        </p>
-      );
+      default:
+        return null;
     }
-
-    flushList();
-    flushCode();
-
-    return elements;
   };
 
   const themeClasses = {
@@ -398,7 +382,7 @@ export function OneNoteViewer({
 
   return (
     <div ref={containerRef} className={`space-y-5 ${isFullscreen ? 'fixed inset-0 z-50 bg-background overflow-y-auto p-4 sm:p-6' : ''}`}>
-      {/* Top Action & Overview Card */}
+      {/* Top Header Card */}
       <div className="relative overflow-hidden rounded-3xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 via-background to-purple-900/20 p-5 sm:p-6 shadow-xl backdrop-blur">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="space-y-1.5">
@@ -407,13 +391,15 @@ export function OneNoteViewer({
                 <BookOpen className="h-3.5 w-3.5" /> Microsoft OneNote
               </Badge>
               <Badge variant="outline" className="border-purple-500/40 text-purple-300">
-                {isPackage ? 'Notebook Package (.onepkg)' : 'Section File (.one)'}
+                {doc?.isPackage ? 'Notebook Package (.onepkg)' : 'Section File (.one)'}
               </Badge>
-              {fileSize && (
+              {doc?.totalBytes ? (
                 <Badge variant="secondary" className="text-[10px]">
-                  {fileSize}
+                  {Math.round(doc.totalBytes / 1024) > 1024 
+                    ? `${(doc.totalBytes / (1024 * 1024)).toFixed(1)} MB` 
+                    : `${Math.round(doc.totalBytes / 1024)} KB`}
                 </Badge>
-              )}
+              ) : null}
               {subjectName && chapterName && (
                 <span className="text-xs text-muted-foreground hidden sm:inline">
                   {subjectName} &middot; {chapterName}
@@ -421,16 +407,16 @@ export function OneNoteViewer({
               )}
             </div>
             <h3 className="font-[var(--font-heading)] text-xl sm:text-2xl font-bold tracking-tight">
-              {title || (isPackage ? 'Notebook Package' : 'Study Note')}
+              {title || doc?.title || 'OneNote Notebook'}
             </h3>
             <p className="text-xs text-muted-foreground max-w-xl">
-              {isPackage 
-                ? `Contains ${sections.length} notebook section${sections.length > 1 ? 's' : ''}. Browse sections below or open in the OneNote app.` 
-                : 'Contains digital notebook pages. Read inline below or open in the OneNote app.'}
+              {doc?.isPackage 
+                ? `Contains ${doc.sections.length} sections and ${doc.totalPages} pages. Browse sections below or open in the OneNote app.` 
+                : 'Contains digital study notes. Read inline below or open in the OneNote app.'}
             </p>
           </div>
 
-          {/* Quick Mobile / Desktop Action Buttons */}
+          {/* Action Buttons */}
           <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
             <Button
               onClick={handleOpenMobileApp}
@@ -467,27 +453,31 @@ export function OneNoteViewer({
           </div>
         </div>
 
-        {/* Section Tabs Bar (for .onepkg Multi-Section Notebooks) */}
-        {sections.length > 1 && (
+        {/* Multi-Section Tabs for .onepkg packages */}
+        {doc && doc.sections.length > 1 && (
           <div className="mt-5 border-t border-purple-500/20 pt-4">
             <div className="flex items-center gap-2 mb-2 text-xs font-semibold text-purple-300">
               <Layers className="h-3.5 w-3.5" />
-              <span>Notebook Sections ({sections.length}):</span>
+              <span>Notebook Sections ({doc.sections.length}):</span>
             </div>
             <div className="flex flex-wrap gap-2 overflow-x-auto pb-1">
-              {sections.map((sec, idx) => (
+              {doc.sections.map((sec, idx) => (
                 <button
-                  key={sec.name + idx}
+                  key={sec.id || idx}
                   type="button"
-                  onClick={() => setActiveSectionIndex(idx)}
+                  onClick={() => {
+                    setActiveSectionIdx(idx);
+                    setActivePageIdx(0);
+                  }}
                   className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-                    activeSectionIndex === idx
+                    activeSectionIdx === idx
                       ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30 ring-2 ring-purple-400/40'
                       : 'bg-muted/40 hover:bg-muted text-muted-foreground hover:text-foreground border border-border/40'
                   }`}
                 >
                   <FileText className="h-3.5 w-3.5" />
                   <span>{sec.name}</span>
+                  <span className="text-[10px] opacity-70 ml-0.5">({sec.pages.length}p)</span>
                 </button>
               ))}
             </div>
@@ -517,7 +507,7 @@ export function OneNoteViewer({
                   : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <HelpCircle className="h-3.5 w-3.5" /> Phone Guide
+              <HelpCircle className="h-3.5 w-3.5" /> Mobile Guide
             </button>
           </div>
 
@@ -534,31 +524,60 @@ export function OneNoteViewer({
         </div>
       </div>
 
-      {/* Main Tab 1: Inbuilt Digital Notebook Reader */}
+      {/* Main Tab 1: Reader */}
       {activeTab === 'reader' && (
         <div className={`overflow-hidden rounded-3xl border shadow-xl flex flex-col transition-colors ${themeClasses[theme]}`}>
-          {/* Reader Toolbar */}
+          {/* Reader Toolbar: Page Navigation, Search, Font, Theme */}
           <div className="flex flex-wrap items-center justify-between border-b border-inherit bg-black/10 px-4 sm:px-6 py-2.5 gap-3 backdrop-blur">
-            {/* Search in Note */}
-            <div className="relative flex-1 min-w-[140px] max-w-xs">
+            {/* Page Navigation Controls */}
+            {pages.length > 1 && (
+              <div className="flex items-center gap-1.5">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handlePrevPage}
+                  disabled={activeSectionIdx === 0 && activePageIdx === 0}
+                  className="h-8 w-8 rounded-lg hover:bg-black/10"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+
+                <div className="flex items-center gap-1 text-xs font-semibold px-1">
+                  <span>Page {activePageIdx + 1}</span>
+                  <span className="opacity-60">/ {pages.length}</span>
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={handleNextPage}
+                  disabled={Boolean(doc && activeSectionIdx === doc.sections.length - 1 && activePageIdx === pages.length - 1)}
+                  className="h-8 w-8 rounded-lg hover:bg-black/10"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            )}
+
+            {/* In-Note Search */}
+            <div className="relative flex-1 min-w-[130px] max-w-xs">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-60" />
               <Input
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search section..."
+                placeholder="Search note..."
                 className="h-8 pl-8 text-xs bg-transparent border-inherit focus-visible:ring-purple-500 rounded-lg"
               />
             </div>
 
-            {/* Customization Controls: Font size, Theme, Print */}
+            {/* Theme & Typography Controls */}
             <div className="flex items-center gap-1.5 sm:gap-2">
-              {/* Font Size A- / A+ */}
+              {/* Font Size */}
               <div className="flex items-center border border-inherit rounded-lg overflow-hidden">
                 <button
                   type="button"
                   onClick={() => setFontSize(prev => Math.max(12, prev - 2))}
                   className="px-2.5 py-1 text-xs font-bold hover:bg-black/10 transition-colors"
-                  title="Smaller Font"
                 >
                   A-
                 </button>
@@ -567,7 +586,6 @@ export function OneNoteViewer({
                   type="button"
                   onClick={() => setFontSize(prev => Math.min(28, prev + 2))}
                   className="px-2.5 py-1 text-xs font-bold hover:bg-black/10 transition-colors"
-                  title="Larger Font"
                 >
                   A+
                 </button>
@@ -613,29 +631,61 @@ export function OneNoteViewer({
             </div>
           </div>
 
-          {/* Active Section Content Viewport */}
+          {/* Document Content Viewport */}
           <div className="p-5 sm:p-10 min-h-[450px] overflow-y-auto max-h-[75vh]">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 space-y-3 text-center">
                 <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
                 <p className="text-sm opacity-70 font-medium">
-                  {isPackage ? 'Unpacking notebook package and extracting sections...' : 'Loading and rendering OneNote section...'}
+                  {isOnePkg ? 'Extracting and rendering notebook package...' : 'Parsing OneNote section...'}
                 </p>
               </div>
-            ) : currentSection?.content ? (
+            ) : currentPage && currentPage.blocks.length > 0 ? (
               <div 
-                className="max-w-3xl mx-auto space-y-4 font-normal"
+                className="max-w-3xl mx-auto space-y-3 font-normal"
                 style={{ fontSize: `${fontSize}px` }}
               >
-                {sections.length > 1 && (
-                  <div className="border-b border-purple-500/20 pb-3 mb-6">
-                    <span className="text-xs uppercase tracking-wider font-semibold text-purple-400">
-                      Section {activeSectionIndex + 1} of {sections.length}
+                {/* Page Title Header */}
+                {currentPage.title && (
+                  <div className="border-b border-purple-500/20 pb-3 mb-5">
+                    <span className="text-[11px] uppercase tracking-wider font-semibold text-purple-400">
+                      {currentSection?.name} &middot; Page {activePageIdx + 1}
                     </span>
-                    <h2 className="text-2xl font-bold font-[var(--font-heading)]">{currentSection.name}</h2>
+                    <h2 className="text-2xl sm:text-3xl font-bold font-[var(--font-heading)]">
+                      {formatInlineText(currentPage.title)}
+                    </h2>
                   </div>
                 )}
-                {renderFormattedContent(currentSection.content)}
+
+                {/* Render Normalized Page Blocks */}
+                {currentPage.blocks.map((block, idx) => renderBlock(block, idx))}
+
+                {/* Page Footer Navigation */}
+                {pages.length > 1 && (
+                  <div className="flex items-center justify-between border-t border-inherit pt-6 mt-8">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handlePrevPage}
+                      disabled={activeSectionIdx === 0 && activePageIdx === 0}
+                      className="rounded-xl border-inherit text-xs"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5 mr-1" /> Previous Page
+                    </Button>
+                    <span className="text-xs opacity-70">
+                      Page {activePageIdx + 1} of {pages.length}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleNextPage}
+                      disabled={Boolean(doc && activeSectionIdx === doc.sections.length - 1 && activePageIdx === pages.length - 1)}
+                      className="rounded-xl border-inherit text-xs"
+                    >
+                      Next Page <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                    </Button>
+                  </div>
+                )}
               </div>
             ) : (
               <div className="flex flex-col items-center justify-center py-12 text-center space-y-4 max-w-md mx-auto">
@@ -645,7 +695,7 @@ export function OneNoteViewer({
                 <div className="space-y-1.5">
                   <h4 className="font-bold text-lg">OneNote Notebook Document</h4>
                   <p className="text-xs opacity-75 leading-relaxed">
-                    This file contains visual drawing ink or handwritten sections. Tap &ldquo;Open on Phone&rdquo; below to launch directly in your Microsoft OneNote app.
+                    This file contains specialized visual ink or drawings. Tap &ldquo;Open on Phone&rdquo; below to view full handwriting in the official OneNote app.
                   </p>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-2.5 pt-2 w-full sm:w-auto">
@@ -722,10 +772,10 @@ export function OneNoteViewer({
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">1</span>
-                  Get OneNote App
+                  Install OneNote App
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Ensure <a href="https://play.google.com/store/apps/details?id=com.microsoft.office.onenote" target="_blank" rel="noopener noreferrer" className="text-purple-400 underline font-medium">Microsoft OneNote</a> is installed on your Android device.
+                  Get <a href="https://play.google.com/store/apps/details?id=com.microsoft.office.onenote" target="_blank" rel="noopener noreferrer" className="text-purple-400 underline font-medium">Microsoft OneNote</a> from the Google Play Store.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
@@ -734,16 +784,16 @@ export function OneNoteViewer({
                   Tap Open on Phone
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Tap <strong>&ldquo;Open on Phone&rdquo;</strong> to launch the native OneNote app directly.
+                  Tap <strong>&ldquo;Open on Phone&rdquo;</strong> to share directly into the OneNote app.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">3</span>
-                  Full Ink & Diagrams
+                  Study Handdrawn Notes
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  OneNote will load all handwritten pen strokes, highlighters, and diagrams with 100% native clarity.
+                  OneNote will load all handwritten ink strokes, highlighters, and formulas.
                 </p>
               </div>
             </div>
@@ -757,7 +807,7 @@ export function OneNoteViewer({
                   Install OneNote iOS
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Download <a href="https://apps.apple.com/app/microsoft-onenote/id410395246" target="_blank" rel="noopener noreferrer" className="text-purple-400 underline font-medium">Microsoft OneNote</a> from the Apple App Store on your iPhone.
+                  Download <a href="https://apps.apple.com/app/microsoft-onenote/id410395246" target="_blank" rel="noopener noreferrer" className="text-purple-400 underline font-medium">Microsoft OneNote</a> from the Apple App Store.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
@@ -766,7 +816,7 @@ export function OneNoteViewer({
                   Tap Open on Phone
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Tap <strong>&ldquo;Open on Phone&rdquo;</strong> in Safari to open the iOS share dialog.
+                  Tap <strong>&ldquo;Open on Phone&rdquo;</strong> in Safari to open the iOS share sheet.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
@@ -775,7 +825,7 @@ export function OneNoteViewer({
                   Open in OneNote
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Select <strong>&ldquo;OneNote&rdquo;</strong> to view full vector handwriting, drawing notes, and illustrations.
+                  Select <strong>&ldquo;OneNote&rdquo;</strong> to import and view drawings and handwritten notes.
                 </p>
               </div>
             </div>
@@ -786,28 +836,28 @@ export function OneNoteViewer({
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">1</span>
-                  OneNote App
+                  Desktop OneNote
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Open with preinstalled OneNote for Windows 10/11 or Microsoft 365 on macOS.
+                  Works with OneNote for Windows 10/11 or Microsoft 365 on macOS.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">2</span>
-                  Click Download
+                  Download File
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Click <strong>&ldquo;Download .{extension}&rdquo;</strong> to save the notebook package file.
+                  Click <strong>&ldquo;Download .{extension}&rdquo;</strong> to save the notebook locally.
                 </p>
               </div>
               <div className="rounded-2xl border border-border/60 bg-muted/20 p-3.5 space-y-1">
                 <div className="flex items-center gap-2 font-bold text-foreground">
                   <span className="flex h-5 w-5 items-center justify-center rounded-full bg-purple-600/20 text-purple-400 text-[10px]">3</span>
-                  Double-Click to Read
+                  Double-Click
                 </div>
                 <p className="text-muted-foreground leading-relaxed">
-                  Double-click the downloaded <code>.{extension}</code> file to unpack and open it in your desktop OneNote.
+                  Double-click the downloaded file to unpack and browse in your desktop OneNote.
                 </p>
               </div>
             </div>
