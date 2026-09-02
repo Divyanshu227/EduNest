@@ -75,18 +75,24 @@ export async function PATCH(request: Request) {
   }
 
   try {
-    const { submissionId, feedback, score } = await request.json();
+    const { submissionId, feedback, score, annotatedAttachments } = await request.json();
 
     if (!submissionId) {
       return jsonError('submissionId is required', 400);
     }
 
-    const updated = await prisma.homeworkSubmission.update({
+    const updateData: any = {
+      feedback,
+      score: score === null ? null : (score !== undefined ? Number(score) : undefined)
+    };
+
+    if (annotatedAttachments !== undefined) {
+      updateData.annotatedAttachments = annotatedAttachments;
+    }
+
+    const updated = await (prisma.homeworkSubmission.update as any)({
       where: { id: submissionId },
-      data: {
-        feedback,
-        score: score === null ? null : (score !== undefined ? Number(score) : undefined)
-      }
+      data: updateData
     });
 
     return NextResponse.json({ data: updated });

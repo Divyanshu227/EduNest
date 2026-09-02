@@ -403,13 +403,28 @@ export function ParentHomeworkClient({ homeworkList: initialList, studentId }: P
                       </div>
                     )}
 
+                    {/* Teacher's Evaluated & Marked Copy Post-Evaluation */}
+                    {Array.isArray(userSubmission.annotatedAttachments) && userSubmission.annotatedAttachments.length > 0 && (
+                      <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/10 p-4 space-y-3 mt-4">
+                        <div>
+                          <h5 className="font-bold text-sm text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5">
+                            <CheckCircle2 className="h-4 w-4" /> Teacher's Evaluated & Marked Work ({userSubmission.annotatedAttachments.length} sheets)
+                          </h5>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            Teacher has reviewed and marked corrections, stamps, and feedback on the submitted answer sheets.
+                          </p>
+                        </div>
+                        <AttachmentViewer attachments={userSubmission.annotatedAttachments} />
+                      </div>
+                    )}
+
                     <div className="bg-background/80 rounded-2xl p-4 border border-border/40 mt-4">
-                      <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Student's Submission Details</span>
+                      <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Student's Original Submission</span>
                       <p className="text-sm text-foreground whitespace-pre-wrap">{userSubmission.textAnswer || 'No written response.'}</p>
                       
                       {Array.isArray(userSubmission.attachments) && userSubmission.attachments.length > 0 && (
                         <div className="mt-4">
-                          <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Attached Files</span>
+                          <span className="text-[10px] text-muted-foreground uppercase font-bold block mb-2">Original Attached Files</span>
                           <AttachmentViewer attachments={userSubmission.attachments} />
                         </div>
                       )}

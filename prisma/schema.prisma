@@ -177,6 +177,7 @@ model HomeworkSubmission {
   status       HomeworkStatus   @default(SUBMITTED)
   textAnswer   String?
   attachments  Json?
+  annotatedAttachments Json?
   feedback     String?
   score        Float?
   createdAt    DateTime         @default(now())

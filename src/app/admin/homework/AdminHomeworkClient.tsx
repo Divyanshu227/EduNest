@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Calendar, FileText, CheckCircle2, AlertCircle, X, ExternalLink, GraduationCap } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, FileText, CheckCircle2, AlertCircle, X, ExternalLink, GraduationCap, Pencil, FileCheck2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 import { DownloadLink } from '@/components/ui/download-link';
 import { AttachmentViewer } from '@/components/ui/attachment-viewer';
+import { SubmissionAnnotator, Attachment } from '@/components/homework/SubmissionAnnotator';
 
 interface Student {
   id: string;
@@ -27,6 +28,7 @@ interface Submission {
   status: 'PENDING' | 'SUBMITTED' | 'LATE';
   textAnswer: string | null;
   attachments: any;
+  annotatedAttachments?: any;
   feedback: string | null;
   score: number | null;
   student: Student;
@@ -303,6 +305,9 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
   const [reassignDueDate, setReassignDueDate] = useState('');
   const [reassignSubmitting, setReassignSubmitting] = useState(false);
 
+  // Annotation studio modal state
+  const [annotatingSubmission, setAnnotatingSubmission] = useState<{ submission: Submission; homework: Homework } | null>(null);
+
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
 
@@ -547,6 +552,51 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
       alert(err.message);
     } finally {
       setGradingSubmitting(prev => ({ ...prev, [submissionId]: false }));
+    }
+  };
+
+  const handleSaveAnnotations = async (annotatedFiles: Attachment[]) => {
+    if (!annotatingSubmission) return;
+    const submissionId = annotatingSubmission.submission.id;
+
+    try {
+      const res = await fetch('/api/homework/submissions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          submissionId,
+          annotatedAttachments: annotatedFiles
+        })
+      });
+
+      if (!res.ok) throw new Error('Failed to save annotated evaluation');
+      const updated = await res.json();
+
+      // Update in local homework list
+      setHomeworkList(prev => prev.map(hw => {
+        if (hw.submissions.some(s => s.id === submissionId)) {
+          return {
+            ...hw,
+            submissions: hw.submissions.map(s => s.id === submissionId ? { ...s, ...updated.data } : s)
+          };
+        }
+        return hw;
+      }));
+
+      // Update in active grading desk
+      if (selectedHomeworkForGrading) {
+        setSelectedHomeworkForGrading(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            submissions: prev.submissions.map(s => s.id === submissionId ? { ...s, ...updated.data } : s)
+          };
+        });
+      }
+
+      alert('Annotated evaluation copy saved successfully and ready to share with student & parent!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to save annotated copy');
     }
   };
 
@@ -894,9 +944,40 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
 
                         {/* Student Attachments */}
                         {Array.isArray(sub.attachments) && sub.attachments.length > 0 && (
-                          <div className="space-y-1.5">
-                            <p className="text-[10px] font-semibold text-muted-foreground">Uploaded Work:</p>
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between">
+                              <p className="text-[10px] font-semibold text-muted-foreground uppercase">Uploaded Work ({sub.attachments.length}):</p>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => setAnnotatingSubmission({ submission: sub, homework: selectedHomeworkForGrading })}
+                                className="h-7 px-2.5 rounded-xl text-xs font-semibold text-red-600 dark:text-red-400 border-red-500/30 hover:bg-red-500/10 flex items-center gap-1 shadow-sm"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                <span>{Array.isArray(sub.annotatedAttachments) && sub.annotatedAttachments.length > 0 ? 'Edit Annotations' : 'Annotate & Grade Paper'}</span>
+                              </Button>
+                            </div>
                             <AttachmentViewer attachments={sub.attachments} />
+                          </div>
+                        )}
+
+                        {/* Teacher's Annotated Copy preview */}
+                        {Array.isArray(sub.annotatedAttachments) && sub.annotatedAttachments.length > 0 && (
+                          <div className="rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5">
+                                <FileCheck2 className="h-4 w-4" /> Marked / Evaluated Copy ({sub.annotatedAttachments.length} sheets)
+                              </span>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setAnnotatingSubmission({ submission: sub, homework: selectedHomeworkForGrading })}
+                                className="h-6 px-2 text-[10px] text-emerald-600 hover:text-emerald-700 font-semibold"
+                              >
+                                Edit Markings
+                              </Button>
+                            </div>
+                            <AttachmentViewer attachments={sub.annotatedAttachments} />
                           </div>
                         )}
 
@@ -1254,6 +1335,18 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
           </div>
         )}
       </AnimatePresence>
+
+      {/* Submission Annotator Studio Modal */}
+      {annotatingSubmission && (
+        <SubmissionAnnotator
+          attachments={Array.isArray(annotatingSubmission.submission.attachments) ? annotatingSubmission.submission.attachments : []}
+          studentName={annotatingSubmission.submission.student.name}
+          homeworkTitle={annotatingSubmission.homework.title}
+          existingAnnotated={Array.isArray(annotatingSubmission.submission.annotatedAttachments) ? annotatingSubmission.submission.annotatedAttachments : []}
+          onSave={handleSaveAnnotations}
+          onClose={() => setAnnotatingSubmission(null)}
+        />
+      )}
     </div>
   );
 }
