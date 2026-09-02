@@ -98,7 +98,7 @@ export async function POST(request: NextRequest) {
         scheduledFor: scheduledDate,
         body: customMessage || null,
         status: 'PENDING',
-        createdBy: auth.user.id
+        createdBy: auth.session.user.id
       }
     });
 

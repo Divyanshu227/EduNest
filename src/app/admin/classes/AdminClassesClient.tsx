@@ -55,24 +55,6 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
   });
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
 
-  const handleSendClassReminder = async (classId: string) => {
-    setSendingReminder(prev => ({ ...prev, [classId]: true }));
-    try {
-      const res = await fetch('/api/reminders/class', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ classId })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send reminder');
-      alert(data.message || 'Live class reminder sent successfully!');
-    } catch (err: any) {
-      alert(err.message || 'Failed to send reminder');
-    } finally {
-      setSendingReminder(prev => ({ ...prev, [classId]: false }));
-    }
-  };
-
   const filteredByStudent = classes.filter(c => {
     if (selectedStudentFilter === 'ALL') return true;
     return c.studentId === selectedStudentFilter || (c.student as any)?.id === selectedStudentFilter;
@@ -143,7 +125,9 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
         meetLink: '',
         startTime: '',
         durationMin: 60,
-        studentId: selectedStudentFilter !== 'ALL' ? selectedStudentFilter : (students[0]?.id || '')
+        studentId: selectedStudentFilter !== 'ALL' ? selectedStudentFilter : (students[0]?.id || ''),
+        reminderTiming: '15min',
+        customReminderTime: ''
       });
       
     } catch (err: any) {
