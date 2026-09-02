@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
+import { AttachmentViewer } from '@/components/ui/attachment-viewer';
 
 interface Chapter {
   id: string;
@@ -344,35 +345,24 @@ export function AdminNotesClient({ initialNotes, subjects, students, fixedSubjec
                     <Youtube className="h-4 w-4" />
                   </a>
                 )}
-                {note.type !== 'PDF' && note.type !== 'ONENOTE' && (
-                  <a 
-                    href={Array.isArray(note.images) && note.images.length > 0 ? note.images[0].url : '#'} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 transition-colors"
-                    title="View Image"
-                  >
-                    <ImageIcon className="h-4 w-4" />
-                  </a>
+                {note.type !== 'PDF' && note.type !== 'ONENOTE' && Array.isArray(note.images) && note.images.length > 0 && (
+                  <AttachmentViewer 
+                    attachments={note.images.map((img: any, i: number) => ({
+                      url: img.url,
+                      name: img.name || `Page ${i + 1}`,
+                      type: 'image'
+                    }))} 
+                  />
                 )}
-                {note.type !== 'IMAGE' && (() => {
-                  const isOneNote = note.type === 'ONENOTE' || (Array.isArray(note.pdfs) && note.pdfs.some((p: any) => p?.url?.toLowerCase().endsWith('.one') || p?.name?.toLowerCase().endsWith('.one')));
-                  return (
-                    <a 
-                      href={Array.isArray(note.pdfs) && note.pdfs.length > 0 ? note.pdfs[0].url : '#'} 
-                      target="_blank" 
-                      rel="noopener noreferrer" 
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
-                        isOneNote 
-                          ? 'bg-purple-500/15 text-purple-400 hover:bg-purple-500/25 border border-purple-500/30' 
-                          : 'bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20'
-                      }`}
-                      title={isOneNote ? "View/Download OneNote (.one)" : "View PDF"}
-                    >
-                      <FileText className="h-4 w-4" />
-                    </a>
-                  );
-                })()}
+                {note.type !== 'IMAGE' && Array.isArray(note.pdfs) && note.pdfs.length > 0 && (
+                  <AttachmentViewer 
+                    attachments={note.pdfs.map((pdf: any, i: number) => ({
+                      url: pdf.url,
+                      name: pdf.name || (note.type === 'ONENOTE' ? `OneNote Section ${i + 1}` : `PDF Document ${i + 1}`),
+                      type: 'pdf'
+                    }))} 
+                  />
+                )}
               </div>
 
               <div className="flex items-center justify-end gap-2 mt-2">
