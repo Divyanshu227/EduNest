@@ -4,6 +4,7 @@ import { getAuthorizedParentStudent } from '@/lib/parent-auth';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Video, Calendar } from 'lucide-react';
+import { CalendarReminderDropdown } from '@/components/ui/calendar-reminder-dropdown';
 
 export default async function ParentSchedulePage({
   searchParams,
@@ -68,7 +69,7 @@ export default async function ParentSchedulePage({
             ) : (
               upcomingClasses.map((cls) => (
                 <div key={cls.id} className="flex flex-col rounded-xl bg-muted/50 p-4 border border-border/50">
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <div>
                       <h4 className="font-semibold">{cls.title}</h4>
                       <p className="text-sm text-muted-foreground">Teacher: {cls.teacher.name}</p>
@@ -79,6 +80,14 @@ export default async function ParentSchedulePage({
                         <Badge variant="secondary">{cls.durationMin} mins</Badge>
                       </div>
                     </div>
+                    <CalendarReminderDropdown
+                      title={`Live Class: ${cls.title}`}
+                      description={`Meet Link: ${cls.meetLink}\nTeacher: ${cls.teacher.name}`}
+                      startTime={cls.startTime}
+                      durationMin={cls.durationMin}
+                      location={cls.meetLink}
+                      buttonText="Remind"
+                    />
                   </div>
                   <div className="mt-4 pt-4 border-t border-border/40">
                     <a href={cls.meetLink} target="_blank" rel="noopener noreferrer" className="block">

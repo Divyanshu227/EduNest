@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash, Video, Calendar, Clock, ExternalLink, Edit } from 'lucide-react';
+import { Loader2, Plus, Trash, Video, Calendar, Clock, ExternalLink, Edit, Bell } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -42,6 +42,7 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [sendingReminder, setSendingReminder] = useState<Record<string, boolean>>({});
   
   // Edit state
   const [editOpen, setEditOpen] = useState(false);
@@ -52,6 +53,24 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
     durationMin: 60
   });
   const [activeTab, setActiveTab] = useState<'upcoming' | 'past'>('upcoming');
+
+  const handleSendClassReminder = async (classId: string) => {
+    setSendingReminder(prev => ({ ...prev, [classId]: true }));
+    try {
+      const res = await fetch('/api/reminders/class', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ classId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send reminder');
+      alert(data.message || 'Live class reminder sent successfully!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to send reminder');
+    } finally {
+      setSendingReminder(prev => ({ ...prev, [classId]: false }));
+    }
+  };
 
   const filteredByStudent = classes.filter(c => {
     if (selectedStudentFilter === 'ALL') return true;
@@ -402,8 +421,19 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                   </div>
                   
                   {!isPast && (
-                    <div className="border-t border-border/40 pt-3 flex justify-end">
-                      <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm font-semibold text-primary hover:underline">
+                    <div className="border-t border-border/40 pt-3 flex items-center justify-between gap-2">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleSendClassReminder(c.id)}
+                        disabled={sendingReminder[c.id]}
+                        className="rounded-xl text-xs font-semibold flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10 h-8"
+                      >
+                        <Bell className="h-3.5 w-3.5" />
+                        <span>{sendingReminder[c.id] ? 'Sending...' : 'Remind Student'}</span>
+                      </Button>
+
+                      <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
                         <Video className="h-4 w-4" /> Open Meet <ExternalLink className="h-3 w-3" />
                       </a>
                     </div>

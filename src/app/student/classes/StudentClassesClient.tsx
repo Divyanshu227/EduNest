@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Video, Calendar, Clock } from 'lucide-react';
+import { CalendarReminderDropdown } from '@/components/ui/calendar-reminder-dropdown';
 
 type LiveClassType = {
   id: string;
@@ -71,6 +72,17 @@ export function StudentClassesClient({ initialClasses }: { initialClasses: any[]
                     <Badge variant={isPast ? "secondary" : "default"} className="text-[10px]">
                       {isPast ? 'Completed' : 'Upcoming'}
                     </Badge>
+                    {!isPast && (
+                      <CalendarReminderDropdown
+                        title={`Live Class: ${c.title}`}
+                        description={`Join link: ${c.meetLink}\nTeacher: ${c.teacher.name}`}
+                        startTime={c.startTime}
+                        durationMin={c.durationMin}
+                        location={c.meetLink}
+                        buttonText="Remind Me"
+                        variant="outline"
+                      />
+                    )}
                   </div>
                   <CardTitle className="text-xl line-clamp-1">{c.title}</CardTitle>
                   <CardDescription className="text-sm font-medium mt-1">

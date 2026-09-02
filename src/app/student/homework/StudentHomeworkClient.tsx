@@ -12,6 +12,7 @@ import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 import { DownloadLink } from '@/components/ui/download-link';
 import { AttachmentViewer } from '@/components/ui/attachment-viewer';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { CalendarReminderDropdown } from '@/components/ui/calendar-reminder-dropdown';
 
 interface Homework {
   id: string;
@@ -364,9 +365,18 @@ export function StudentHomeworkClient({ homeworkList: initialList, fixedSubjectI
                       {selectedHw.chapter ? selectedHw.chapter.name : 'General syllabus'}
                     </CardDescription>
                   </div>
-                  <Badge variant="outline" className="text-xs">
-                    Due {new Date(selectedHw.dueDate).toLocaleDateString()} {new Date(selectedHw.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                  </Badge>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="outline" className="text-xs">
+                      Due {new Date(selectedHw.dueDate).toLocaleDateString()} {new Date(selectedHw.dueDate).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
+                    </Badge>
+                    <CalendarReminderDropdown
+                      title={`Homework: ${selectedHw.title}`}
+                      description={`Homework Instructions:\n${selectedHw.instructions}`}
+                      startTime={new Date(new Date(selectedHw.dueDate).getTime() - 60 * 60000)}
+                      endTime={selectedHw.dueDate}
+                      buttonText="Set Reminder"
+                    />
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="pt-6 space-y-6">

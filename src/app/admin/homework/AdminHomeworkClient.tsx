@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Plus, Edit2, Trash2, Calendar, FileText, CheckCircle2, AlertCircle, X, ExternalLink, GraduationCap, Pencil, FileCheck2 } from 'lucide-react';
+import { Plus, Edit2, Trash2, Calendar, FileText, CheckCircle2, AlertCircle, X, ExternalLink, GraduationCap, Pencil, FileCheck2, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -307,6 +307,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
 
   // Annotation studio modal state
   const [annotatingSubmission, setAnnotatingSubmission] = useState<{ submission: Submission; homework: Homework } | null>(null);
+  const [sendingHwReminder, setSendingHwReminder] = useState<Record<string, boolean>>({});
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
@@ -600,6 +601,25 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
     }
   };
 
+  const handleSendHwReminder = async (homeworkId: string, studentId?: string) => {
+    const key = studentId ? `${homeworkId}-${studentId}` : homeworkId;
+    setSendingHwReminder(prev => ({ ...prev, [key]: true }));
+    try {
+      const res = await fetch('/api/reminders/homework', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ homeworkId, studentId })
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to send reminder');
+      alert(data.message || 'Homework due reminder sent successfully to students and parents!');
+    } catch (err: any) {
+      alert(err.message || 'Failed to send reminder');
+    } finally {
+      setSendingHwReminder(prev => ({ ...prev, [key]: false }));
+    }
+  };
+
   const handleReassignSubmit = async (sub: Submission, hw: Homework) => {
     if (!reassignInstructions.trim() || !reassignDueDate) {
       alert("Please provide additional instructions and a new due date.");
@@ -824,7 +844,19 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                         {submissionCount} / {status.totalAssigned} Submissions {status.allSubmittedOnTime && submissionCount > 0 ? '(All on time)' : ''}
                       </span>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {status.missingStudents.length > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleSendHwReminder(hw.id)}
+                            disabled={sendingHwReminder[hw.id]}
+                            className="rounded-xl text-xs font-semibold flex items-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
+                          >
+                            <Bell className="h-3.5 w-3.5" />
+                            <span>{sendingHwReminder[hw.id] ? 'Reminding...' : `Remind (${status.missingStudents.length})`}</span>
+                          </Button>
+                        )}
                         <Button 
                           size="sm" 
                           variant="outline"
@@ -1092,9 +1124,21 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                             <p className="text-xs font-semibold">{missingStudent.name}</p>
                             <p className="text-[10px] text-muted-foreground">{missingStudent.email}</p>
                           </div>
-                          <Badge variant={gradingStatus.isPastDue ? "destructive" : "secondary"} className="text-[9px]">
-                            {gradingStatus.isPastDue ? "🔴 Overdue" : "⏳ Pending"}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Badge variant={gradingStatus.isPastDue ? "destructive" : "secondary"} className="text-[9px]">
+                              {gradingStatus.isPastDue ? "🔴 Overdue" : "⏳ Pending"}
+                            </Badge>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => handleSendHwReminder(selectedHomeworkForGrading.id, missingStudent.id)}
+                              disabled={sendingHwReminder[`${selectedHomeworkForGrading.id}-${missingStudent.id}`]}
+                              className="h-7 px-2.5 rounded-xl text-[11px] font-semibold flex items-center gap-1 text-primary border-primary/30 hover:bg-primary/10"
+                            >
+                              <Bell className="h-3 w-3" />
+                              <span>{sendingHwReminder[`${selectedHomeworkForGrading.id}-${missingStudent.id}`] ? 'Sending...' : 'Remind'}</span>
+                            </Button>
+                          </div>
                         </div>
                       ))}
                     </div>
