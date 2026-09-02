@@ -13,6 +13,7 @@ import { CloudinaryUploader } from '@/components/notes/CloudinaryUploader';
 import { DownloadLink } from '@/components/ui/download-link';
 import { AttachmentViewer } from '@/components/ui/attachment-viewer';
 import { SubmissionAnnotator, Attachment } from '@/components/homework/SubmissionAnnotator';
+import { ScheduleReminderModal } from '@/components/reminders/ScheduleReminderModal';
 
 interface Student {
   id: string;
@@ -308,6 +309,7 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
   // Annotation studio modal state
   const [annotatingSubmission, setAnnotatingSubmission] = useState<{ submission: Submission; homework: Homework } | null>(null);
   const [sendingHwReminder, setSendingHwReminder] = useState<Record<string, boolean>>({});
+  const [schedulingHomework, setSchedulingHomework] = useState<{ homework: Homework; studentId?: string } | null>(null);
 
   const selectedSubject = subjects.find(s => s.id === selectedSubjectId);
   const chapters = selectedSubject?.chapters || [];
@@ -849,12 +851,11 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                           <Button
                             size="sm"
                             variant="outline"
-                            onClick={() => handleSendHwReminder(hw.id)}
-                            disabled={sendingHwReminder[hw.id]}
+                            onClick={() => setSchedulingHomework({ homework: hw })}
                             className="rounded-xl text-xs font-semibold flex items-center gap-1.5 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/10"
                           >
                             <Bell className="h-3.5 w-3.5" />
-                            <span>{sendingHwReminder[hw.id] ? 'Reminding...' : `Remind (${status.missingStudents.length})`}</span>
+                            <span>Remind ({status.missingStudents.length})</span>
                           </Button>
                         )}
                         <Button 
@@ -1131,12 +1132,11 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                             <Button
                               size="sm"
                               variant="outline"
-                              onClick={() => handleSendHwReminder(selectedHomeworkForGrading.id, missingStudent.id)}
-                              disabled={sendingHwReminder[`${selectedHomeworkForGrading.id}-${missingStudent.id}`]}
+                              onClick={() => setSchedulingHomework({ homework: selectedHomeworkForGrading, studentId: missingStudent.id })}
                               className="h-7 px-2.5 rounded-xl text-[11px] font-semibold flex items-center gap-1 text-primary border-primary/30 hover:bg-primary/10"
                             >
                               <Bell className="h-3 w-3" />
-                              <span>{sendingHwReminder[`${selectedHomeworkForGrading.id}-${missingStudent.id}`] ? 'Sending...' : 'Remind'}</span>
+                              <span>Remind</span>
                             </Button>
                           </div>
                         </div>
@@ -1389,6 +1389,20 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
           existingAnnotated={Array.isArray(annotatingSubmission.submission.annotatedAttachments) ? annotatingSubmission.submission.annotatedAttachments : []}
           onSave={handleSaveAnnotations}
           onClose={() => setAnnotatingSubmission(null)}
+        />
+      )}
+
+      {/* Schedule Reminder Modal */}
+      {schedulingHomework && (
+        <ScheduleReminderModal
+          isOpen={Boolean(schedulingHomework)}
+          onClose={() => setSchedulingHomework(null)}
+          type="HOMEWORK"
+          targetId={schedulingHomework.homework.id}
+          title={schedulingHomework.homework.title}
+          eventDate={schedulingHomework.homework.dueDate}
+          students={students}
+          defaultStudentId={schedulingHomework.studentId}
         />
       )}
     </div>

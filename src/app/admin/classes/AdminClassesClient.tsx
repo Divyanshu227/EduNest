@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Trash, Video, Calendar, Clock, ExternalLink, Edit, Bell } from 'lucide-react';
+import { Loader2, Plus, Trash, Video, Calendar, Clock, ExternalLink, Edit, Bell, Timer } from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -15,6 +15,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { ScheduleReminderModal } from '@/components/reminders/ScheduleReminderModal';
 
 type StudentType = {
   id: string;
@@ -42,7 +43,7 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [sendingReminder, setSendingReminder] = useState<Record<string, boolean>>({});
+  const [schedulingClass, setSchedulingClass] = useState<LiveClassType | null>(null);
   
   // Edit state
   const [editOpen, setEditOpen] = useState(false);
@@ -425,12 +426,11 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                       <Button
                         size="sm"
                         variant="outline"
-                        onClick={() => handleSendClassReminder(c.id)}
-                        disabled={sendingReminder[c.id]}
+                        onClick={() => setSchedulingClass(c)}
                         className="rounded-xl text-xs font-semibold flex items-center gap-1.5 text-primary border-primary/30 hover:bg-primary/10 h-8"
                       >
                         <Bell className="h-3.5 w-3.5" />
-                        <span>{sendingReminder[c.id] ? 'Sending...' : 'Remind Student'}</span>
+                        <span>Schedule Reminder</span>
                       </Button>
 
                       <a href={c.meetLink} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 text-xs font-semibold text-primary hover:underline">
@@ -471,9 +471,9 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
               <Input 
                 id="editDurationMin" 
                 name="durationMin" 
-                type="number"
-                min="15"
-                step="5"
+                type="number" 
+                min="15" 
+                step="5" 
                 required 
                 value={editFormData.durationMin}
                 onChange={(e) => setEditFormData({ ...editFormData, durationMin: parseInt(e.target.value) })}
@@ -486,6 +486,19 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
           </form>
         </DialogContent>
       </Dialog>
+
+      {/* Schedule Reminder Modal */}
+      {schedulingClass && (
+        <ScheduleReminderModal
+          isOpen={Boolean(schedulingClass)}
+          onClose={() => setSchedulingClass(null)}
+          type="CLASS"
+          targetId={schedulingClass.id}
+          title={schedulingClass.title}
+          eventDate={schedulingClass.startTime}
+          defaultStudentId={schedulingClass.studentId || (schedulingClass.student as any)?.id}
+        />
+      )}
     </div>
   );
 }
