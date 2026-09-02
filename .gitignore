@@ -40,3 +40,7 @@ public/workbox-*.js
 public/fallback-*.js
 tsconfig.tsbuildinfo
 scripts/schedule-backup.ts
+
+# Test files
+test11mb.pdf
+
