@@ -7,7 +7,7 @@ const teachers = [
   {
     name: "Divyanshu Kumar Jha",
     role: "Mathematics & CS Expert",
-    qualification: "BTech CSE IIIT Bhopal",
+    qualification: "IIIT Bhopal (CSE '28)",
     highlights: [
       "99% in CBSE Class 10",
       "98.2% in Class 12",
@@ -24,7 +24,7 @@ const teachers = [
   {
     name: "Anand Kumar Jha",
     role: "All Subjects Expert",
-    qualification: "MBBS '31",
+    qualification: "IPGMER, Kolkata (MBBS '31)",
     highlights: [
       "97.2% in ICSE Class 10",
       "95.4% in Class 12",
