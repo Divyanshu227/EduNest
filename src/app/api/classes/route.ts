@@ -76,23 +76,51 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    const recipients = await prisma.user.findMany({
-      where: { id: studentId, role: 'STUDENT' },
-      select: { id: true, deviceTokens: true }
-    });
+    // Handle reminder scheduling
+    const { reminderTiming = '15min', customReminderTime } = body;
 
-    const when = new Intl.DateTimeFormat('en-IN', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-      timeZone: 'Asia/Kolkata'
-    }).format(scheduledTime);
+    if (reminderTiming === 'immediate') {
+      const recipients = await prisma.user.findMany({
+        where: { id: studentId, role: 'STUDENT' },
+        select: { id: true, deviceTokens: true }
+      });
 
-    await notifyUsers(recipients, {
-      title: `${session.user.name ?? 'Teacher'} scheduled ${title}`,
-      body: `${session.user.name ?? 'Teacher'} scheduled ${title} class at ${when}. Click to view.`,
-      type: 'SYSTEM',
-      link: '/student/classes'
-    });
+      const when = new Intl.DateTimeFormat('en-IN', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+        timeZone: 'Asia/Kolkata'
+      }).format(scheduledTime);
+
+      await notifyUsers(recipients, {
+        title: `🔔 Class Reminder: ${title}`,
+        body: `${session.user.name ?? 'Teacher'} scheduled ${title} class at ${when}. Click to view.`,
+        type: 'SYSTEM',
+        link: '/student/classes'
+      });
+    } else if (reminderTiming !== 'none') {
+      let triggerTime: Date;
+      if (reminderTiming === '30min') {
+        triggerTime = new Date(scheduledTime.getTime() - 30 * 60000);
+      } else if (reminderTiming === '1hr') {
+        triggerTime = new Date(scheduledTime.getTime() - 60 * 60000);
+      } else if (reminderTiming === 'custom' && customReminderTime) {
+        triggerTime = new Date(customReminderTime);
+      } else {
+        // default 15min
+        triggerTime = new Date(scheduledTime.getTime() - 15 * 60000);
+      }
+
+      await (prisma as any).scheduledReminder.create({
+        data: {
+          type: 'CLASS',
+          targetId: newClass.id,
+          studentId: studentId,
+          scheduledFor: triggerTime,
+          status: 'PENDING',
+          createdBy: session.user.id
+        }
+      });
+    }
 
     return NextResponse.json({ data: newClass });
   } catch (error) {

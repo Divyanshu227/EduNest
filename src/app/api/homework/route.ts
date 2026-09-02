@@ -32,35 +32,63 @@ export async function POST(request: Request) {
     return auth.error;
   }
 
-  const parsed = homeworkSchema.safeParse(await request.json());
+  const rawBody = await request.json();
+  const parsed = homeworkSchema.safeParse(rawBody);
 
   if (!parsed.success) {
     return jsonError(parsed.error.message, 422);
   }
 
+  const { reminderTiming = '1day', customReminderTime } = rawBody;
+  const dueDate = new Date(parsed.data.dueDate);
+
   const homework = await prisma.homework.create({
     data: {
       ...parsed.data,
       authorId: auth.session.user.id,
-      dueDate: new Date(parsed.data.dueDate)
+      dueDate: dueDate
     }
   });
 
-  const recipients = await prisma.user.findMany({
-    where: {
-      ...(parsed.data.assignedStudentIds && parsed.data.assignedStudentIds.length > 0
-        ? { id: { in: parsed.data.assignedStudentIds } }
-        : {}),
-      role: 'STUDENT'
-    }
-  });
+  if (reminderTiming === 'immediate') {
+    const recipients = await prisma.user.findMany({
+      where: {
+        ...(parsed.data.assignedStudentIds && parsed.data.assignedStudentIds.length > 0
+          ? { id: { in: parsed.data.assignedStudentIds } }
+          : {}),
+        role: 'STUDENT'
+      }
+    });
 
-  await notifyUsers(recipients, {
-    title: `New homework: ${parsed.data.title}`,
-    body: 'A new homework assignment has been posted.',
-    type: 'HOMEWORK',
-    link: '/student/homework'
-  });
+    await notifyUsers(recipients, {
+      title: `New homework: ${parsed.data.title}`,
+      body: 'A new homework assignment has been posted.',
+      type: 'HOMEWORK',
+      link: '/student/homework'
+    });
+  } else if (reminderTiming !== 'none') {
+    let triggerTime: Date;
+    if (reminderTiming === '2hr') {
+      triggerTime = new Date(dueDate.getTime() - 120 * 60000);
+    } else if (reminderTiming === '30min') {
+      triggerTime = new Date(dueDate.getTime() - 30 * 60000);
+    } else if (reminderTiming === 'custom' && customReminderTime) {
+      triggerTime = new Date(customReminderTime);
+    } else {
+      // default 1day
+      triggerTime = new Date(dueDate.getTime() - 24 * 60 * 60000);
+    }
+
+    await (prisma as any).scheduledReminder.create({
+      data: {
+        type: 'HOMEWORK',
+        targetId: homework.id,
+        scheduledFor: triggerTime,
+        status: 'PENDING',
+        createdBy: auth.session.user.id
+      }
+    });
+  }
 
   return NextResponse.json({ data: homework }, { status: 201 });
 }

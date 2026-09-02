@@ -87,7 +87,9 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
     meetLink: '',
     startTime: '',
     durationMin: 60,
-    studentId: students[0]?.id || ''
+    studentId: students[0]?.id || '',
+    reminderTiming: '15min',
+    customReminderTime: ''
   });
 
   const openScheduleModal = () => {
@@ -96,7 +98,9 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
       meetLink: '',
       startTime: '',
       durationMin: 60,
-      studentId: selectedStudentFilter !== 'ALL' ? selectedStudentFilter : (students[0]?.id || '')
+      studentId: selectedStudentFilter !== 'ALL' ? selectedStudentFilter : (students[0]?.id || ''),
+      reminderTiming: '15min',
+      customReminderTime: ''
     });
     setIsOpen(true);
   };
@@ -313,6 +317,47 @@ export function AdminClassesClient({ initialClasses, students }: { initialClasse
                   value={formData.meetLink}
                   onChange={handleChange}
                 />
+              </div>
+
+              {/* Reminder Scheduling Options */}
+              <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3.5">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="reminderTiming" className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                    <Bell className="h-3.5 w-3.5 text-primary" /> Auto-Schedule Reminder
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground">Notification timing</span>
+                </div>
+                <select
+                  id="reminderTiming"
+                  name="reminderTiming"
+                  className="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                  value={formData.reminderTiming}
+                  onChange={handleChange}
+                >
+                  <option value="15min">🕒 Schedule for 15 minutes before class</option>
+                  <option value="30min">🕒 Schedule for 30 minutes before class</option>
+                  <option value="1hr">🕒 Schedule for 1 hour before class</option>
+                  <option value="custom">📅 Schedule for a Custom Date & Time</option>
+                  <option value="immediate">⚡ Send Immediately upon creation</option>
+                  <option value="none">🚫 Do not send reminder</option>
+                </select>
+
+                {formData.reminderTiming === 'custom' && (
+                  <div className="pt-2">
+                    <Label htmlFor="customReminderTime" className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                      Choose Custom Reminder Date & Time:
+                    </Label>
+                    <Input
+                      id="customReminderTime"
+                      name="customReminderTime"
+                      type="datetime-local"
+                      required={formData.reminderTiming === 'custom'}
+                      value={formData.customReminderTime}
+                      onChange={handleChange}
+                      className="h-8 text-xs bg-background"
+                    />
+                  </div>
+                )}
               </div>
 
               {error && (

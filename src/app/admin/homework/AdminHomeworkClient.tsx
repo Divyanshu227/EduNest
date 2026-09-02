@@ -292,6 +292,8 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
   const [selectedChapterId, setSelectedChapterId] = useState(fixedChapterId || '');
   const [uploadedAttachments, setUploadedAttachments] = useState<any[]>([]);
   const [selectedStudentIds, setSelectedStudentIds] = useState<string[]>([]);
+  const [reminderTiming, setReminderTiming] = useState<string>('1day');
+  const [customReminderTime, setCustomReminderTime] = useState<string>('');
   const [submitting, setSubmitting] = useState(false);
 
   // Grading form states
@@ -344,6 +346,8 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
     } else {
       setSelectedStudentIds(students.map(s => s.id)); // Default to all students
     }
+    setReminderTiming('1day');
+    setCustomReminderTime('');
     setIsFormOpen(true);
   };
 
@@ -381,7 +385,9 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
       subjectId: selectedSubjectId,
       chapterId: selectedChapterId || undefined,
       attachments: uploadedAttachments,
-      assignedStudentIds: selectedStudentIds
+      assignedStudentIds: selectedStudentIds,
+      reminderTiming,
+      customReminderTime: reminderTiming === 'custom' ? customReminderTime : undefined
     };
 
     try {
@@ -1302,6 +1308,47 @@ export function AdminHomeworkClient({ initialHomework, subjects, students, fixed
                     folder="homework_attachments"
                   />
                 </div>
+
+                {/* Reminder Timing Selector */}
+                {!editingHomework && (
+                  <div className="space-y-2 rounded-2xl border border-primary/20 bg-primary/5 p-3.5">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="hwReminderTiming" className="text-xs font-bold text-foreground flex items-center gap-1.5">
+                        <Bell className="h-3.5 w-3.5 text-primary" /> Auto-Schedule Reminder
+                      </Label>
+                      <span className="text-[10px] text-muted-foreground">Notification timing</span>
+                    </div>
+                    <select
+                      id="hwReminderTiming"
+                      className="flex h-9 w-full rounded-xl border border-input bg-background px-3 py-1 text-xs shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      value={reminderTiming}
+                      onChange={(e) => setReminderTiming(e.target.value)}
+                    >
+                      <option value="1day">🕒 Schedule for 1 day before due date</option>
+                      <option value="2hr">🕒 Schedule for 2 hours before due date</option>
+                      <option value="30min">🕒 Schedule for 30 minutes before due date</option>
+                      <option value="custom">📅 Schedule for a Custom Date & Time</option>
+                      <option value="immediate">⚡ Send Immediately upon publishing</option>
+                      <option value="none">🚫 Do not send reminder</option>
+                    </select>
+
+                    {reminderTiming === 'custom' && (
+                      <div className="pt-2">
+                        <Label htmlFor="customHwReminderTime" className="text-[11px] font-semibold text-muted-foreground block mb-1">
+                          Choose Custom Reminder Date & Time:
+                        </Label>
+                        <Input
+                          id="customHwReminderTime"
+                          type="datetime-local"
+                          required={reminderTiming === 'custom'}
+                          value={customReminderTime}
+                          onChange={(e) => setCustomReminderTime(e.target.value)}
+                          className="h-8 text-xs bg-background"
+                        />
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-3 border-t border-border/40 pt-4 mt-6">
                   <Button type="button" variant="outline" onClick={() => setIsFormOpen(false)} disabled={submitting} className="rounded-xl">
