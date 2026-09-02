@@ -349,4 +349,23 @@ model Feedback {
   @@index([teacherId, status])
   @@index([parentId])
 }
+
+model ScheduledReminder {
+  id           String    @id @default(auto()) @map("_id") @db.ObjectId
+  type         String    // "CLASS" or "HOMEWORK"
+  targetId     String    @db.ObjectId // LiveClass ID or Homework ID
+  studentId    String?   @db.ObjectId // Specific student ID, or null for all assigned students
+  scheduledFor DateTime  // When the reminder should be sent
+  status       String    @default("PENDING") // PENDING, SENT, CANCELLED, FAILED
+  title        String?
+  body         String?
+  sentAt       DateTime?
+  createdBy    String    @db.ObjectId
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([status, scheduledFor])
+  @@index([targetId, status])
+}
+
 

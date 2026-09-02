@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireRole, requireUser, jsonError } from '@/lib/api';
+import { processDueReminders } from '@/lib/reminder-scheduler';
 
 export async function GET() {
   const auth = await requireUser();
@@ -8,6 +9,9 @@ export async function GET() {
   if ('error' in auth) {
     return auth.error;
   }
+
+  // Trigger background check for any scheduled reminders that have reached their trigger time
+  processDueReminders().catch(err => console.error('Background reminder check error:', err));
 
   let userIds = [auth.session.user.id];
 
