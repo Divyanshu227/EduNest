@@ -41,10 +41,9 @@ export function AttachmentViewer({ attachments, className = "" }: AttachmentView
   const [rotation, setRotation] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
-  if (!attachments || !Array.isArray(attachments) || attachments.length === 0) return null;
-
   // Normalize attachments array
-  const normalizedList = attachments.map((att, idx) => {
+  const rawList = Array.isArray(attachments) ? attachments : [];
+  const normalizedList = rawList.map((att, idx) => {
     if (typeof att === "string") {
       return { url: att, name: `Attachment ${idx + 1}` };
     }
@@ -55,8 +54,6 @@ export function AttachmentViewer({ attachments, className = "" }: AttachmentView
       publicId: att?.publicId
     };
   }).filter(item => Boolean(item.url));
-
-  if (normalizedList.length === 0) return null;
 
   const totalCount = normalizedList.length;
   const currentItem = normalizedList[currentIndex] || normalizedList[0];
@@ -145,6 +142,8 @@ export function AttachmentViewer({ attachments, className = "" }: AttachmentView
     }
     touchStartX.current = null;
   };
+
+  if (totalCount === 0) return null;
 
   return (
     <>

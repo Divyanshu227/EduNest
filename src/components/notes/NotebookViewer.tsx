@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -8,7 +8,7 @@ import {
   ZoomOut, 
   RotateCw, 
   RotateCcw, 
-  Maximize2,
+  Maximize2, 
   Minimize2,
   Image as ImageIcon
 } from 'lucide-react';
@@ -39,31 +39,29 @@ export function NotebookViewer({ noteId, images = [], initialPage = 1 }: Noteboo
   const totalPages = images.length;
   const currentImage = images[currentPage - 1];
 
-  const handlePrevPage = () => {
+  const handlePrevPage = useCallback(() => {
     if (currentPage > 1) {
-      setCurrentPage(currentPage - 1);
+      setCurrentPage(prev => prev - 1);
       setZoom(1);
       setRotation(0);
     } else if (totalPages > 1) {
-      // Loop to end
       setCurrentPage(totalPages);
       setZoom(1);
       setRotation(0);
     }
-  };
+  }, [currentPage, totalPages]);
 
-  const handleNextPage = () => {
+  const handleNextPage = useCallback(() => {
     if (currentPage < totalPages) {
-      setCurrentPage(currentPage + 1);
+      setCurrentPage(prev => prev + 1);
       setZoom(1);
       setRotation(0);
     } else if (totalPages > 1) {
-      // Loop to start
       setCurrentPage(1);
       setZoom(1);
       setRotation(0);
     }
-  };
+  }, [currentPage, totalPages]);
 
   // Keyboard navigation
   useEffect(() => {
@@ -74,7 +72,7 @@ export function NotebookViewer({ noteId, images = [], initialPage = 1 }: Noteboo
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentPage, totalPages]);
+  }, [handlePrevPage, handleNextPage]);
 
   // Touch handlers for swipe navigation
   const handleTouchStart = (e: React.TouchEvent) => {
