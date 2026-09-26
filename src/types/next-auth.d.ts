@@ -11,12 +11,14 @@ declare module 'next-auth' {
       home: string;
       name?: string | null;
       email?: string | null;
+      isAccessRevoked?: boolean;
     };
   }
 
   interface User {
     role: UserRole;
     avatarUrl?: string | null;
+    isAccessRevoked?: boolean;
   }
 }
 
@@ -24,5 +26,6 @@ declare module 'next-auth/jwt' {
   interface JWT {
     role?: UserRole;
     avatarUrl?: string | null;
+    isAccessRevoked?: boolean;
   }
 }

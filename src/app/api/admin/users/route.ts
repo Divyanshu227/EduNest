@@ -8,12 +8,12 @@ export async function POST(req: NextRequest) {
     const session = await auth();
 
     // Verify authentication and role
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN' || session.user.isAccessRevoked) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await req.json();
-    const { name, email, password, role } = body;
+    const { name, email, password, role, phone, isAccessRevoked } = body;
 
     // Validate inputs
     if (!name || !email || !password || !role) {
@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
     // Check if the user already exists
     const existingUser = await prisma.user.findUnique({
-      where: { email },
+      where: { email: email.toLowerCase().trim() },
     });
 
     if (existingUser) {
@@ -36,9 +36,11 @@ export async function POST(req: NextRequest) {
     const newUser = await prisma.user.create({
       data: {
         name,
-        email,
+        email: email.toLowerCase().trim(),
         passwordHash,
         role,
+        phone: phone || null,
+        isAccessRevoked: Boolean(isAccessRevoked),
       },
     });
 
@@ -50,6 +52,8 @@ export async function POST(req: NextRequest) {
         name: newUser.name,
         email: newUser.email,
         role: newUser.role,
+        phone: newUser.phone,
+        isAccessRevoked: newUser.isAccessRevoked,
       },
     }, { status: 201 });
 

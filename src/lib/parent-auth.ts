@@ -4,7 +4,11 @@ import { redirect } from 'next/navigation';
 
 export async function getAuthorizedParentStudent(searchParamsPromise: Promise<{ student?: string }> | { student?: string }) {
   const session = await auth();
-  if (!session?.user || session.user.role !== 'PARENT') {
+  if (!session?.user || session.user.isAccessRevoked) {
+    redirect('/login?error=AccessRevoked');
+  }
+
+  if (session.user.role !== 'PARENT') {
     redirect('/login');
   }
 
@@ -13,7 +17,11 @@ export async function getAuthorizedParentStudent(searchParamsPromise: Promise<{ 
     include: { parentOf: true }
   });
 
-  if (!parentData || parentData.parentOf.length === 0) {
+  if (!parentData || parentData.isAccessRevoked) {
+    redirect('/login?error=AccessRevoked');
+  }
+
+  if (parentData.parentOf.length === 0) {
     return null; // Parent has no linked students
   }
 

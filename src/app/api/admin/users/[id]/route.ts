@@ -10,19 +10,25 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const session = await auth();
 
     // Verify authentication and role
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN' || session.user.isAccessRevoked) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const { id } = await params;
     const body = await request.json();
-    const { name, email, password, role, avatarUrl } = body;
+    const { name, email, password, role, avatarUrl, phone, isAccessRevoked } = body;
 
-    if (!name || !email || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (!targetUser) {
+      return NextResponse.json({ error: 'User not found' }, { status: 404 });
     }
 
-    const updateData: any = { name, email, role };
+    const updateData: any = {};
+
+    if (name !== undefined) updateData.name = name;
+    if (email !== undefined) updateData.email = email.toLowerCase().trim();
+    if (role !== undefined) updateData.role = role;
+    if (phone !== undefined) updateData.phone = phone;
 
     // Hash the new password if provided
     if (password) {
@@ -32,6 +38,16 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     // Allow admin to set avatar for any user
     if (avatarUrl !== undefined) {
       updateData.avatarUrl = avatarUrl;
+    }
+
+    if (isAccessRevoked !== undefined) {
+      if (targetUser.email === MASTER_ADMIN_EMAIL && isAccessRevoked === true) {
+        return NextResponse.json({ error: 'Cannot revoke access of Master Admin' }, { status: 403 });
+      }
+      if (id === session.user.id && isAccessRevoked === true) {
+        return NextResponse.json({ error: 'Cannot revoke your own access' }, { status: 403 });
+      }
+      updateData.isAccessRevoked = Boolean(isAccessRevoked);
     }
 
     // Update the user
@@ -48,6 +64,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         email: updatedUser.email,
         role: updatedUser.role,
         avatarUrl: updatedUser.avatarUrl,
+        phone: updatedUser.phone,
+        isAccessRevoked: updatedUser.isAccessRevoked,
       },
     });
 
@@ -61,7 +79,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const session = await auth();
 
-    if (!session?.user || session.user.role !== 'ADMIN') {
+    if (!session?.user || session.user.role !== 'ADMIN' || session.user.isAccessRevoked) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 

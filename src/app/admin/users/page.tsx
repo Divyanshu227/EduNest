@@ -5,7 +5,7 @@ import { AdminUsersClient } from './AdminUsersClient';
 export default async function AdminUsersPage() {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || session.user.role !== 'ADMIN' || session.user.isAccessRevoked) {
     return <div className="p-6">Unauthorized</div>;
   }
 
@@ -17,6 +17,7 @@ export default async function AdminUsersPage() {
       email: true,
       role: true,
       avatarUrl: true,
+      isAccessRevoked: true,
       createdAt: true,
       parents: {
         include: {
@@ -29,5 +30,5 @@ export default async function AdminUsersPage() {
     orderBy: { createdAt: 'desc' }
   });
 
-  return <AdminUsersClient initialUsers={users} />;
+  return <AdminUsersClient initialUsers={users} currentUserId={session.user.id} />;
 }

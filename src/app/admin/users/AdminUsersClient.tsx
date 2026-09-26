@@ -7,7 +7,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Plus, Users, Trash, Edit2, Upload, Camera, Shield } from 'lucide-react';
+import { 
+  Loader2, 
+  Plus, 
+  Users, 
+  Trash, 
+  Edit2, 
+  Camera, 
+  Shield, 
+  ShieldAlert, 
+  UserX, 
+  UserCheck, 
+  CheckCircle2, 
+  Ban 
+} from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -23,17 +36,19 @@ type UserType = {
   email: string;
   role: string;
   avatarUrl?: string | null;
+  isAccessRevoked?: boolean;
   createdAt: Date;
   parents?: { parent: { name: string, phone: string | null } }[];
 };
 
 const MASTER_ADMIN_EMAIL = 'admin@edunest.dev';
 
-export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] }) {
+export function AdminUsersClient({ initialUsers, currentUserId }: { initialUsers: UserType[]; currentUserId?: string }) {
   const router = useRouter();
   const [users, setUsers] = useState<UserType[]>(initialUsers);
   const [isOpen, setIsOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [togglingUserId, setTogglingUserId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<UserType | null>(null);
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
@@ -45,23 +60,37 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
     email: '',
     password: '',
     role: 'STUDENT',
-    avatarUrl: '' as string | undefined
+    avatarUrl: '' as string | undefined,
+    isAccessRevoked: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value, type } = e.target;
+    if (type === 'checkbox') {
+      const checked = (e.target as HTMLInputElement).checked;
+      setFormData(prev => ({ ...prev, [name]: checked }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const openCreateForm = () => {
     setEditingUser(null);
-    setFormData({ name: '', email: '', password: '', role: 'STUDENT', avatarUrl: undefined });
+    setFormData({ name: '', email: '', password: '', role: 'STUDENT', avatarUrl: undefined, isAccessRevoked: false });
     setAvatarPreview(null);
     setIsOpen(true);
   };
 
   const openEditForm = (user: UserType) => {
     setEditingUser(user);
-    setFormData({ name: user.name, email: user.email, password: '', role: user.role, avatarUrl: user.avatarUrl || undefined });
+    setFormData({ 
+      name: user.name, 
+      email: user.email, 
+      password: '', 
+      role: user.role, 
+      avatarUrl: user.avatarUrl || undefined,
+      isAccessRevoked: Boolean(user.isAccessRevoked)
+    });
     setAvatarPreview(user.avatarUrl || null);
     setIsOpen(true);
   };
@@ -95,6 +124,38 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
     }
   };
 
+  const handleToggleAccess = async (user: UserType) => {
+    if (isMasterAdmin(user.email) || user.id === currentUserId) {
+      alert('Cannot revoke access for this account.');
+      return;
+    }
+
+    const nextState = !user.isAccessRevoked;
+    const actionText = nextState ? 'revoke login access for' : 'restore login access for';
+    if (!confirm(`Are you sure you want to ${actionText} "${user.name}"?`)) {
+      return;
+    }
+
+    setTogglingUserId(user.id);
+    try {
+      const res = await fetch(`/api/admin/users/${user.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAccessRevoked: nextState })
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to update access status');
+
+      setUsers(prev => prev.map(u => u.id === user.id ? { ...u, isAccessRevoked: nextState } : u));
+      router.refresh();
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setTogglingUserId(null);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -105,12 +166,13 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
         const payload: any = {
           name: formData.name,
           email: formData.email,
-          role: formData.role
+          role: formData.role,
+          isAccessRevoked: formData.isAccessRevoked,
         };
         if (formData.password) {
           payload.password = formData.password;
         }
-        if (formData.avatarUrl) {
+        if (formData.avatarUrl !== undefined) {
           payload.avatarUrl = formData.avatarUrl;
         }
 
@@ -128,7 +190,8 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
           name: data.user.name,
           email: data.user.email,
           role: data.user.role,
-          avatarUrl: data.user.avatarUrl
+          avatarUrl: data.user.avatarUrl,
+          isAccessRevoked: data.user.isAccessRevoked
         } : u));
       } else {
         const res = await fetch('/api/admin/users', {
@@ -147,6 +210,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
             email: data.user.email,
             role: data.user.role,
             avatarUrl: null,
+            isAccessRevoked: Boolean(data.user.isAccessRevoked),
             createdAt: new Date()
           },
           ...prev
@@ -154,7 +218,7 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
       }
       
       setIsOpen(false);
-      setFormData({ name: '', email: '', password: '', role: 'STUDENT', avatarUrl: undefined });
+      setFormData({ name: '', email: '', password: '', role: 'STUDENT', avatarUrl: undefined, isAccessRevoked: false });
       setAvatarPreview(null);
       router.refresh();
       
@@ -191,23 +255,23 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h2 className="font-[var(--font-heading)] text-3xl">Manage Users</h2>
-          <p className="text-sm text-muted-foreground">Add and manage student and teacher accounts.</p>
+          <h2 className="font-[var(--font-heading)] text-3xl font-bold">Manage Users</h2>
+          <p className="text-sm text-muted-foreground">Add, manage, and control login access for student and teacher accounts.</p>
         </div>
         
         <Dialog open={isOpen} onOpenChange={setIsOpen}>
           <DialogTrigger asChild>
-            <Button onClick={openCreateForm}>
+            <Button onClick={openCreateForm} className="shadow-lg shadow-primary/20">
               <Plus className="mr-2 h-4 w-4" />
               Add User
             </Button>
           </DialogTrigger>
-          <DialogContent className="glass">
+          <DialogContent className="glass sm:max-w-md">
             <DialogHeader>
               <DialogTitle>{editingUser ? 'Edit Account' : 'Create New Account'}</DialogTitle>
               <DialogDescription>
                 {editingUser 
-                  ? "Modify the user's details below. Leave password blank if you do not wish to change it."
+                  ? "Modify the user's details and access status below. Leave password blank to keep unchanged."
                   : "Provide details for the new user. They will use the email and password to log in."
                 }
               </DialogDescription>
@@ -224,9 +288,9 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
                       onClick={() => fileInputRef.current?.click()}
                     >
                       {avatarPreview ? (
-                        <img src={avatarPreview} alt="Avatar" className="h-14 w-14 rounded-xl object-cover border-2 border-primary/20" />
+                        <img src={avatarPreview} alt="Avatar" className="h-14 w-14 rounded-xl object-cover border-2 border-primary/20 shadow" />
                       ) : (
-                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary text-primary-foreground font-bold text-lg shadow">
                           {formData.name?.[0] || '?'}
                         </div>
                       )}
@@ -295,18 +359,45 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
                 <select 
                   id="role" 
                   name="role" 
-                  className="flex h-10 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   value={formData.role}
                   onChange={handleChange}
                 >
-                  <option className="text-black" value="STUDENT">Student</option>
-                  <option className="text-black" value="ADMIN">Teacher (Admin)</option>
+                  <option value="STUDENT">Student</option>
+                  <option value="ADMIN">Teacher (Admin)</option>
                 </select>
               </div>
 
+              {/* Login Access Status Toggle */}
+              {editingUser && !isMasterAdmin(editingUser.email) && editingUser.id !== currentUserId && (
+                <div className="rounded-xl border border-border/70 p-3 bg-muted/30 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <Label htmlFor="isAccessRevoked" className="text-sm font-semibold cursor-pointer">
+                        Login Access Status
+                      </Label>
+                      <p className="text-xs text-muted-foreground">
+                        {formData.isAccessRevoked ? 'Access is currently revoked (Login disabled)' : 'Access is active (Can log in)'}
+                      </p>
+                    </div>
+                    <select
+                      id="isAccessRevoked"
+                      name="isAccessRevoked"
+                      className="h-9 rounded-md border border-input bg-background px-2.5 py-1 text-xs font-medium"
+                      value={formData.isAccessRevoked ? 'true' : 'false'}
+                      onChange={(e) => setFormData(prev => ({ ...prev, isAccessRevoked: e.target.value === 'true' }))}
+                    >
+                      <option value="false">Active</option>
+                      <option value="true">Revoked</option>
+                    </select>
+                  </div>
+                </div>
+              )}
+
               {error && (
-                <div className="rounded-md border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                  {error}
+                <div className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 shrink-0" />
+                  <span>{error}</span>
                 </div>
               )}
               
@@ -319,74 +410,128 @@ export function AdminUsersClient({ initialUsers }: { initialUsers: UserType[] })
         </Dialog>
       </div>
 
-      <Card className="glass border-border/60">
+      <Card className="glass border-border/60 shadow-xl shadow-black/5">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Users className="h-5 w-5 text-primary" />
-            Registered Users
+            Registered Users ({users.length})
           </CardTitle>
-          <CardDescription>A list of all users currently active in the platform.</CardDescription>
+          <CardDescription>View, edit, and manage login access status for all users.</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="rounded-md border border-border/50">
-            <div className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] border-b border-border/50 bg-muted/50 p-4 font-medium">
+          <div className="rounded-xl border border-border/50 overflow-hidden">
+            <div className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_1fr_auto] border-b border-border/50 bg-muted/50 p-4 font-medium text-xs uppercase tracking-wider text-muted-foreground">
               <div className="w-10"></div>
               <div>Name</div>
               <div>Email</div>
               <div>Role</div>
+              <div>Access Status</div>
               <div>Joined</div>
-              <div className="w-16"></div>
+              <div className="w-24 text-right">Actions</div>
             </div>
             
             <div className="divide-y divide-border/50">
               {users.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">No users found.</div>
               ) : (
-                users.map((user) => (
-                  <div key={user.id} className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_auto] items-center p-4 text-sm transition-colors hover:bg-muted/20">
-                    <div className="w-10">
-                      {user.avatarUrl ? (
-                        <img src={user.avatarUrl} alt={user.name} className="h-8 w-8 rounded-lg object-cover" />
-                      ) : (
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
-                          {user.name?.[0] || '?'}
-                        </div>
-                      )}
-                    </div>
-                    <div className="font-medium flex items-center gap-1.5">
-                      {user.name}
-                      {isMasterAdmin(user.email) && (
-                        <span title="Master Admin" aria-label="Master Admin">
-                          <Shield className="h-3.5 w-3.5 text-amber-500" />
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-muted-foreground">{user.email}</div>
-                    <div>
-                      <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
-                        {user.role}
-                      </Badge>
-                    </div>
-                    <div className="text-muted-foreground">
-                      {new Date(user.createdAt).toLocaleDateString()}
-                      {user.role === 'STUDENT' && user.parents && user.parents.length > 0 && (
-                        <div className="text-xs text-primary mt-1">
-                          Parent: {user.parents[0].parent.name} {user.parents[0].parent.phone ? `(${user.parents[0].parent.phone})` : ''}
-                        </div>
-                      )}
-                    </div>
-                    <div className="flex items-center justify-end gap-1">
-                      <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-accent rounded-lg" onClick={() => openEditForm(user)}>
-                        <Edit2 className="h-4 w-4 text-foreground" />
-                      </Button>
-                      {!isMasterAdmin(user.email) && (
-                        <Button size="icon" variant="ghost" className="h-8 w-8 hover:bg-destructive/10 rounded-lg" onClick={() => handleDelete(user.id)}>
-                          <Trash className="h-4 w-4 text-destructive" />
+                users.map((user) => {
+                  const isRevoked = Boolean(user.isAccessRevoked);
+                  const isToggling = togglingUserId === user.id;
+                  const canToggle = !isMasterAdmin(user.email) && user.id !== currentUserId;
+
+                  return (
+                    <div key={user.id} className="grid grid-cols-[auto_2fr_2fr_1fr_1fr_1fr_auto] items-center p-4 text-sm transition-colors hover:bg-muted/20">
+                      <div className="w-10">
+                        {user.avatarUrl ? (
+                          <img src={user.avatarUrl} alt={user.name} className="h-8 w-8 rounded-lg object-cover shadow-sm" />
+                        ) : (
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 text-primary font-bold text-xs">
+                            {user.name?.[0] || '?'}
+                          </div>
+                        )}
+                      </div>
+                      <div className="font-medium flex items-center gap-1.5">
+                        <span className={isRevoked ? "line-through opacity-70" : ""}>{user.name}</span>
+                        {isMasterAdmin(user.email) && (
+                          <span title="Master Admin" aria-label="Master Admin">
+                            <Shield className="h-3.5 w-3.5 text-amber-500" />
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground truncate pr-2">{user.email}</div>
+                      <div>
+                        <Badge variant={user.role === 'ADMIN' ? 'default' : 'secondary'}>
+                          {user.role}
+                        </Badge>
+                      </div>
+                      <div>
+                        {isRevoked ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-destructive/30 bg-destructive/10 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+                            <Ban className="h-3 w-3" />
+                            Access Revoked
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="h-3 w-3" />
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <div className="text-muted-foreground text-xs">
+                        {new Date(user.createdAt).toLocaleDateString()}
+                        {user.role === 'STUDENT' && user.parents && user.parents.length > 0 && (
+                          <div className="text-xs text-primary mt-0.5 truncate">
+                            Parent: {user.parents[0].parent.name}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-end gap-1">
+                        {canToggle && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            disabled={isToggling}
+                            className={`h-8 w-8 rounded-lg transition-colors ${
+                              isRevoked 
+                                ? "hover:bg-emerald-500/10 text-emerald-600 hover:text-emerald-700 dark:text-emerald-400" 
+                                : "hover:bg-amber-500/10 text-amber-600 hover:text-amber-700 dark:text-amber-400"
+                            }`}
+                            title={isRevoked ? "Restore login access" : "Revoke login access"}
+                            onClick={() => handleToggleAccess(user)}
+                          >
+                            {isToggling ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : isRevoked ? (
+                              <UserCheck className="h-4 w-4" />
+                            ) : (
+                              <UserX className="h-4 w-4" />
+                            )}
+                          </Button>
+                        )}
+                        <Button 
+                          size="icon" 
+                          variant="ghost" 
+                          className="h-8 w-8 hover:bg-accent rounded-lg" 
+                          title="Edit User"
+                          onClick={() => openEditForm(user)}
+                        >
+                          <Edit2 className="h-4 w-4 text-foreground" />
                         </Button>
-                      )}
+                        {!isMasterAdmin(user.email) && user.id !== currentUserId && (
+                          <Button 
+                            size="icon" 
+                            variant="ghost" 
+                            className="h-8 w-8 hover:bg-destructive/10 rounded-lg text-destructive" 
+                            title="Delete User"
+                            onClick={() => handleDelete(user.id)}
+                          >
+                            <Trash className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           </div>

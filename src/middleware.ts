@@ -22,6 +22,10 @@ export default async function middleware(req: NextRequest) {
     });
   }
 
+  if (token?.isAccessRevoked) {
+    return NextResponse.redirect(new URL('/login?error=AccessRevoked', req.url));
+  }
+
   const role = token?.role;
 
   if (pathname.startsWith('/admin') && role !== 'ADMIN') {
@@ -29,15 +33,15 @@ export default async function middleware(req: NextRequest) {
   }
 
   if (pathname.startsWith('/student') && role !== 'STUDENT') {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL(token?.isAccessRevoked ? '/login?error=AccessRevoked' : '/login', req.url));
   }
 
   if (pathname.startsWith('/parent') && role !== 'PARENT') {
-    return NextResponse.redirect(new URL('/login', req.url));
+    return NextResponse.redirect(new URL(token?.isAccessRevoked ? '/login?error=AccessRevoked' : '/login', req.url));
   }
 
   if (pathname === '/') {
-    if (token) {
+    if (token && !token.isAccessRevoked) {
       const homeUrl = (token.home as string) || (role === 'ADMIN' ? '/admin' : role === 'PARENT' ? '/parent' : '/student');
       return NextResponse.redirect(new URL(homeUrl, req.url));
     }

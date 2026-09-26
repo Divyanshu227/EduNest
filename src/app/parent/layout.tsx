@@ -12,7 +12,11 @@ export default async function ParentLayout({
 }) {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== 'PARENT') {
+  if (!session?.user || session.user.isAccessRevoked) {
+    redirect('/login?error=AccessRevoked');
+  }
+
+  if (session.user.role !== 'PARENT') {
     redirect('/login');
   }
 
@@ -34,8 +38,8 @@ export default async function ParentLayout({
     }
   });
 
-  if (!parentData) {
-    redirect('/login');
+  if (!parentData || parentData.isAccessRevoked) {
+    redirect('/login?error=AccessRevoked');
   }
 
   const linkedStudents = parentData.parentOf.map(p => p.student);

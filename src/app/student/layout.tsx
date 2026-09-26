@@ -6,7 +6,11 @@ import { DashboardShell } from '@/components/layout/dashboard-shell';
 export default async function StudentLayout({ children }: Readonly<{ children: ReactNode }>) {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== 'STUDENT') {
+  if (!session?.user || session.user.isAccessRevoked) {
+    redirect('/login?error=AccessRevoked');
+  }
+
+  if (session.user.role !== 'STUDENT') {
     redirect('/login');
   }
 

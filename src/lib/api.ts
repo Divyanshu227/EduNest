@@ -9,8 +9,8 @@ export function jsonError(message: string, status = 400) {
 export async function requireUser() {
   const session = await auth();
 
-  if (!session?.user) {
-    return { error: jsonError('Unauthorized', 401) };
+  if (!session?.user || session.user.isAccessRevoked) {
+    return { error: jsonError('Access revoked', 403) };
   }
 
   return { session };

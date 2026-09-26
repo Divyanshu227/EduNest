@@ -1,12 +1,11 @@
 import { prisma } from '@/lib/prisma';
 import { auth } from '@/lib/auth';
 import { AdminParentsClient } from './AdminParentsClient';
-import { redirect } from 'next/navigation';
 
 export default async function AdminParentsPage() {
   const session = await auth();
 
-  if (!session?.user || session.user.role !== 'ADMIN') {
+  if (!session?.user || session.user.role !== 'ADMIN' || session.user.isAccessRevoked) {
     return <div className="p-6">Unauthorized</div>;
   }
 
@@ -18,6 +17,7 @@ export default async function AdminParentsPage() {
       email: true,
       phone: true,
       avatarUrl: true,
+      isAccessRevoked: true,
       createdAt: true,
       parentOf: {
         include: {

@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
 import { LoginForm } from '@/components/auth/login-form';
-import { Card, CardContent } from '@/components/ui/card';
+import { Suspense } from 'react';
 
 export default async function LoginPage() {
   const session = await auth();
 
-  if (session?.user?.home) {
+  if (session?.user?.home && !session?.user?.isAccessRevoked && session?.user?.role) {
     redirect(session.user.home);
   }
 
@@ -18,7 +18,9 @@ export default async function LoginPage() {
           <h1 className="mt-2 font-[var(--font-heading)] text-3xl font-black">Sign in securely</h1>
           <p className="mt-1 text-xs text-muted-foreground">Sign in to access your dashboard.</p>
         </div>
-        <LoginForm />
+        <Suspense fallback={<div className="h-64 rounded-2xl bg-card/50 animate-pulse" />}>
+          <LoginForm />
+        </Suspense>
       </div>
     </main>
   );

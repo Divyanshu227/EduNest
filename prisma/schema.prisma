@@ -55,6 +55,7 @@ model User {
   avatarUrl     String?
   phone         String?
   deviceTokens  String[]            @default([])
+  isAccessRevoked Boolean           @default(false)
   createdAt     DateTime            @default(now())
   updatedAt     DateTime            @updatedAt
 

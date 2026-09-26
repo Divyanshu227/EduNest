@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getSession, signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { getSession, signIn, signOut } from 'next-auth/react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Loader2, ShieldAlert } from 'lucide-react';
 import { credentialsSchema } from '@/lib/validators';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,15 @@ type FormValues = z.infer<typeof credentialsSchema>;
 export function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+
+  useEffect(() => {
+    const err = searchParams.get('error');
+    if (err === 'AccessRevoked' || err === 'revoked') {
+      setError('Access revoked');
+      signOut({ redirect: false });
+    }
+  }, [searchParams]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(credentialsSchema),
@@ -30,6 +39,25 @@ export function LoginForm() {
   const onSubmit = form.handleSubmit(async (values) => {
     setError(null);
 
+    // Pre-flight credential check to accurately detect revoked access
+    try {
+      const statusRes = await fetch('/api/auth/check-status', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: values.email, password: values.password })
+      });
+
+      if (statusRes.status === 403) {
+        const data = await statusRes.json();
+        if (data.isAccessRevoked) {
+          setError('Access revoked');
+          return;
+        }
+      }
+    } catch {
+      // Continue to signIn fallback
+    }
+
     const result = await signIn('credentials', {
       email: values.email,
       password: values.password,
@@ -37,12 +65,30 @@ export function LoginForm() {
     });
 
     if (!result?.ok) {
-      setError('Invalid email or password.');
+      if (result?.error?.toLowerCase().includes('revoked') || result?.code?.toLowerCase().includes('revoked')) {
+        setError('Access revoked');
+      } else {
+        setError('Invalid email or password.');
+      }
       return;
     }
 
     const session = await getSession();
-    router.replace(session?.user.role === 'ADMIN' ? '/admin' : '/student');
+
+    if (session?.user?.isAccessRevoked) {
+      setError('Access revoked');
+      await signOut({ redirect: false });
+      return;
+    }
+
+    const role = session?.user?.role;
+    if (role === 'ADMIN') {
+      router.replace('/admin');
+    } else if (role === 'PARENT') {
+      router.replace('/parent');
+    } else {
+      router.replace('/student');
+    }
     router.refresh();
   });
 
@@ -64,7 +110,12 @@ export function LoginForm() {
             <Input id="password" type="password" autoComplete="current-password" {...form.register('password')} placeholder="••••••••" />
             {form.formState.errors.password ? <p className="text-sm text-destructive">{form.formState.errors.password.message}</p> : null}
           </div>
-          {error ? <div className="rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">{error}</div> : null}
+          {error ? (
+            <div className="flex items-center gap-2.5 rounded-2xl border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm font-semibold text-destructive animate-in fade-in">
+              <ShieldAlert className="h-4 w-4 shrink-0 text-destructive" />
+              <span>{error}</span>
+            </div>
+          ) : null}
           <Button type="submit" className="w-full" disabled={form.formState.isSubmitting}>
             {form.formState.isSubmitting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
             Sign In
