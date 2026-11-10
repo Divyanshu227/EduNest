@@ -25,7 +25,7 @@ export default async function HomePage() {
       <main>
         <HeroSection />
         <FeaturesSection />
-        <TeachersSection />
+        {/* <TeachersSection /> */}
         <SubjectsSection />
         <HowItWorksSection />
         <ComparisonSection />
